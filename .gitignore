@@ -1,0 +1,6 @@
+.DS_Store
+
+test/lib
+node_modules/*
+cssbelt.coffee
+.grunt

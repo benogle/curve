@@ -1,0 +1,17 @@
+{
+  "name": "curve",
+  "version": "0.0.1",
+  "main": ["./curve.js", "./curve.min.js"],
+  "dependencies": {},
+  "ignore": [
+    ".gitignore",
+    ".travis.yml",
+    "LICENSE",
+    "Gruntfile.js",
+    "**/*.md",
+    "**/*.json",
+    "src/",
+    "examples/",
+    "test/"
+  ]
+}
