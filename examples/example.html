@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Curve Test</title>
+
+  <script src="vendor/event-emitter.js"></script>
+  <script src="vendor/underscore.js"></script>
+  <script src="vendor/raphael.js"></script>
+
+  <script src="../curve.js"></script>
+
+  <script type="text/javascript">
+  window.onload = function(){
+    main()
+  }
+  </script>
+
+  <style type="text/css">
+    body {
+      background: #444;
+    }
+    #canvas, body{
+      padding: 0; margin: 0;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+    svg{
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+
+</head>
+<body>
+  <div id="canvas"></div>
+</body>
+</html>
