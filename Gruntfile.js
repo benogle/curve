@@ -38,7 +38,7 @@ module.exports = function(grunt) {
     watch: {
       build: {
         files: ['src/**/*.coffee'],
-        tasks: ['concat', 'coffee:build'/*, 'jasmine'*/]
+        tasks: ['concat', 'coffee:build', 'jasmine']
       },
       test: {
         files: ['test/src/**/*.coffee'],
@@ -51,7 +51,13 @@ module.exports = function(grunt) {
       options: {
         specs: ['test/lib/exploreSpec.js'],
         helpers: 'test/lib/**/*Helper.js',
-        vendor: ['test/lib/vendor/*.js']
+        vendor: [
+          'test/vendor/event-emitter.js',
+          'test/vendor/raphael.js',
+          'test/vendor/jquery-2.0.3.js',
+          'test/vendor/underscore.js',
+          'test/vendor/jasmine-jquery.js'
+        ]
       }
     }
   });
