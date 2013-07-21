@@ -1,5 +1,5 @@
 (function() {
-  var Curve, Node, Path, Point, SelectionModel, SelectionView, attrs, utils,
+  var Curve, Node, NodeEditor, Path, Point, SelectionModel, SelectionView, attrs, utils,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -214,20 +214,6 @@
   SelectionView = (function() {
     SelectionView.prototype.nodeSize = 5;
 
-    SelectionView.prototype.selectionAttrs = {
-      fill: null,
-      stroke: '#09C',
-      "stroke-width": 2,
-      "stroke-linecap": "round"
-    };
-
-    SelectionView.prototype.nodeAttrs = {
-      fill: '#fff',
-      stroke: '#069',
-      "stroke-width": 1,
-      "stroke-linecap": "round"
-    };
-
     function SelectionView(model) {
       this.model = model;
       this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
@@ -237,10 +223,11 @@
       this.handles = null;
       this.model.on('change:selected', this.onChangeSelected);
       this.model.on('change:selectedNode', this.onChangeSelectedNode);
+      this.nodeEditor = new NodeEditor();
     }
 
     SelectionView.prototype.renderSelectedObject = function() {
-      var i, node, nodeDifference, object, _i, _j, _k, _len, _ref, _ref1, _ref2;
+      var circle, i, node, nodeDifference, object, _i, _j, _k, _ref, _ref1, _ref2, _results;
 
       if (!(object = this.model.selected)) {
         return;
@@ -252,7 +239,9 @@
       nodeDifference = object.nodes.length - this.nodes.length;
       if (nodeDifference > 0) {
         for (i = _i = 0; 0 <= nodeDifference ? _i < nodeDifference : _i > nodeDifference; i = 0 <= nodeDifference ? ++_i : --_i) {
-          this.nodes.push(raphael.circle(0, 0, this.nodeSize));
+          circle = raphael.circle(0, 0, this.nodeSize);
+          circle.node.setAttribute('class', 'selected-node');
+          this.nodes.push(circle);
         }
       } else if (nodeDifference < 0) {
         for (i = _j = _ref = object.nodes.length, _ref1 = this.nodes.length; _ref <= _ref1 ? _j < _ref1 : _j > _ref1; i = _ref <= _ref1 ? ++_j : --_j) {
@@ -260,16 +249,23 @@
           this.nodes.exclude(this.nodes[i]);
         }
       }
-      _ref2 = object.nodes.length;
-      for (_k = 0, _len = _ref2.length; _k < _len; _k++) {
-        i = _ref2[_k];
+      _results = [];
+      for (i = _k = 0, _ref2 = object.nodes.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
         node = object.nodes[i];
-        this.nodes[i].attr({
+        _results.push(this.nodes[i].attr({
           cx: node.point.x,
           cy: node.point.y
-        });
+        }));
       }
-      return this.nodes.attr(this.nodeAttrs);
+      return _results;
+    };
+
+    SelectionView.prototype.renderSelectedNode = function() {
+      var node;
+
+      if (!(node = this.model.selectedNode)) {
+
+      }
     };
 
     SelectionView.prototype.onChangeSelected = function(_arg) {
@@ -283,7 +279,7 @@
       var object;
 
       object = _arg.object;
-      return this.setSelectedNode(object);
+      return this.nodeEditor.setNode(object);
     };
 
     SelectionView.prototype.setSelectedObject = function(object) {
@@ -296,14 +292,85 @@
       }
       this.path = null;
       if (object) {
-        this.path = object.path.clone().toFront().attr(this.selectionAttrs);
+        this.path = object.path.clone().toFront();
+        this.path.node.setAttribute('class', 'selected-path');
       }
       return this.renderSelectedObject();
     };
 
-    SelectionView.prototype.setSelectedNode = function(node) {};
-
     return SelectionView;
+
+  })();
+
+  NodeEditor = (function() {
+    var handleElements, handleNode, lineElement;
+
+    NodeEditor.prototype.nodeSize = 3;
+
+    handleNode = null;
+
+    handleElements = null;
+
+    lineElement = null;
+
+    function NodeEditor() {
+      this._setupLineElement();
+      this._setupHandleElements();
+      this.hide();
+    }
+
+    NodeEditor.prototype.hide = function() {
+      this.lineElement.hide();
+      return this.handleElements.hide();
+    };
+
+    NodeEditor.prototype.show = function() {
+      this.lineElement.toFront().show();
+      return this.handleElements.toFront().show();
+    };
+
+    NodeEditor.prototype.setNode = function(handleNode) {
+      this.handleNode = handleNode;
+      return this.render();
+    };
+
+    NodeEditor.prototype.render = function() {
+      var handleIn, handleOut, linePath, point;
+
+      if (!this.handleNode) {
+        return this.hide();
+      }
+      handleIn = this.handleNode.getAbsoluteHandleIn();
+      handleOut = this.handleNode.getAbsoluteHandleOut();
+      point = this.handleNode.point;
+      linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]];
+      this.lineElement.attr({
+        path: linePath
+      });
+      this.handleElements[0].attr({
+        cx: handleIn.x,
+        cy: handleIn.y
+      });
+      this.handleElements[1].attr({
+        cx: handleOut.x,
+        cy: handleOut.y
+      });
+      return this.show();
+    };
+
+    NodeEditor.prototype._setupLineElement = function() {
+      this.lineElement = raphael.path([]);
+      return this.lineElement.node.setAttribute('class', 'node-editor-lines');
+    };
+
+    NodeEditor.prototype._setupHandleElements = function() {
+      this.handleElements = raphael.set();
+      this.handleElements.push(raphael.circle(0, 0, this.nodeSize), raphael.circle(0, 0, this.nodeSize));
+      this.handleElements[0].node.setAttribute('class', 'node-editor-handle');
+      return this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
+    };
+
+    return NodeEditor;
 
   })();
 
@@ -327,7 +394,8 @@
     this.path.close();
     this.selectionModel = new SelectionModel();
     this.selectionView = new SelectionView(selectionModel);
-    return this.selectionModel.setSelected(this.path);
+    this.selectionModel.setSelected(this.path);
+    return this.selectionModel.setSelectedNode(this.path.nodes[2]);
   };
 
 }).call(this);

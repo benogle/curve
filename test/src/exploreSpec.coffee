@@ -56,19 +56,27 @@ describe 'Curve.SelectionView', ->
     @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
     @path.close()
 
-  it 'creates nodes when selecting a path', ->
+  it 'creates nodes when selecting and cleans up when selecting nothing', ->
     @model.setSelected(@path)
 
-    expect($('svg circle').length).toEqual 1
-    expect($('svg path').length).toEqual 2
-
-  it 'cleans up when selecting nothing', ->
-    @model.setSelected(@path)
-
-    expect($('svg circle').length).toEqual 1
-    expect($('svg path').length).toEqual 2
+    expect($('svg circle.selected-node').length).toEqual 1
+    expect($('svg path.selected-path').length).toEqual 1
 
     @model.clearSelected()
 
-    expect($('svg circle').length).toEqual 0
-    expect($('svg path').length).toEqual 1
+    expect($('svg circle.selected-node').length).toEqual 0
+    expect($('svg path.selected-path').length).toEqual 0
+
+  it 'renders node editor when selecting a node', ->
+    @model.setSelected(@path)
+    @model.setSelectedNode(@path.nodes[0])
+
+    expect($('svg circle.node-editor-handle:eq(0)')).toShow()
+    expect($('svg circle.node-editor-handle:eq(1)')).toShow()
+    expect($('svg circle.node-editor-handle:eq(0)')).toHaveAttr 'cx', 40
+    expect($('svg circle.node-editor-handle:eq(1)')).toHaveAttr 'cx', 60
+
+    @model.clearSelectedNode()
+
+    expect($('svg circle.node-editor-handle:eq(0)')).toHide()
+    expect($('svg circle.node-editor-handle:eq(1)')).toHide()

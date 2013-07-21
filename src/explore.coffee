@@ -129,6 +129,8 @@ class SelectionView
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:selectedNode', @onChangeSelectedNode
 
+    @nodeEditor = new NodeEditor()
+
   renderSelectedObject: ->
     return unless object = @model.selected
 
@@ -157,7 +159,7 @@ class SelectionView
   onChangeSelected: ({object}) =>
     @setSelectedObject(object)
   onChangeSelectedNode: ({object}) =>
-    @setSelectedNode(object)
+    @nodeEditor.setNode(object)
 
   setSelectedObject: (object) ->
     if @nodes
@@ -172,7 +174,56 @@ class SelectionView
 
     @renderSelectedObject()
 
-  setSelectedNode: (node) ->
+class NodeEditor
+  nodeSize: 3
+
+  handleNode = null
+  handleElements = null
+  lineElement = null
+
+  constructor: ->
+    @_setupLineElement()
+    @_setupHandleElements()
+    @hide()
+
+  hide: ->
+    @lineElement.hide()
+    @handleElements.hide()
+
+  show: ->
+    @lineElement.toFront().show()
+    @handleElements.toFront().show()
+
+  setNode: (@handleNode) ->
+    @render()
+
+  render: ->
+    return @hide() unless @handleNode
+
+    handleIn = @handleNode.getAbsoluteHandleIn()
+    handleOut = @handleNode.getAbsoluteHandleOut()
+    point = @handleNode.point
+
+    linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]]
+    @lineElement.attr(path: linePath)
+
+    @handleElements[0].attr(cx: handleIn.x, cy: handleIn.y)
+    @handleElements[1].attr(cx: handleOut.x, cy: handleOut.y)
+
+    @show()
+
+  _setupLineElement: ->
+    @lineElement = raphael.path([])
+    @lineElement.node.setAttribute('class', 'node-editor-lines')
+
+  _setupHandleElements: ->
+    @handleElements = raphael.set()
+    @handleElements.push(
+      raphael.circle(0, 0, @nodeSize),
+      raphael.circle(0, 0, @nodeSize)
+    )
+    @handleElements[0].node.setAttribute('class', 'node-editor-handle')
+    @handleElements[1].node.setAttribute('class', 'node-editor-handle')
 
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView})
@@ -189,3 +240,4 @@ window.main = ->
   @selectionView = new SelectionView(selectionModel)
 
   @selectionModel.setSelected(@path)
+  @selectionModel.setSelectedNode(@path.nodes[2])
