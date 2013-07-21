@@ -379,14 +379,26 @@ _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView,
 
 window.main = ->
   @svg = SVG("canvas")
-  @path = new Path()
-  @path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
-  @path.addNode(new Node([80, 60], [-10, -5], [10, 5]))
-  @path.addNode(new Node([60, 80], [10, 0], [-10, 0]))
-  @path.close()
+
+  @path1 = new Path()
+  @path1.addNode(new Node([50, 50], [-10, 0], [10, 0]))
+  @path1.addNode(new Node([80, 60], [-10, -5], [10, 5]))
+  @path1.addNode(new Node([60, 80], [10, 0], [-10, 0]))
+  @path1.close()
+
+  @path2 = new Path()
+  @path2.addNode(new Node([150, 50], [-10, 0], [10, 0]))
+  @path2.addNode(new Node([220, 100], [-10, -5], [10, 5]))
+  @path2.addNode(new Node([160, 120], [10, 0], [-10, 0]))
+  @path2.close()
+
+  @path2.path.attr
+    fill: 'none'
+    stroke: '#333'
+    'stroke-width': 2
 
   @selectionModel = new SelectionModel()
   @selectionView = new SelectionView(selectionModel)
 
-  @selectionModel.setSelected(@path)
-  @selectionModel.setSelectedNode(@path.nodes[2])
+  @selectionModel.setSelected(@path1)
+  @selectionModel.setSelectedNode(@path1.nodes[2])

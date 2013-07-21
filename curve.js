@@ -628,15 +628,25 @@
 
   window.main = function() {
     this.svg = SVG("canvas");
-    this.path = new Path();
-    this.path.addNode(new Node([50, 50], [-10, 0], [10, 0]));
-    this.path.addNode(new Node([80, 60], [-10, -5], [10, 5]));
-    this.path.addNode(new Node([60, 80], [10, 0], [-10, 0]));
-    this.path.close();
+    this.path1 = new Path();
+    this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
+    this.path1.addNode(new Node([80, 60], [-10, -5], [10, 5]));
+    this.path1.addNode(new Node([60, 80], [10, 0], [-10, 0]));
+    this.path1.close();
+    this.path2 = new Path();
+    this.path2.addNode(new Node([150, 50], [-10, 0], [10, 0]));
+    this.path2.addNode(new Node([220, 100], [-10, -5], [10, 5]));
+    this.path2.addNode(new Node([160, 120], [10, 0], [-10, 0]));
+    this.path2.close();
+    this.path2.path.attr({
+      fill: 'none',
+      stroke: '#333',
+      'stroke-width': 2
+    });
     this.selectionModel = new SelectionModel();
     this.selectionView = new SelectionView(selectionModel);
-    this.selectionModel.setSelected(this.path);
-    return this.selectionModel.setSelectedNode(this.path.nodes[2]);
+    this.selectionModel.setSelected(this.path1);
+    return this.selectionModel.setSelectedNode(this.path1.nodes[2]);
   };
 
 }).call(this);
