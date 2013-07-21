@@ -1,5 +1,5 @@
 (function() {
-  var Curve, Path, PathPoint, Point, SelectionModel, SelectionView, attrs, utils,
+  var Curve, Node, Path, Point, SelectionModel, SelectionView, attrs, utils,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -23,16 +23,27 @@
 
   utils = window.Curve;
 
+  /*
+    TODO
+    * draw handles
+    * move handles
+    * move nodes
+    * move entire object
+    * select/deselect things
+    * make new objects
+  */
+
+
   Path = (function() {
     function Path() {
       this.path = null;
-      this.pathPoints = [];
+      this.nodes = [];
       this.isClosed = false;
       this.path = this._createRaphaelObject([]);
     }
 
-    Path.prototype.addPathPoint = function(pathPoint) {
-      this.pathPoints.push(pathPoint);
+    Path.prototype.addNode = function(node) {
+      this.nodes.push(node);
       return this.render();
     };
 
@@ -51,31 +62,31 @@
     };
 
     Path.prototype.toPathArray = function() {
-      var lastPoint, makeCurve, path, point, _i, _len, _ref;
+      var lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref;
 
       path = [];
       lastPoint = null;
-      makeCurve = function(lastPoint, point) {
+      makeCurve = function(fromNode, toNode) {
         var curve;
 
         curve = ['C'];
-        curve = curve.concat(lastPoint.getAbsoluteHandleOut().toArray());
-        curve = curve.concat(point.getAbsoluteHandleIn().toArray());
-        curve = curve.concat(point.point.toArray());
+        curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
+        curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
+        curve = curve.concat(toNode.point.toArray());
         return curve;
       };
-      _ref = this.pathPoints;
+      _ref = this.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        point = _ref[_i];
+        node = _ref[_i];
         if (path.length === 0) {
-          path.push(['M'].concat(point.point.toArray()));
+          path.push(['M'].concat(node.point.toArray()));
         } else {
-          path.push(makeCurve(lastPoint, point));
+          path.push(makeCurve(lastNode, node));
         }
-        lastPoint = point;
+        lastNode = node;
       }
       if (this.isClosed) {
-        path.push(makeCurve(this.pathPoints[this.pathPoints.length - 1], this.pathPoints[0]));
+        path.push(makeCurve(this.nodes[this.nodes.length - 1], this.nodes[0]));
         path.push(['Z']);
       }
       return path;
@@ -142,10 +153,10 @@
 
   })();
 
-  PathPoint = (function(_super) {
-    __extends(PathPoint, _super);
+  Node = (function(_super) {
+    __extends(Node, _super);
 
-    function PathPoint(point, handleIn, handleOut) {
+    function Node(point, handleIn, handleOut) {
       this.point = Point.create(point);
       this.handleIn = Point.create(handleIn);
       this.handleOut = Point.create(handleOut);
@@ -154,15 +165,15 @@
       this._curveOut = null;
     }
 
-    PathPoint.prototype.getAbsoluteHandleIn = function() {
+    Node.prototype.getAbsoluteHandleIn = function() {
       return this.point.add(this.handleIn);
     };
 
-    PathPoint.prototype.getAbsoluteHandleOut = function() {
+    Node.prototype.getAbsoluteHandleOut = function() {
       return this.point.add(this.handleOut);
     };
 
-    return PathPoint;
+    return Node;
 
   })(EventEmitter);
 
@@ -181,8 +192,19 @@
       });
     };
 
+    SelectionModel.prototype.setSelectedNode = function(selectedNode) {
+      this.selectedNode = selectedNode;
+      return this.emit('change:selectedNode', {
+        object: this.selectedNode
+      });
+    };
+
     SelectionModel.prototype.clearSelected = function() {
       return this.setSelected(null);
+    };
+
+    SelectionModel.prototype.clearSelectedNode = function() {
+      return this.setSelectedNode(null);
     };
 
     return SelectionModel;
@@ -208,35 +230,49 @@
 
     function SelectionView(model) {
       this.model = model;
+      this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
       this.onChangeSelected = __bind(this.onChangeSelected, this);
       this.path = null;
       this.nodes = null;
       this.handles = null;
       this.model.on('change:selected', this.onChangeSelected);
+      this.model.on('change:selectedNode', this.onChangeSelectedNode);
     }
 
     SelectionView.prototype.onChangeSelected = function(_arg) {
       var object;
 
       object = _arg.object;
-      return this.setSelectionObject(object);
+      return this.setSelectedObject(object);
     };
 
-    SelectionView.prototype.setSelectionObject = function(object) {
-      var pp, _i, _len, _ref;
+    SelectionView.prototype.onChangeSelectedNode = function(_arg) {
+      var object;
 
-      this.path = object.path.clone().toFront().attr(this.selectionAttrs);
+      object = _arg.object;
+      return this.setSelectedNode(object);
+    };
+
+    SelectionView.prototype.setSelectedObject = function(object) {
+      var node, _i, _len, _ref;
+
       if (this.nodes) {
         this.nodes.remove();
       }
+      if (!object) {
+        return;
+      }
+      this.path = object.path.clone().toFront().attr(this.selectionAttrs);
       this.nodes = raphael.set();
-      _ref = object.pathPoints;
+      _ref = object.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        pp = _ref[_i];
-        this.nodes.push(raphael.circle(pp.point.x, pp.point.y, this.nodeSize));
+        node = _ref[_i];
+        this.nodes.push(raphael.circle(node.point.x, node.point.y, this.nodeSize));
       }
       return this.nodes.attr(this.nodeAttrs);
     };
+
+    SelectionView.prototype.setSelectedNode = function(node) {};
 
     return SelectionView;
 
@@ -246,7 +282,7 @@
     Path: Path,
     Curve: Curve,
     Point: Point,
-    PathPoint: PathPoint,
+    Node: Node,
     SelectionModel: SelectionModel,
     SelectionView: SelectionView
   });
@@ -256,9 +292,9 @@
 
     this.raphael = r = Raphael("canvas");
     this.path = new Path(r);
-    this.path.addPathPoint(new PathPoint([50, 50], [-10, 0], [10, 0]));
-    this.path.addPathPoint(new PathPoint([80, 60], [-10, -5], [10, 5]));
-    this.path.addPathPoint(new PathPoint([60, 80], [10, 0], [-10, 0]));
+    this.path.addNode(new Node([50, 50], [-10, 0], [10, 0]));
+    this.path.addNode(new Node([80, 60], [-10, -5], [10, 5]));
+    this.path.addNode(new Node([60, 80], [10, 0], [-10, 0]));
     this.path.close();
     this.selectionModel = new SelectionModel();
     this.selectionView = new SelectionView(selectionModel);

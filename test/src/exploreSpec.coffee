@@ -5,9 +5,9 @@ describe 'Curve.Path', ->
 
   it 'can be created', ->
     path = new Curve.Path()
-    path.addPathPoint(new Curve.PathPoint([50, 50], [-10, 0], [10, 0]))
-    path.addPathPoint(new Curve.PathPoint([80, 60], [-10, -5], [10, 5]))
-    path.addPathPoint(new Curve.PathPoint([60, 80], [10, 0], [-10, 0]))
+    path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
+    path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
+    path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
     path.close()
 
     el = $('svg path')
@@ -16,7 +16,7 @@ describe 'Curve.Path', ->
 
   it 'is associated with the node', ->
     path = new Curve.Path(@raphael)
-    path.addPathPoint(new Curve.PathPoint([60, 80], [10, 0], [-10, 0]))
+    path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
     path.render()
 
     el = $('svg path')
@@ -29,12 +29,20 @@ describe 'Curve.SelectionModel', ->
     @path = {id: 1}
 
     @s.on 'change:selected', @onSelected = jasmine.createSpy()
+    @s.on 'change:selectedNode', @onSelectedNode = jasmine.createSpy()
 
   it 'fires events when changing selection', ->
     @s.setSelected(@path)
 
     expect(@onSelected).toHaveBeenCalled()
     expect(@onSelected.mostRecentCall.args[0]).toEqual object: @path
+
+  it 'fires events when changing selected node', ->
+    node = {omg: 1}
+    @s.setSelectedNode(node)
+
+    expect(@onSelectedNode).toHaveBeenCalled()
+    expect(@onSelectedNode.mostRecentCall.args[0]).toEqual object: node
 
 describe 'Curve.SelectionView', ->
   beforeEach ->
@@ -45,7 +53,7 @@ describe 'Curve.SelectionView', ->
     @model = new Curve.SelectionModel()
     @s = new Curve.SelectionView(@model)
     @path = new Curve.Path()
-    @path.addPathPoint(new Curve.PathPoint([50, 50], [-10, 0], [10, 0]))
+    @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
     @path.close()
 
   it 'creates nodes when selecting a path', ->

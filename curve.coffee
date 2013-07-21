@@ -11,16 +11,26 @@ _.extend(window.Curve, utils)
 attrs = {fill: '#ccc'}
 utils = window.Curve
 
+###
+  TODO
+  * draw handles
+  * move handles
+  * move nodes
+  * move entire object
+  * select/deselect things
+  * make new objects
+###
+
 #
 class Path
   constructor: () ->
     @path = null
-    @pathPoints = []
+    @nodes = []
     @isClosed = false
     @path = @_createRaphaelObject([])
 
-  addPathPoint: (pathPoint) ->
-    @pathPoints.push(pathPoint)
+  addNode: (node) ->
+    @nodes.push(node)
     @render()
 
   close: ->
@@ -34,24 +44,24 @@ class Path
     path = []
     lastPoint = null
 
-    makeCurve = (lastPoint, point) ->
+    makeCurve = (fromNode, toNode) ->
       curve = ['C']
-      curve = curve.concat(lastPoint.getAbsoluteHandleOut().toArray())
-      curve = curve.concat(point.getAbsoluteHandleIn().toArray())
-      curve = curve.concat(point.point.toArray())
+      curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray())
+      curve = curve.concat(toNode.getAbsoluteHandleIn().toArray())
+      curve = curve.concat(toNode.point.toArray())
       curve
 
-    for point in @pathPoints
+    for node in @nodes
 
       if path.length == 0
-        path.push(['M'].concat(point.point.toArray()))
+        path.push(['M'].concat(node.point.toArray()))
       else
-        path.push(makeCurve(lastPoint, point))
+        path.push(makeCurve(lastNode, node))
 
-      lastPoint = point
+      lastNode = node
 
     if @isClosed
-      path.push(makeCurve(@pathPoints[@pathPoints.length-1], @pathPoints[0]))
+      path.push(makeCurve(@nodes[@nodes.length-1], @nodes[0]))
       path.push(['Z'])
 
     path
@@ -86,7 +96,7 @@ class Curve
   constructor: (@point1, @handle1, @point2, @handle2) ->
 
 #
-class PathPoint extends EventEmitter
+class Node extends EventEmitter
   constructor: (point, handleIn, handleOut) ->
     @point = Point.create(point)
     @handleIn = Point.create(handleIn)
@@ -109,8 +119,14 @@ class SelectionModel extends EventEmitter
   setSelected: (@selected) ->
     @emit 'change:selected', object: @selected
 
+  setSelectedNode: (@selectedNode) ->
+    @emit 'change:selectedNode', object: @selectedNode
+
   clearSelected: ->
     @setSelected(null)
+
+  clearSelectedNode: ->
+    @setSelectedNode(null)
 
 #
 class SelectionView
@@ -131,31 +147,39 @@ class SelectionView
     @nodes = null
     @handles = null
     @model.on 'change:selected', @onChangeSelected
+    @model.on 'change:selectedNode', @onChangeSelectedNode
 
   #render: ->
 
   onChangeSelected: ({object}) =>
-    @setSelectionObject(object)
+    @setSelectedObject(object)
+  onChangeSelectedNode: ({object}) =>
+    @setSelectedNode(object)
 
-  setSelectionObject: (object) ->
-    @path = object.path.clone().toFront().attr(@selectionAttrs)
-
+  setSelectedObject: (object) ->
     @nodes.remove() if @nodes
+
+    return unless object
+
+    @path = object.path.clone().toFront().attr(@selectionAttrs)
     @nodes = raphael.set()
 
-    for pp in object.pathPoints
-      @nodes.push(raphael.circle(pp.point.x, pp.point.y, @nodeSize))
+    for node in object.nodes
+      @nodes.push(raphael.circle(node.point.x, node.point.y, @nodeSize))
 
     @nodes.attr(@nodeAttrs)
 
-_.extend(window.Curve, {Path, Curve, Point, PathPoint, SelectionModel, SelectionView})
+  setSelectedNode: (node) ->
+
+
+_.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView})
 
 window.main = ->
   @raphael = r = Raphael("canvas")
   @path = new Path(r)
-  @path.addPathPoint(new PathPoint([50, 50], [-10, 0], [10, 0]))
-  @path.addPathPoint(new PathPoint([80, 60], [-10, -5], [10, 5]))
-  @path.addPathPoint(new PathPoint([60, 80], [10, 0], [-10, 0]))
+  @path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
+  @path.addNode(new Node([80, 60], [-10, -5], [10, 5]))
+  @path.addNode(new Node([60, 80], [10, 0], [-10, 0]))
   @path.close()
 
   @selectionModel = new SelectionModel()
