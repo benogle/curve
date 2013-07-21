@@ -546,7 +546,17 @@
       this.nodeElement.dragstart = function() {
         return _this.selectionModel.setSelectedNode(_this.node);
       };
-      return this.nodeElement.dragmove = this.onDraggingNode;
+      this.nodeElement.dragmove = this.onDraggingNode;
+      this.nodeElement.on('mouseover', function() {
+        return _this.nodeElement.attr({
+          'r': _this.nodeSize + 2
+        });
+      });
+      return this.nodeElement.on('mouseout', function() {
+        return _this.nodeElement.attr({
+          'r': _this.nodeSize
+        });
+      });
     };
 
     NodeEditor.prototype._setupLineElement = function() {
@@ -555,7 +565,8 @@
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
-      var onStartDraggingHandle, onStopDraggingHandle, self;
+      var find, onStartDraggingHandle, onStopDraggingHandle, self,
+        _this = this;
 
       self = this;
       this.handleElements = svg.set();
@@ -575,7 +586,30 @@
       this.handleElements.members[1].draggable();
       this.handleElements.members[1].dragmove = this.onDraggingHandleOut;
       this.handleElements.members[1].dragstart = onStartDraggingHandle;
-      return this.handleElements.members[1].dragend = onStopDraggingHandle;
+      this.handleElements.members[1].dragend = onStopDraggingHandle;
+      find = function(el) {
+        if (_this.handleElements.members[0].node === el) {
+          return _this.handleElements.members[0];
+        }
+        return _this.handleElements.members[1];
+      };
+      this.handleElements.on('mouseover', function() {
+        var el;
+
+        el = find(this);
+        el.front();
+        return el.attr({
+          'r': self.handleSize + 2
+        });
+      });
+      return this.handleElements.on('mouseout', function() {
+        var el;
+
+        el = find(this);
+        return el.attr({
+          'r': self.handleSize
+        });
+      });
     };
 
     return NodeEditor;

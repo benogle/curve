@@ -326,10 +326,10 @@ class NodeEditor
     @nodeElement.draggable()
     @nodeElement.dragstart = => @selectionModel.setSelectedNode(@node)
     @nodeElement.dragmove = @onDraggingNode
-    # @nodeElement.hover =>
-    #   @nodeElement.attr('r': @nodeSize+2)
-    # , =>
-    #   @nodeElement.attr('r': @nodeSize)
+    @nodeElement.on 'mouseover', =>
+      @nodeElement.attr('r': @nodeSize+2)
+    @nodeElement.on 'mouseout', =>
+      @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
     @lineElement = svg.path('')
@@ -361,11 +361,18 @@ class NodeEditor
     @handleElements.members[1].dragstart = onStartDraggingHandle
     @handleElements.members[1].dragend = onStopDraggingHandle
 
-    # @handleElements.hover ->
-    #   this.front()
-    #   this.attr('r': self.handleSize+2)
-    # , ->
-    #   this.attr('r': self.handleSize)
+    # I hate this.
+    find = (el) =>
+      return @handleElements.members[0] if @handleElements.members[0].node == el
+      @handleElements.members[1]
+
+    @handleElements.on 'mouseover', ->
+      el = find(this)
+      el.front()
+      el.attr('r': self.handleSize+2)
+    @handleElements.on 'mouseout', ->
+      el = find(this)
+      el.attr('r': self.handleSize)
 
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
