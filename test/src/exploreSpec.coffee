@@ -158,7 +158,7 @@ describe 'Curve.NodeEditor', ->
       @s.setNode(@path.nodes[0])
 
     it 'dragging a handle updates the path and the node editor', ->
-      @s.onDraggingHandleOut(10, 10, 70, 60, {})
+      @s.onDraggingHandleOut({x:10, y:10}, {clientX: 70, clientY: 60})
 
       expect(@path.nodes[0].handleOut).toEqual new Curve.Point([20, 10])
       expect($(@s.handleElements.members[1].node)).toHaveAttr 'cx', 70

@@ -508,16 +508,16 @@
       }
     };
 
-    NodeEditor.prototype.onDraggingNode = function(dx, dy, x, y, event) {
-      return this.node.setPoint(new Point(x, y));
+    NodeEditor.prototype.onDraggingNode = function(delta, event) {
+      return this.node.setPoint(new Point(event.clientX, event.clientY));
     };
 
-    NodeEditor.prototype.onDraggingHandleIn = function(dx, dy, x, y, event) {
-      return this.node.setAbsoluteHandleIn(new Point(x, y));
+    NodeEditor.prototype.onDraggingHandleIn = function(delta, event) {
+      return this.node.setAbsoluteHandleIn(new Point(event.clientX, event.clientY));
     };
 
-    NodeEditor.prototype.onDraggingHandleOut = function(dx, dy, x, y, event) {
-      return this.node.setAbsoluteHandleOut(new Point(x, y));
+    NodeEditor.prototype.onDraggingHandleOut = function(delta, event) {
+      return this.node.setAbsoluteHandleOut(new Point(event.clientX, event.clientY));
     };
 
     NodeEditor.prototype._bindNode = function(node) {

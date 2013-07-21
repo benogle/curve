@@ -291,12 +291,12 @@ class NodeEditor
     # situation where the handle passed under the other, and it feels weird.
     @_draggingHandle.front() if @_draggingHandle
 
-  onDraggingNode: (dx, dy, x, y, event) =>
-    @node.setPoint(new Point(x, y))
-  onDraggingHandleIn: (dx, dy, x, y, event) =>
-    @node.setAbsoluteHandleIn(new Point(x, y))
-  onDraggingHandleOut: (dx, dy, x, y, event) =>
-    @node.setAbsoluteHandleOut(new Point(x, y))
+  onDraggingNode: (delta, event) =>
+    @node.setPoint(new Point(event.clientX, event.clientY))
+  onDraggingHandleIn: (delta, event) =>
+    @node.setAbsoluteHandleIn(new Point(event.clientX, event.clientY))
+  onDraggingHandleOut: (delta, event) =>
+    @node.setAbsoluteHandleOut(new Point(event.clientX, event.clientY))
 
   _bindNode: (node) ->
     return unless node
