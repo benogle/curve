@@ -210,6 +210,7 @@ class SelectionView
       return nodeEditor if nodeEditor.node == node
     null
 
+#
 class ObjectSelection
   constructor: ->
 
@@ -221,7 +222,7 @@ class ObjectSelection
     @path.remove() if @path
     @path = null
     if @object
-      @path = @object.path.clone().front()
+      @path = svg.path('').front()
       @path.node.setAttribute('class', 'object-selection')
       @render()
 
@@ -236,6 +237,7 @@ class ObjectSelection
     return unless object
     object.off 'change', @render
 
+#
 class NodeEditor
   nodeSize: 5
   handleSize: 3

@@ -386,7 +386,7 @@
       }
       this.path = null;
       if (this.object) {
-        this.path = this.object.path.clone().front();
+        this.path = svg.path('').front();
         this.path.node.setAttribute('class', 'object-selection');
         return this.render();
       }
