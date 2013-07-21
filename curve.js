@@ -1,15 +1,28 @@
 (function() {
-  var Curve, Path, PathPoint, Point, SelectionModel, attrs, _ref,
+  var Curve, Path, PathPoint, Point, SelectionModel, attrs, utils, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   window.Curve = window.Curve || {};
+
+  utils = {
+    getObjectFromNode: function(domNode) {
+      return $.data(domNode, 'curve.object');
+    },
+    setObjectOnNode: function(domNode, object) {
+      return $.data(domNode, 'curve.object', object);
+    }
+  };
+
+  _.extend(window.Curve, utils);
 
   attrs = {
     stroke: '#ccc',
     "stroke-width": 4,
     "stroke-linecap": "round"
   };
+
+  utils = window.Curve;
 
   Path = (function() {
     function Path(raphael) {
@@ -38,7 +51,7 @@
           path: pathArray
         });
       } else {
-        return this.path = this.raphael.path(pathArray).attr(attrs);
+        return this.path = this._createRaphaelObject(pathArray);
       }
     };
 
@@ -70,6 +83,14 @@
         path.push(makeCurve(this.pathPoints[this.pathPoints.length - 1], this.pathPoints[0]));
         path.push(['Z']);
       }
+      return path;
+    };
+
+    Path.prototype._createRaphaelObject = function(pathArray) {
+      var path;
+
+      path = this.raphael.path(pathArray).attr(attrs);
+      utils.setObjectOnNode(path.node, this);
       return path;
     };
 

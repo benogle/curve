@@ -1,6 +1,16 @@
 window.Curve = window.Curve or {}
 
+utils =
+  getObjectFromNode: (domNode) ->
+    $.data(domNode, 'curve.object')
+  setObjectOnNode: (domNode, object) ->
+    $.data(domNode, 'curve.object', object)
+
+_.extend(window.Curve, utils)
+
 attrs = {stroke: '#ccc', "stroke-width": 4, "stroke-linecap": "round"}
+utils = window.Curve
+
 class Path
   constructor: (@raphael) ->
     @path = null
@@ -20,7 +30,7 @@ class Path
     if @path
       @path.attr(path: pathArray)
     else
-      @path = @raphael.path(pathArray).attr(attrs)
+      @path = @_createRaphaelObject(pathArray)
 
   toPathArray: ->
     path = []
@@ -48,6 +58,12 @@ class Path
 
     path
 
+  _createRaphaelObject: (pathArray) ->
+    path = @raphael.path(pathArray).attr(attrs)
+    utils.setObjectOnNode(path.node, this)
+    path
+
+
 class Point extends EventEmitter
   @create: (x, y) ->
     return x if x instanceof Point
@@ -66,8 +82,10 @@ class Point extends EventEmitter
   toArray: ->
     [@x, @y]
 
+
 class Curve
   constructor: (@point1, @handle1, @point2, @handle2) ->
+
 
 class PathPoint extends EventEmitter
   constructor: (point, handleIn, handleOut) ->
@@ -82,7 +100,6 @@ class PathPoint extends EventEmitter
     @point.add(@handleIn)
   getAbsoluteHandleOut: ->
     @point.add(@handleOut)
-
 
 
 class SelectionModel extends EventEmitter
