@@ -124,12 +124,18 @@ class Node extends EventEmitter
   getAbsoluteHandleOut: ->
     @point.add(@handleOut)
 
+  setAbsoluteHandleIn: (point) ->
+    @setHandleIn(point.subtract(@point))
+  setAbsoluteHandleOut: (point) ->
+    @setHandleOut(point.subtract(@point))
+
   setPoint: (point) ->
     @set('point', Point.create(point))
   setHandleIn: (point) ->
     @set('handleIn', Point.create(point))
   setHandleOut: (point) ->
     @set('handleOut', Point.create(point))
+
 
   set: (attribute, value) ->
     old = @[attribute]
@@ -292,6 +298,10 @@ class NodeEditor
 
   onDraggingNode: (dx, dy, x, y, event) =>
     @node.setPoint(new Point(x, y))
+  onDraggingHandleIn: (dx, dy, x, y, event) =>
+    @node.setAbsoluteHandleIn(new Point(x, y))
+  onDraggingHandleOut: (dx, dy, x, y, event) =>
+    @node.setAbsoluteHandleOut(new Point(x, y))
 
   _bindNode: (node) ->
     return unless node
@@ -323,6 +333,9 @@ class NodeEditor
     @handleElements[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements[1].node.setAttribute('class', 'node-editor-handle')
 
+    @handleElements[0].drag @onDraggingHandleIn
+    @handleElements[1].drag @onDraggingHandleOut
+
     self = this
     @handleElements.hover ->
       this.attr('r': self.handleSize+2)
@@ -330,7 +343,7 @@ class NodeEditor
       this.attr('r': self.handleSize)
 
 
-_.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView})
+_.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
 
 window.main = ->
   @raphael = r = Raphael("canvas")

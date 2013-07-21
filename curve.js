@@ -200,6 +200,14 @@
       return this.point.add(this.handleOut);
     };
 
+    Node.prototype.setAbsoluteHandleIn = function(point) {
+      return this.setHandleIn(point.subtract(this.point));
+    };
+
+    Node.prototype.setAbsoluteHandleOut = function(point) {
+      return this.setHandleOut(point.subtract(this.point));
+    };
+
     Node.prototype.setPoint = function(point) {
       return this.set('point', Point.create(point));
     };
@@ -413,6 +421,8 @@
 
     function NodeEditor(selectionModel) {
       this.selectionModel = selectionModel;
+      this.onDraggingHandleOut = __bind(this.onDraggingHandleOut, this);
+      this.onDraggingHandleIn = __bind(this.onDraggingHandleIn, this);
       this.onDraggingNode = __bind(this.onDraggingNode, this);
       this.render = __bind(this.render, this);
       this._setupNodeElement();
@@ -489,6 +499,14 @@
       return this.node.setPoint(new Point(x, y));
     };
 
+    NodeEditor.prototype.onDraggingHandleIn = function(dx, dy, x, y, event) {
+      return this.node.setAbsoluteHandleIn(new Point(x, y));
+    };
+
+    NodeEditor.prototype.onDraggingHandleOut = function(dx, dy, x, y, event) {
+      return this.node.setAbsoluteHandleOut(new Point(x, y));
+    };
+
     NodeEditor.prototype._bindNode = function(node) {
       if (!node) {
         return;
@@ -537,6 +555,8 @@
       this.handleElements.push(raphael.circle(0, 0, this.handleSize), raphael.circle(0, 0, this.handleSize));
       this.handleElements[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
+      this.handleElements[0].drag(this.onDraggingHandleIn);
+      this.handleElements[1].drag(this.onDraggingHandleOut);
       self = this;
       return this.handleElements.hover(function() {
         return this.attr({
@@ -559,7 +579,8 @@
     Point: Point,
     Node: Node,
     SelectionModel: SelectionModel,
-    SelectionView: SelectionView
+    SelectionView: SelectionView,
+    NodeEditor: NodeEditor
   });
 
   window.main = function() {
