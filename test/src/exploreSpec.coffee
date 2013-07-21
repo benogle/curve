@@ -35,14 +35,22 @@ describe 'Curve.SelectionModel', ->
     @s.setSelected(@path)
 
     expect(@onSelected).toHaveBeenCalled()
-    expect(@onSelected.mostRecentCall.args[0]).toEqual object: @path
+    expect(@onSelected.mostRecentCall.args[0]).toEqual object: @path, old: null
 
   it 'fires events when changing selected node', ->
     node = {omg: 1}
     @s.setSelectedNode(node)
 
     expect(@onSelectedNode).toHaveBeenCalled()
-    expect(@onSelectedNode.mostRecentCall.args[0]).toEqual object: node
+    expect(@onSelectedNode.mostRecentCall.args[0]).toEqual node: node, old: null
+
+  it 'sends proper old value through when unset', ->
+    node = {omg: 1}
+    @s.setSelectedNode(node)
+    @s.setSelectedNode(null)
+
+    expect(@onSelectedNode).toHaveBeenCalled()
+    expect(@onSelectedNode.mostRecentCall.args[0]).toEqual node: null, old: node
 
 describe 'Curve.SelectionView', ->
   beforeEach ->
@@ -59,12 +67,12 @@ describe 'Curve.SelectionView', ->
   it 'creates nodes when selecting and cleans up when selecting nothing', ->
     @model.setSelected(@path)
 
-    expect($('svg circle.selected-node').length).toEqual 1
+    expect($('svg circle.node-editor-node:eq(0)')).toShow()
     expect($('svg path.selected-path').length).toEqual 1
 
     @model.clearSelected()
 
-    expect($('svg circle.selected-node').length).toEqual 0
+    expect($('svg circle.node-editor-node:eq(0)')).toHide()
     expect($('svg path.selected-path').length).toEqual 0
 
   it 'renders node editor when selecting a node', ->
@@ -77,6 +85,18 @@ describe 'Curve.SelectionView', ->
     expect($('svg circle.node-editor-handle:eq(1)')).toHaveAttr 'cx', 60
 
     @model.clearSelectedNode()
+
+    expect($('svg circle.node-editor-handle:eq(0)')).toHide()
+    expect($('svg circle.node-editor-handle:eq(1)')).toHide()
+
+  it 'hides handles when unselecting object', ->
+    @model.setSelected(@path)
+    @model.setSelectedNode(@path.nodes[0])
+
+    expect($('svg circle.node-editor-handle:eq(0)')).toShow()
+    expect($('svg circle.node-editor-handle:eq(1)')).toShow()
+
+    @model.setSelected(null)
 
     expect($('svg circle.node-editor-handle:eq(0)')).toHide()
     expect($('svg circle.node-editor-handle:eq(1)')).toHide()

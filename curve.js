@@ -186,16 +186,24 @@
     }
 
     SelectionModel.prototype.setSelected = function(selected) {
+      var old;
+
+      old = this.selected;
       this.selected = selected;
       return this.emit('change:selected', {
-        object: this.selected
+        object: this.selected,
+        old: old
       });
     };
 
     SelectionModel.prototype.setSelectedNode = function(selectedNode) {
+      var old;
+
+      old = this.selectedNode;
       this.selectedNode = selectedNode;
       return this.emit('change:selectedNode', {
-        object: this.selectedNode
+        node: this.selectedNode,
+        old: old
       });
     };
 
@@ -219,54 +227,10 @@
       this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
       this.onChangeSelected = __bind(this.onChangeSelected, this);
       this.path = null;
-      this.nodes = null;
-      this.handles = null;
+      this.nodeEditors = [];
       this.model.on('change:selected', this.onChangeSelected);
       this.model.on('change:selectedNode', this.onChangeSelectedNode);
-      this.nodeEditor = new NodeEditor();
     }
-
-    SelectionView.prototype.renderSelectedObject = function() {
-      var circle, i, node, nodeDifference, object, _i, _j, _k, _ref, _ref1, _ref2, _results;
-
-      if (!(object = this.model.selected)) {
-        return;
-      }
-      this.model.selected.render(this.path);
-      if (!this.nodes) {
-        this.nodes = raphael.set();
-      }
-      nodeDifference = object.nodes.length - this.nodes.length;
-      if (nodeDifference > 0) {
-        for (i = _i = 0; 0 <= nodeDifference ? _i < nodeDifference : _i > nodeDifference; i = 0 <= nodeDifference ? ++_i : --_i) {
-          circle = raphael.circle(0, 0, this.nodeSize);
-          circle.node.setAttribute('class', 'selected-node');
-          this.nodes.push(circle);
-        }
-      } else if (nodeDifference < 0) {
-        for (i = _j = _ref = object.nodes.length, _ref1 = this.nodes.length; _ref <= _ref1 ? _j < _ref1 : _j > _ref1; i = _ref <= _ref1 ? ++_j : --_j) {
-          this.nodes[i].remove();
-          this.nodes.exclude(this.nodes[i]);
-        }
-      }
-      _results = [];
-      for (i = _k = 0, _ref2 = object.nodes.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
-        node = object.nodes[i];
-        _results.push(this.nodes[i].attr({
-          cx: node.point.x,
-          cy: node.point.y
-        }));
-      }
-      return _results;
-    };
-
-    SelectionView.prototype.renderSelectedNode = function() {
-      var node;
-
-      if (!(node = this.model.selectedNode)) {
-
-      }
-    };
 
     SelectionView.prototype.onChangeSelected = function(_arg) {
       var object;
@@ -276,17 +240,20 @@
     };
 
     SelectionView.prototype.onChangeSelectedNode = function(_arg) {
-      var object;
+      var node, nodeEditor, old;
 
-      object = _arg.object;
-      return this.nodeEditor.setNode(object);
+      node = _arg.node, old = _arg.old;
+      nodeEditor = this._findNodeEditorForNode(old);
+      if (nodeEditor) {
+        nodeEditor.setEnableHandles(false);
+      }
+      nodeEditor = this._findNodeEditorForNode(node);
+      if (nodeEditor) {
+        return nodeEditor.setEnableHandles(true);
+      }
     };
 
     SelectionView.prototype.setSelectedObject = function(object) {
-      if (this.nodes) {
-        this.nodes.remove();
-        this.nodes = null;
-      }
       if (this.path) {
         this.path.remove();
       }
@@ -294,8 +261,40 @@
       if (object) {
         this.path = object.path.clone().toFront();
         this.path.node.setAttribute('class', 'selected-path');
+        object.render(this.path);
       }
-      return this.renderSelectedObject();
+      return this._createNodeEditors(object);
+    };
+
+    SelectionView.prototype._createNodeEditors = function(object) {
+      var i, nodeDiff, _i, _j, _ref, _results;
+
+      if (object) {
+        nodeDiff = object.nodes.length - this.nodeEditors.length;
+        if (nodeDiff > 0) {
+          for (i = _i = 0; 0 <= nodeDiff ? _i < nodeDiff : _i > nodeDiff; i = 0 <= nodeDiff ? ++_i : --_i) {
+            this.nodeEditors.push(new NodeEditor());
+          }
+        }
+      }
+      _results = [];
+      for (i = _j = 0, _ref = this.nodeEditors.length; 0 <= _ref ? _j < _ref : _j > _ref; i = 0 <= _ref ? ++_j : --_j) {
+        _results.push(this.nodeEditors[i].setNode(object && object.nodes[i] || null));
+      }
+      return _results;
+    };
+
+    SelectionView.prototype._findNodeEditorForNode = function(node) {
+      var nodeEditor, _i, _len, _ref;
+
+      _ref = this.nodeEditors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        nodeEditor = _ref[_i];
+        if (nodeEditor.node === node) {
+          return nodeEditor;
+        }
+      }
+      return null;
     };
 
     return SelectionView;
@@ -303,46 +302,70 @@
   })();
 
   NodeEditor = (function() {
-    var handleElements, handleNode, lineElement;
+    var handleElements, lineElement, node, nodeElement;
 
-    NodeEditor.prototype.nodeSize = 3;
+    NodeEditor.prototype.nodeSize = 5;
 
-    handleNode = null;
+    NodeEditor.prototype.handleSize = 3;
+
+    node = null;
+
+    nodeElement = null;
 
     handleElements = null;
 
     lineElement = null;
 
     function NodeEditor() {
+      this._setupNodeElement();
       this._setupLineElement();
       this._setupHandleElements();
       this.hide();
     }
 
     NodeEditor.prototype.hide = function() {
+      this.visible = false;
       this.lineElement.hide();
+      this.nodeElement.hide();
       return this.handleElements.hide();
     };
 
     NodeEditor.prototype.show = function() {
-      this.lineElement.toFront().show();
-      return this.handleElements.toFront().show();
+      this.visible = true;
+      this.lineElement.toFront();
+      this.nodeElement.toFront().show();
+      this.handleElements.toFront();
+      if (this.enableHandles) {
+        this.lineElement.show();
+        return this.handleElements.show();
+      } else {
+        this.lineElement.hide();
+        return this.handleElements.hide();
+      }
     };
 
-    NodeEditor.prototype.setNode = function(handleNode) {
-      this.handleNode = handleNode;
+    NodeEditor.prototype.setEnableHandles = function(enableHandles) {
+      this.enableHandles = enableHandles;
+      if (this.visible) {
+        return this.show();
+      }
+    };
+
+    NodeEditor.prototype.setNode = function(node) {
+      this.node = node;
+      this.setEnableHandles(false);
       return this.render();
     };
 
     NodeEditor.prototype.render = function() {
       var handleIn, handleOut, linePath, point;
 
-      if (!this.handleNode) {
+      if (!this.node) {
         return this.hide();
       }
-      handleIn = this.handleNode.getAbsoluteHandleIn();
-      handleOut = this.handleNode.getAbsoluteHandleOut();
-      point = this.handleNode.point;
+      handleIn = this.node.getAbsoluteHandleIn();
+      handleOut = this.node.getAbsoluteHandleOut();
+      point = this.node.point;
       linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]];
       this.lineElement.attr({
         path: linePath
@@ -355,7 +378,16 @@
         cx: handleOut.x,
         cy: handleOut.y
       });
+      this.nodeElement.attr({
+        cx: point.x,
+        cy: point.y
+      });
       return this.show();
+    };
+
+    NodeEditor.prototype._setupNodeElement = function() {
+      this.nodeElement = raphael.circle(0, 0, this.nodeSize);
+      return this.nodeElement.node.setAttribute('class', 'node-editor-node');
     };
 
     NodeEditor.prototype._setupLineElement = function() {
@@ -365,7 +397,7 @@
 
     NodeEditor.prototype._setupHandleElements = function() {
       this.handleElements = raphael.set();
-      this.handleElements.push(raphael.circle(0, 0, this.nodeSize), raphael.circle(0, 0, this.nodeSize));
+      this.handleElements.push(raphael.circle(0, 0, this.handleSize), raphael.circle(0, 0, this.handleSize));
       this.handleElements[0].node.setAttribute('class', 'node-editor-handle');
       return this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
     };

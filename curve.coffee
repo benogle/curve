@@ -116,11 +116,15 @@ class SelectionModel extends EventEmitter
     @selected = null
     @selectedNode = null
 
-  setSelected: (@selected) ->
-    @emit 'change:selected', object: @selected
+  setSelected: (selected) ->
+    old = @selected
+    @selected = selected
+    @emit 'change:selected', object: @selected, old: old
 
-  setSelectedNode: (@selectedNode) ->
-    @emit 'change:selectedNode', object: @selectedNode
+  setSelectedNode: (selectedNode) ->
+    old = @selectedNode
+    @selectedNode = selectedNode
+    @emit 'change:selectedNode', node: @selectedNode, old: old
 
   clearSelected: ->
     @setSelected(null)
@@ -134,85 +138,90 @@ class SelectionView
 
   constructor: (@model) ->
     @path = null
-    @nodes = null
-    @handles = null
+    @nodeEditors = []
+
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:selectedNode', @onChangeSelectedNode
 
-    @nodeEditor = new NodeEditor()
-
-  renderSelectedObject: ->
-    return unless object = @model.selected
-
-    @model.selected.render(@path)
-
-    @nodes = raphael.set() unless @nodes
-
-    nodeDifference = object.nodes.length - @nodes.length
-    if nodeDifference > 0
-      for i in [0...nodeDifference]
-        circle = raphael.circle(0, 0, @nodeSize)
-        circle.node.setAttribute('class','selected-node')
-        @nodes.push(circle)
-    else if nodeDifference < 0
-      for i in [object.nodes.length...@nodes.length]
-        @nodes[i].remove()
-        @nodes.exclude(@nodes[i])
-
-    for i in [0...object.nodes.length]
-      node = object.nodes[i]
-      @nodes[i].attr(cx: node.point.x, cy: node.point.y)
-
-  renderSelectedNode: ->
-    return unless node = @model.selectedNode
-
   onChangeSelected: ({object}) =>
     @setSelectedObject(object)
-  onChangeSelectedNode: ({object}) =>
-    @nodeEditor.setNode(object)
+  onChangeSelectedNode: ({node, old}) =>
+    nodeEditor = @_findNodeEditorForNode(old)
+    nodeEditor.setEnableHandles(false) if nodeEditor
+
+    nodeEditor = @_findNodeEditorForNode(node)
+    nodeEditor.setEnableHandles(true) if nodeEditor
 
   setSelectedObject: (object) ->
-    if @nodes
-      @nodes.remove()
-      @nodes = null
-
     @path.remove() if @path
     @path = null
     if object
       @path = object.path.clone().toFront()
       @path.node.setAttribute('class', 'selected-path')
+      object.render(@path)
 
-    @renderSelectedObject()
+    @_createNodeEditors(object)
+
+  _createNodeEditors: (object) ->
+    if object
+      nodeDiff = object.nodes.length - @nodeEditors.length
+      @nodeEditors.push(new NodeEditor()) for i in [0...nodeDiff] if nodeDiff > 0
+
+    for i in [0...@nodeEditors.length]
+      @nodeEditors[i].setNode(object and object.nodes[i] or null)
+
+  _findNodeEditorForNode: (node) ->
+    for nodeEditor in @nodeEditors
+      return nodeEditor if nodeEditor.node == node
+    null
 
 class NodeEditor
-  nodeSize: 3
+  nodeSize: 5
+  handleSize: 3
 
-  handleNode = null
+  node = null
+  nodeElement = null
   handleElements = null
   lineElement = null
 
   constructor: ->
+    @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
     @hide()
 
   hide: ->
+    @visible = false
     @lineElement.hide()
+    @nodeElement.hide()
     @handleElements.hide()
 
   show: ->
-    @lineElement.toFront().show()
-    @handleElements.toFront().show()
+    @visible = true
+    @lineElement.toFront()
+    @nodeElement.toFront().show()
+    @handleElements.toFront()
 
-  setNode: (@handleNode) ->
+    if @enableHandles
+      @lineElement.show()
+      @handleElements.show()
+    else
+      @lineElement.hide()
+      @handleElements.hide()
+
+  setEnableHandles: (@enableHandles) ->
+    @show() if @visible
+
+  setNode: (@node) ->
+    @setEnableHandles(false)
     @render()
 
   render: ->
-    return @hide() unless @handleNode
+    return @hide() unless @node
 
-    handleIn = @handleNode.getAbsoluteHandleIn()
-    handleOut = @handleNode.getAbsoluteHandleOut()
-    point = @handleNode.point
+    handleIn = @node.getAbsoluteHandleIn()
+    handleOut = @node.getAbsoluteHandleOut()
+    point = @node.point
 
     linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]]
     @lineElement.attr(path: linePath)
@@ -220,7 +229,13 @@ class NodeEditor
     @handleElements[0].attr(cx: handleIn.x, cy: handleIn.y)
     @handleElements[1].attr(cx: handleOut.x, cy: handleOut.y)
 
+    @nodeElement.attr(cx: point.x, cy: point.y)
+
     @show()
+
+  _setupNodeElement: ->
+    @nodeElement = raphael.circle(0, 0, @nodeSize)
+    @nodeElement.node.setAttribute('class', 'node-editor-node')
 
   _setupLineElement: ->
     @lineElement = raphael.path([])
@@ -229,8 +244,8 @@ class NodeEditor
   _setupHandleElements: ->
     @handleElements = raphael.set()
     @handleElements.push(
-      raphael.circle(0, 0, @nodeSize),
-      raphael.circle(0, 0, @nodeSize)
+      raphael.circle(0, 0, @handleSize),
+      raphael.circle(0, 0, @handleSize)
     )
     @handleElements[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements[1].node.setAttribute('class', 'node-editor-handle')
