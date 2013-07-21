@@ -22,6 +22,19 @@ describe 'Curve.Path', ->
     el = $('svg path')
     expect(Curve.getObjectFromNode(el[0])).toEqual path
 
+  describe 'updating', ->
+    beforeEach ->
+      @path = new Curve.Path()
+      @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
+      @path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
+      @path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
+      @path.close()
+
+    it 'renders when node point is updated', ->
+      @path.nodes[0].setPoint([70, 70])
+      el = $('svg path')
+      expect(el.attr('d')).toMatch(/^M70,70C80,70/)
+
 
 describe 'Curve.SelectionModel', ->
   beforeEach ->

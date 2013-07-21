@@ -30,6 +30,7 @@ class Path
     @path = @_createRaphaelObject([])
 
   addNode: (node) ->
+    @_bindNode(node)
     @nodes.push(node)
     @render()
 
@@ -37,7 +38,7 @@ class Path
     @isClosed = true
     @render()
 
-  render: (path=@path)->
+  render: (path=@path) ->
     path.attr(path: @toPathArray())
 
   toPathArray: ->
@@ -66,6 +67,9 @@ class Path
 
     path
 
+  _bindNode: (node) ->
+    node.on 'change', => @render()
+
   _createRaphaelObject: (pathArray) ->
     path = raphael.path(pathArray).attr(attrs)
     utils.setObjectOnNode(path.node, this)
@@ -88,6 +92,9 @@ class Point extends EventEmitter
   add: (other) ->
     new Point(@x + other.x, @y + other.y)
 
+  subtract: (other) ->
+    new Point(@x - other.x, @y - other.y)
+
   toArray: ->
     [@x, @y]
 
@@ -98,17 +105,32 @@ class Curve
 #
 class Node extends EventEmitter
   constructor: (point, handleIn, handleOut) ->
-    @point = Point.create(point)
-    @handleIn = Point.create(handleIn)
-    @handleOut = Point.create(handleOut)
+    @setPoint(point)
+    @setHandleIn(handleIn)
+    @setHandleOut(handleOut)
     @isBroken = false
-    @_curveIn = null
-    @_curveOut = null
 
   getAbsoluteHandleIn: ->
     @point.add(@handleIn)
   getAbsoluteHandleOut: ->
     @point.add(@handleOut)
+
+  setPoint: (point) ->
+    @set('point', Point.create(point))
+  setHandleIn: (point) ->
+    @set('handleIn', Point.create(point))
+  setHandleOut: (point) ->
+    @set('handleOut', Point.create(point))
+
+  set: (attribute, value) ->
+    old = @[attribute]
+    @[attribute] = value
+
+    event = "change:#{attribute}"
+    eventArgs = {event, value, old}
+
+    @emit event, eventArgs
+    @emit 'change', eventArgs
 
 #
 class SelectionModel extends EventEmitter
@@ -214,11 +236,14 @@ class NodeEditor
   setEnableHandles: (@enableHandles) ->
     @show() if @visible
 
-  setNode: (@node) ->
+  setNode: (node) ->
+    @_unbindNode(@node)
+    @node = node
+    @_bindNode(@node)
     @setEnableHandles(false)
     @render()
 
-  render: ->
+  render: =>
     return @hide() unless @node
 
     handleIn = @node.getAbsoluteHandleIn()
@@ -236,7 +261,14 @@ class NodeEditor
     @show()
 
   onDraggingNode: (dx, dy, x, y, event) =>
-    console.log('dragging', arguments)
+    @node.setPoint(new Point(x, y))
+
+  _bindNode: (node) ->
+    return unless node
+    node.on 'change', @render
+  _unbindNode: (node) ->
+    return unless node
+    node.off 'change', @render
 
   _setupNodeElement: ->
     @nodeElement = raphael.circle(0, 0, @nodeSize)

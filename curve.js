@@ -43,6 +43,7 @@
     }
 
     Path.prototype.addNode = function(node) {
+      this._bindNode(node);
       this.nodes.push(node);
       return this.render();
     };
@@ -92,6 +93,14 @@
       return path;
     };
 
+    Path.prototype._bindNode = function(node) {
+      var _this = this;
+
+      return node.on('change', function() {
+        return _this.render();
+      });
+    };
+
     Path.prototype._createRaphaelObject = function(pathArray) {
       var path;
 
@@ -133,6 +142,10 @@
       return new Point(this.x + other.x, this.y + other.y);
     };
 
+    Point.prototype.subtract = function(other) {
+      return new Point(this.x - other.x, this.y - other.y);
+    };
+
     Point.prototype.toArray = function() {
       return [this.x, this.y];
     };
@@ -157,12 +170,10 @@
     __extends(Node, _super);
 
     function Node(point, handleIn, handleOut) {
-      this.point = Point.create(point);
-      this.handleIn = Point.create(handleIn);
-      this.handleOut = Point.create(handleOut);
+      this.setPoint(point);
+      this.setHandleIn(handleIn);
+      this.setHandleOut(handleOut);
       this.isBroken = false;
-      this._curveIn = null;
-      this._curveOut = null;
     }
 
     Node.prototype.getAbsoluteHandleIn = function() {
@@ -171,6 +182,33 @@
 
     Node.prototype.getAbsoluteHandleOut = function() {
       return this.point.add(this.handleOut);
+    };
+
+    Node.prototype.setPoint = function(point) {
+      return this.set('point', Point.create(point));
+    };
+
+    Node.prototype.setHandleIn = function(point) {
+      return this.set('handleIn', Point.create(point));
+    };
+
+    Node.prototype.setHandleOut = function(point) {
+      return this.set('handleOut', Point.create(point));
+    };
+
+    Node.prototype.set = function(attribute, value) {
+      var event, eventArgs, old;
+
+      old = this[attribute];
+      this[attribute] = value;
+      event = "change:" + attribute;
+      eventArgs = {
+        event: event,
+        value: value,
+        old: old
+      };
+      this.emit(event, eventArgs);
+      return this.emit('change', eventArgs);
     };
 
     return Node;
@@ -325,6 +363,7 @@
     function NodeEditor(selectionModel) {
       this.selectionModel = selectionModel;
       this.onDraggingNode = __bind(this.onDraggingNode, this);
+      this.render = __bind(this.render, this);
       this._setupNodeElement();
       this._setupLineElement();
       this._setupHandleElements();
@@ -360,7 +399,9 @@
     };
 
     NodeEditor.prototype.setNode = function(node) {
+      this._unbindNode(this.node);
       this.node = node;
+      this._bindNode(this.node);
       this.setEnableHandles(false);
       return this.render();
     };
@@ -394,7 +435,21 @@
     };
 
     NodeEditor.prototype.onDraggingNode = function(dx, dy, x, y, event) {
-      return console.log('dragging', arguments);
+      return this.node.setPoint(new Point(x, y));
+    };
+
+    NodeEditor.prototype._bindNode = function(node) {
+      if (!node) {
+        return;
+      }
+      return node.on('change', this.render);
+    };
+
+    NodeEditor.prototype._unbindNode = function(node) {
+      if (!node) {
+        return;
+      }
+      return node.off('change', this.render);
     };
 
     NodeEditor.prototype._setupNodeElement = function() {
