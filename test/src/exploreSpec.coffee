@@ -1,7 +1,7 @@
 describe 'Curve.Path', ->
   beforeEach ->
     loadFixtures 'canvas.html'
-    window.raphael = Raphael("canvas")
+    window.svg = SVG("canvas")
 
   it 'can be created', ->
     path = new Curve.Path()
@@ -15,7 +15,7 @@ describe 'Curve.Path', ->
     expect(el.attr('d')).toMatch(/Z$/)
 
   it 'is associated with the node', ->
-    path = new Curve.Path(@raphael)
+    path = new Curve.Path()
     path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
     path.render()
 
@@ -81,7 +81,7 @@ describe 'Curve.SelectionModel', ->
 describe 'Curve.SelectionView', ->
   beforeEach ->
     loadFixtures 'canvas.html'
-    window.raphael = Raphael("canvas")
+    window.svg = SVG("canvas")
 
   beforeEach ->
     @model = new Curve.SelectionModel()
@@ -142,7 +142,7 @@ describe 'Curve.Node', ->
 describe 'Curve.NodeEditor', ->
   beforeEach ->
     loadFixtures 'canvas.html'
-    window.raphael = Raphael("canvas")
+    window.svg = SVG("canvas")
 
     @path = new Curve.Path()
     @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
@@ -161,5 +161,5 @@ describe 'Curve.NodeEditor', ->
       @s.onDraggingHandleOut(10, 10, 70, 60, {})
 
       expect(@path.nodes[0].handleOut).toEqual new Curve.Point([20, 10])
-      expect($(@s.handleElements[1].node)).toHaveAttr 'cx', 70
-      expect($(@s.handleElements[1].node)).toHaveAttr 'cy', 60
+      expect($(@s.handleElements.members[1].node)).toHaveAttr 'cx', 70
+      expect($(@s.handleElements.members[1].node)).toHaveAttr 'cy', 60

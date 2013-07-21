@@ -25,7 +25,7 @@ class Path extends EventEmitter
     @path = null
     @nodes = []
     @isClosed = false
-    @path = @_createRaphaelObject([])
+    @path = @_createSVGObject()
 
   addNode: (node) ->
     @_bindNode(node)
@@ -37,31 +37,30 @@ class Path extends EventEmitter
     @render()
 
   render: (path=@path) ->
-    path.attr(path: @toPathArray())
+    path.attr(d: @toPathString())
 
-  toPathArray: ->
-    path = []
+  toPathString: ->
+    path = ''
     lastPoint = null
 
     makeCurve = (fromNode, toNode) ->
-      curve = ['C']
+      curve = []
       curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray())
       curve = curve.concat(toNode.getAbsoluteHandleIn().toArray())
       curve = curve.concat(toNode.point.toArray())
-      curve
+      'C' + curve.join(',')
 
     for node in @nodes
-
-      if path.length == 0
-        path.push(['M'].concat(node.point.toArray()))
+      if path
+        path += makeCurve(lastNode, node)
       else
-        path.push(makeCurve(lastNode, node))
+        path = 'M' + node.point.toArray().join(',')
 
       lastNode = node
 
     if @isClosed
-      path.push(makeCurve(@nodes[@nodes.length-1], @nodes[0]))
-      path.push(['Z'])
+      path += makeCurve(@nodes[@nodes.length-1], @nodes[0])
+      path += 'Z'
 
     path
 
@@ -79,8 +78,8 @@ class Path extends EventEmitter
       return i if @nodes[i] == node
     -1
 
-  _createRaphaelObject: (pathArray) ->
-    path = raphael.path(pathArray).attr(attrs)
+  _createSVGObject: (pathString='') ->
+    path = svg.path(pathString).attr(attrs)
     utils.setObjectOnNode(path.node, this)
     path
 
@@ -222,7 +221,7 @@ class ObjectSelection
     @path.remove() if @path
     @path = null
     if @object
-      @path = @object.path.clone().toFront()
+      @path = @object.path.clone().front()
       @path.node.setAttribute('class', 'object-selection')
       @render()
 
@@ -260,9 +259,9 @@ class NodeEditor
 
   show: ->
     @visible = true
-    @lineElement.toFront()
-    @nodeElement.toFront().show()
-    @handleElements.toFront()
+    @lineElement.front()
+    @nodeElement.front().show()
+    @handleElements.front()
 
     if @enableHandles
       @lineElement.show()
@@ -291,8 +290,8 @@ class NodeEditor
     linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]]
     @lineElement.attr(path: linePath)
 
-    @handleElements[0].attr(cx: handleIn.x, cy: handleIn.y)
-    @handleElements[1].attr(cx: handleOut.x, cy: handleOut.y)
+    @handleElements.members[0].attr(cx: handleIn.x, cy: handleIn.y)
+    @handleElements.members[1].attr(cx: handleOut.x, cy: handleOut.y)
 
     @nodeElement.attr(cx: point.x, cy: point.y)
 
@@ -300,7 +299,7 @@ class NodeEditor
 
     # make sure the handlethe user is dragging is on top. could get in the
     # situation where the handle passed under the other, and it feels weird.
-    @_draggingHandle.toFront() if @_draggingHandle
+    @_draggingHandle.front() if @_draggingHandle
 
   onDraggingNode: (dx, dy, x, y, event) =>
     @node.setPoint(new Point(x, y))
@@ -317,50 +316,61 @@ class NodeEditor
     node.off 'change', @render
 
   _setupNodeElement: ->
-    @nodeElement = raphael.circle(0, 0, @nodeSize)
+    @nodeElement = svg.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
-    @nodeElement.drag @onDraggingNode, => @selectionModel.setSelectedNode(@node)
+
     @nodeElement.click => @selectionModel.setSelectedNode(@node)
-    @nodeElement.hover =>
-      @nodeElement.attr('r': @nodeSize+2)
-    , =>
-      @nodeElement.attr('r': @nodeSize)
+
+    @nodeElement.draggable()
+    @nodeElement.dragstart = => @selectionModel.setSelectedNode(@node)
+    @nodeElement.dragmove = @onDraggingNode
+    # @nodeElement.hover =>
+    #   @nodeElement.attr('r': @nodeSize+2)
+    # , =>
+    #   @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
-    @lineElement = raphael.path([])
+    @lineElement = svg.path('')
     @lineElement.node.setAttribute('class', 'node-editor-lines')
 
   _setupHandleElements: ->
     self = this
 
-    @handleElements = raphael.set()
-    @handleElements.push(
-      raphael.circle(0, 0, @handleSize),
-      raphael.circle(0, 0, @handleSize)
+    @handleElements = svg.set()
+    @handleElements.add(
+      svg.circle(@handleSize),
+      svg.circle(@handleSize)
     )
-    @handleElements[0].node.setAttribute('class', 'node-editor-handle')
-    @handleElements[1].node.setAttribute('class', 'node-editor-handle')
+    @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
+    @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')
 
     onStartDraggingHandle = ->
       self._draggingHandle = this
     onStopDraggingHandle = ->
       self._draggingHandle = null
 
-    @handleElements[0].drag @onDraggingHandleIn, onStartDraggingHandle, onStopDraggingHandle
-    @handleElements[1].drag @onDraggingHandleOut, onStartDraggingHandle, onStopDraggingHandle
+    @handleElements.members[0].draggable()
+    @handleElements.members[0].dragmove = @onDraggingHandleIn
+    @handleElements.members[0].dragstart = onStartDraggingHandle
+    @handleElements.members[0].dragend = onStopDraggingHandle
 
-    @handleElements.hover ->
-      this.toFront()
-      this.attr('r': self.handleSize+2)
-    , ->
-      this.attr('r': self.handleSize)
+    @handleElements.members[1].draggable()
+    @handleElements.members[1].dragmove = @onDraggingHandleOut
+    @handleElements.members[1].dragstart = onStartDraggingHandle
+    @handleElements.members[1].dragend = onStopDraggingHandle
+
+    # @handleElements.hover ->
+    #   this.front()
+    #   this.attr('r': self.handleSize+2)
+    # , ->
+    #   this.attr('r': self.handleSize)
 
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
 
 window.main = ->
-  @raphael = r = Raphael("canvas")
-  @path = new Path(r)
+  @svg = SVG("canvas")
+  @path = new Path()
   @path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
   @path.addNode(new Node([80, 60], [-10, -5], [10, 5]))
   @path.addNode(new Node([60, 80], [10, 0], [-10, 0]))

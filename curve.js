@@ -40,7 +40,7 @@
       this.onNodeChange = __bind(this.onNodeChange, this);      this.path = null;
       this.nodes = [];
       this.isClosed = false;
-      this.path = this._createRaphaelObject([]);
+      this.path = this._createSVGObject();
     }
 
     Path.prototype.addNode = function(node) {
@@ -59,37 +59,37 @@
         path = this.path;
       }
       return path.attr({
-        path: this.toPathArray()
+        d: this.toPathString()
       });
     };
 
-    Path.prototype.toPathArray = function() {
+    Path.prototype.toPathString = function() {
       var lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref;
 
-      path = [];
+      path = '';
       lastPoint = null;
       makeCurve = function(fromNode, toNode) {
         var curve;
 
-        curve = ['C'];
+        curve = [];
         curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
         curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
         curve = curve.concat(toNode.point.toArray());
-        return curve;
+        return 'C' + curve.join(',');
       };
       _ref = this.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         node = _ref[_i];
-        if (path.length === 0) {
-          path.push(['M'].concat(node.point.toArray()));
+        if (path) {
+          path += makeCurve(lastNode, node);
         } else {
-          path.push(makeCurve(lastNode, node));
+          path = 'M' + node.point.toArray().join(',');
         }
         lastNode = node;
       }
       if (this.isClosed) {
-        path.push(makeCurve(this.nodes[this.nodes.length - 1], this.nodes[0]));
-        path.push(['Z']);
+        path += makeCurve(this.nodes[this.nodes.length - 1], this.nodes[0]);
+        path += 'Z';
       }
       return path;
     };
@@ -119,10 +119,13 @@
       return -1;
     };
 
-    Path.prototype._createRaphaelObject = function(pathArray) {
+    Path.prototype._createSVGObject = function(pathString) {
       var path;
 
-      path = raphael.path(pathArray).attr(attrs);
+      if (pathString == null) {
+        pathString = '';
+      }
+      path = svg.path(pathString).attr(attrs);
       utils.setObjectOnNode(path.node, this);
       return path;
     };
@@ -383,7 +386,7 @@
       }
       this.path = null;
       if (this.object) {
-        this.path = this.object.path.clone().toFront();
+        this.path = this.object.path.clone().front();
         this.path.node.setAttribute('class', 'object-selection');
         return this.render();
       }
@@ -447,9 +450,9 @@
 
     NodeEditor.prototype.show = function() {
       this.visible = true;
-      this.lineElement.toFront();
-      this.nodeElement.toFront().show();
-      this.handleElements.toFront();
+      this.lineElement.front();
+      this.nodeElement.front().show();
+      this.handleElements.front();
       if (this.enableHandles) {
         this.lineElement.show();
         return this.handleElements.show();
@@ -487,11 +490,11 @@
       this.lineElement.attr({
         path: linePath
       });
-      this.handleElements[0].attr({
+      this.handleElements.members[0].attr({
         cx: handleIn.x,
         cy: handleIn.y
       });
-      this.handleElements[1].attr({
+      this.handleElements.members[1].attr({
         cx: handleOut.x,
         cy: handleOut.y
       });
@@ -501,7 +504,7 @@
       });
       this.show();
       if (this._draggingHandle) {
-        return this._draggingHandle.toFront();
+        return this._draggingHandle.front();
       }
     };
 
@@ -534,27 +537,20 @@
     NodeEditor.prototype._setupNodeElement = function() {
       var _this = this;
 
-      this.nodeElement = raphael.circle(0, 0, this.nodeSize);
+      this.nodeElement = svg.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
-      this.nodeElement.drag(this.onDraggingNode, function() {
-        return _this.selectionModel.setSelectedNode(_this.node);
-      });
       this.nodeElement.click(function() {
         return _this.selectionModel.setSelectedNode(_this.node);
       });
-      return this.nodeElement.hover(function() {
-        return _this.nodeElement.attr({
-          'r': _this.nodeSize + 2
-        });
-      }, function() {
-        return _this.nodeElement.attr({
-          'r': _this.nodeSize
-        });
-      });
+      this.nodeElement.draggable();
+      this.nodeElement.dragstart = function() {
+        return _this.selectionModel.setSelectedNode(_this.node);
+      };
+      return this.nodeElement.dragmove = this.onDraggingNode;
     };
 
     NodeEditor.prototype._setupLineElement = function() {
-      this.lineElement = raphael.path([]);
+      this.lineElement = svg.path('');
       return this.lineElement.node.setAttribute('class', 'node-editor-lines');
     };
 
@@ -562,28 +558,24 @@
       var onStartDraggingHandle, onStopDraggingHandle, self;
 
       self = this;
-      this.handleElements = raphael.set();
-      this.handleElements.push(raphael.circle(0, 0, this.handleSize), raphael.circle(0, 0, this.handleSize));
-      this.handleElements[0].node.setAttribute('class', 'node-editor-handle');
-      this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
+      this.handleElements = svg.set();
+      this.handleElements.add(svg.circle(this.handleSize), svg.circle(this.handleSize));
+      this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
+      this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
       onStartDraggingHandle = function() {
         return self._draggingHandle = this;
       };
       onStopDraggingHandle = function() {
         return self._draggingHandle = null;
       };
-      this.handleElements[0].drag(this.onDraggingHandleIn, onStartDraggingHandle, onStopDraggingHandle);
-      this.handleElements[1].drag(this.onDraggingHandleOut, onStartDraggingHandle, onStopDraggingHandle);
-      return this.handleElements.hover(function() {
-        this.toFront();
-        return this.attr({
-          'r': self.handleSize + 2
-        });
-      }, function() {
-        return this.attr({
-          'r': self.handleSize
-        });
-      });
+      this.handleElements.members[0].draggable();
+      this.handleElements.members[0].dragmove = this.onDraggingHandleIn;
+      this.handleElements.members[0].dragstart = onStartDraggingHandle;
+      this.handleElements.members[0].dragend = onStopDraggingHandle;
+      this.handleElements.members[1].draggable();
+      this.handleElements.members[1].dragmove = this.onDraggingHandleOut;
+      this.handleElements.members[1].dragstart = onStartDraggingHandle;
+      return this.handleElements.members[1].dragend = onStopDraggingHandle;
     };
 
     return NodeEditor;
@@ -601,10 +593,8 @@
   });
 
   window.main = function() {
-    var r;
-
-    this.raphael = r = Raphael("canvas");
-    this.path = new Path(r);
+    this.svg = SVG("canvas");
+    this.path = new Path();
     this.path.addNode(new Node([50, 50], [-10, 0], [10, 0]));
     this.path.addNode(new Node([80, 60], [-10, -5], [10, 5]));
     this.path.addNode(new Node([60, 80], [10, 0], [-10, 0]));

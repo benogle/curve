@@ -53,7 +53,10 @@ module.exports = function(grunt) {
         helpers: 'test/lib/**/*Helper.js',
         vendor: [
           'test/vendor/event-emitter.js',
-          'test/vendor/raphael.js',
+          'test/vendor/svg.js',
+          'test/vendor/svg.circle.js',
+          'test/vendor/svg.draggable.js',
+          'test/vendor/svg.import.js',
           'test/vendor/jquery-2.0.3.js',
           'test/vendor/underscore.js',
           'test/vendor/jasmine-jquery.js'
