@@ -173,6 +173,7 @@ class SelectionView
   constructor: (@model) ->
     @path = null
     @nodeEditors = []
+    @objectSelection = new ObjectSelection()
 
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:selectedNode', @onChangeSelectedNode
@@ -187,13 +188,7 @@ class SelectionView
     nodeEditor.setEnableHandles(true) if nodeEditor
 
   setSelectedObject: (object) ->
-    @path.remove() if @path
-    @path = null
-    if object
-      @path = object.path.clone().toFront()
-      @path.node.setAttribute('class', 'selected-path')
-      object.render(@path)
-
+    @objectSelection.setObject(object)
     @_createNodeEditors(object)
 
   _createNodeEditors: (object) ->
@@ -208,6 +203,32 @@ class SelectionView
     for nodeEditor in @nodeEditors
       return nodeEditor if nodeEditor.node == node
     null
+
+class ObjectSelection
+  constructor: ->
+
+  setObject: (object) ->
+    @_unbindObject(@object)
+    @object = object
+    @_bindObject(@object)
+
+    @path.remove() if @path
+    @path = null
+    if @object
+      @path = @object.path.clone().toFront()
+      @path.node.setAttribute('class', 'object-selection')
+      @render()
+
+  render: =>
+    @object.render(@path)
+
+  _bindObject: (object) ->
+    return unless object
+    object.on 'change', @render
+
+  _unbindObject: (object) ->
+    return unless object
+    object.off 'change', @render
 
 class NodeEditor
   nodeSize: 5

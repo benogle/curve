@@ -1,5 +1,5 @@
 (function() {
-  var Curve, Node, NodeEditor, Path, Point, SelectionModel, SelectionView, attrs, utils,
+  var Curve, Node, NodeEditor, ObjectSelection, Path, Point, SelectionModel, SelectionView, attrs, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -289,6 +289,7 @@
       this.onChangeSelected = __bind(this.onChangeSelected, this);
       this.path = null;
       this.nodeEditors = [];
+      this.objectSelection = new ObjectSelection();
       this.model.on('change:selected', this.onChangeSelected);
       this.model.on('change:selectedNode', this.onChangeSelectedNode);
     }
@@ -315,15 +316,7 @@
     };
 
     SelectionView.prototype.setSelectedObject = function(object) {
-      if (this.path) {
-        this.path.remove();
-      }
-      this.path = null;
-      if (object) {
-        this.path = object.path.clone().toFront();
-        this.path.node.setAttribute('class', 'selected-path');
-        object.render(this.path);
-      }
+      this.objectSelection.setObject(object);
       return this._createNodeEditors(object);
     };
 
@@ -359,6 +352,48 @@
     };
 
     return SelectionView;
+
+  })();
+
+  ObjectSelection = (function() {
+    function ObjectSelection() {
+      this.render = __bind(this.render, this);
+    }
+
+    ObjectSelection.prototype.setObject = function(object) {
+      this._unbindObject(this.object);
+      this.object = object;
+      this._bindObject(this.object);
+      if (this.path) {
+        this.path.remove();
+      }
+      this.path = null;
+      if (this.object) {
+        this.path = this.object.path.clone().toFront();
+        this.path.node.setAttribute('class', 'object-selection');
+        return this.render();
+      }
+    };
+
+    ObjectSelection.prototype.render = function() {
+      return this.object.render(this.path);
+    };
+
+    ObjectSelection.prototype._bindObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.on('change', this.render);
+    };
+
+    ObjectSelection.prototype._unbindObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.off('change', this.render);
+    };
+
+    return ObjectSelection;
 
   })();
 

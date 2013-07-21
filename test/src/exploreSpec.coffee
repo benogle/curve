@@ -94,12 +94,12 @@ describe 'Curve.SelectionView', ->
     @model.setSelected(@path)
 
     expect($('svg circle.node-editor-node:eq(0)')).toShow()
-    expect($('svg path.selected-path').length).toEqual 1
+    expect($('svg path.object-selection').length).toEqual 1
 
     @model.clearSelected()
 
     expect($('svg circle.node-editor-node:eq(0)')).toHide()
-    expect($('svg path.selected-path').length).toEqual 0
+    expect($('svg path.object-selection').length).toEqual 0
 
   it 'renders node editor when selecting a node', ->
     @model.setSelected(@path)
