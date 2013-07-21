@@ -1,7 +1,8 @@
 (function() {
-  var Curve, Path, PathPoint, Point, SelectionModel, attrs, utils, _ref,
+  var Curve, Path, PathPoint, Point, SelectionModel, SelectionView, attrs, utils,
     __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   window.Curve = window.Curve || {};
 
@@ -17,19 +18,17 @@
   _.extend(window.Curve, utils);
 
   attrs = {
-    stroke: '#ccc',
-    "stroke-width": 4,
-    "stroke-linecap": "round"
+    fill: '#ccc'
   };
 
   utils = window.Curve;
 
   Path = (function() {
-    function Path(raphael) {
-      this.raphael = raphael;
+    function Path() {
       this.path = null;
       this.pathPoints = [];
       this.isClosed = false;
+      this.path = this._createRaphaelObject([]);
     }
 
     Path.prototype.addPathPoint = function(pathPoint) {
@@ -42,17 +41,13 @@
       return this.render();
     };
 
-    Path.prototype.render = function() {
-      var pathArray;
-
-      pathArray = this.toPathArray();
-      if (this.path) {
-        return this.path.attr({
-          path: pathArray
-        });
-      } else {
-        return this.path = this._createRaphaelObject(pathArray);
+    Path.prototype.render = function(path) {
+      if (path == null) {
+        path = this.path;
       }
+      return path.attr({
+        path: this.toPathArray()
+      });
     };
 
     Path.prototype.toPathArray = function() {
@@ -89,7 +84,7 @@
     Path.prototype._createRaphaelObject = function(pathArray) {
       var path;
 
-      path = this.raphael.path(pathArray).attr(attrs);
+      path = raphael.path(pathArray).attr(attrs);
       utils.setObjectOnNode(path.node, this);
       return path;
     };
@@ -120,7 +115,7 @@
       if (_.isArray(this.x)) {
         _ref = this.x, this.x = _ref[0], this.y = _ref[1];
       }
-      return this.trigger('changed');
+      return this.emit('change');
     };
 
     Point.prototype.add = function(other) {
@@ -175,31 +170,99 @@
     __extends(SelectionModel, _super);
 
     function SelectionModel() {
-      _ref = SelectionModel.__super__.constructor.apply(this, arguments);
-      return _ref;
+      this.selected = null;
+      this.selectedNode = null;
     }
+
+    SelectionModel.prototype.setSelected = function(selected) {
+      this.selected = selected;
+      return this.emit('change:selected', {
+        object: this.selected
+      });
+    };
+
+    SelectionModel.prototype.clearSelected = function() {
+      return this.setSelected(null);
+    };
 
     return SelectionModel;
 
   })(EventEmitter);
+
+  SelectionView = (function() {
+    SelectionView.prototype.nodeSize = 5;
+
+    SelectionView.prototype.selectionAttrs = {
+      fill: null,
+      stroke: '#09C',
+      "stroke-width": 2,
+      "stroke-linecap": "round"
+    };
+
+    SelectionView.prototype.nodeAttrs = {
+      fill: '#fff',
+      stroke: '#069',
+      "stroke-width": 1,
+      "stroke-linecap": "round"
+    };
+
+    function SelectionView(model) {
+      this.model = model;
+      this.onChangeSelected = __bind(this.onChangeSelected, this);
+      this.path = null;
+      this.nodes = null;
+      this.handles = null;
+      this.model.on('change:selected', this.onChangeSelected);
+    }
+
+    SelectionView.prototype.onChangeSelected = function(_arg) {
+      var object;
+
+      object = _arg.object;
+      return this.setSelectionObject(object);
+    };
+
+    SelectionView.prototype.setSelectionObject = function(object) {
+      var pp, _i, _len, _ref;
+
+      this.path = object.path.clone().toFront().attr(this.selectionAttrs);
+      if (this.nodes) {
+        this.nodes.remove();
+      }
+      this.nodes = raphael.set();
+      _ref = object.pathPoints;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        pp = _ref[_i];
+        this.nodes.push(raphael.circle(pp.point.x, pp.point.y, this.nodeSize));
+      }
+      return this.nodes.attr(this.nodeAttrs);
+    };
+
+    return SelectionView;
+
+  })();
 
   _.extend(window.Curve, {
     Path: Path,
     Curve: Curve,
     Point: Point,
     PathPoint: PathPoint,
-    SelectionModel: SelectionModel
+    SelectionModel: SelectionModel,
+    SelectionView: SelectionView
   });
 
   window.main = function() {
-    var path, r;
+    var r;
 
-    r = Raphael("canvas");
-    path = new Path(r);
-    path.addPathPoint(new PathPoint([50, 50], [-10, 0], [10, 0]));
-    path.addPathPoint(new PathPoint([80, 60], [-10, -5], [10, 5]));
-    path.addPathPoint(new PathPoint([60, 80], [10, 0], [-10, 0]));
-    return path.close();
+    this.raphael = r = Raphael("canvas");
+    this.path = new Path(r);
+    this.path.addPathPoint(new PathPoint([50, 50], [-10, 0], [10, 0]));
+    this.path.addPathPoint(new PathPoint([80, 60], [-10, -5], [10, 5]));
+    this.path.addPathPoint(new PathPoint([60, 80], [10, 0], [-10, 0]));
+    this.path.close();
+    this.selectionModel = new SelectionModel();
+    this.selectionView = new SelectionView(selectionModel);
+    return this.selectionModel.setSelected(this.path);
   };
 
 }).call(this);

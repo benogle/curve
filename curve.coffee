@@ -8,14 +8,16 @@ utils =
 
 _.extend(window.Curve, utils)
 
-attrs = {stroke: '#ccc', "stroke-width": 4, "stroke-linecap": "round"}
+attrs = {fill: '#ccc'}
 utils = window.Curve
 
+#
 class Path
-  constructor: (@raphael) ->
+  constructor: () ->
     @path = null
     @pathPoints = []
     @isClosed = false
+    @path = @_createRaphaelObject([])
 
   addPathPoint: (pathPoint) ->
     @pathPoints.push(pathPoint)
@@ -25,12 +27,8 @@ class Path
     @isClosed = true
     @render()
 
-  render: ->
-    pathArray = @toPathArray()
-    if @path
-      @path.attr(path: pathArray)
-    else
-      @path = @_createRaphaelObject(pathArray)
+  render: (path=@path)->
+    path.attr(path: @toPathArray())
 
   toPathArray: ->
     path = []
@@ -59,11 +57,12 @@ class Path
     path
 
   _createRaphaelObject: (pathArray) ->
-    path = @raphael.path(pathArray).attr(attrs)
+    path = raphael.path(pathArray).attr(attrs)
     utils.setObjectOnNode(path.node, this)
     path
 
 
+#
 class Point extends EventEmitter
   @create: (x, y) ->
     return x if x instanceof Point
@@ -74,7 +73,7 @@ class Point extends EventEmitter
 
   set: (@x, @y) ->
     [@x, @y] = @x if _.isArray(@x)
-    @trigger 'changed'
+    @emit 'change'
 
   add: (other) ->
     new Point(@x + other.x, @y + other.y)
@@ -82,11 +81,11 @@ class Point extends EventEmitter
   toArray: ->
     [@x, @y]
 
-
+#
 class Curve
   constructor: (@point1, @handle1, @point2, @handle2) ->
 
-
+#
 class PathPoint extends EventEmitter
   constructor: (point, handleIn, handleOut) ->
     @point = Point.create(point)
@@ -101,15 +100,65 @@ class PathPoint extends EventEmitter
   getAbsoluteHandleOut: ->
     @point.add(@handleOut)
 
-
+#
 class SelectionModel extends EventEmitter
+  constructor: ->
+    @selected = null
+    @selectedNode = null
 
-_.extend(window.Curve, {Path, Curve, Point, PathPoint, SelectionModel})
+  setSelected: (@selected) ->
+    @emit 'change:selected', object: @selected
+
+  clearSelected: ->
+    @setSelected(null)
+
+#
+class SelectionView
+  nodeSize: 5
+  selectionAttrs:
+    fill: null
+    stroke: '#09C'
+    "stroke-width": 2,
+    "stroke-linecap": "round"
+  nodeAttrs:
+    fill: '#fff'
+    stroke: '#069'
+    "stroke-width": 1,
+    "stroke-linecap": "round"
+
+  constructor: (@model) ->
+    @path = null
+    @nodes = null
+    @handles = null
+    @model.on 'change:selected', @onChangeSelected
+
+  #render: ->
+
+  onChangeSelected: ({object}) =>
+    @setSelectionObject(object)
+
+  setSelectionObject: (object) ->
+    @path = object.path.clone().toFront().attr(@selectionAttrs)
+
+    @nodes.remove() if @nodes
+    @nodes = raphael.set()
+
+    for pp in object.pathPoints
+      @nodes.push(raphael.circle(pp.point.x, pp.point.y, @nodeSize))
+
+    @nodes.attr(@nodeAttrs)
+
+_.extend(window.Curve, {Path, Curve, Point, PathPoint, SelectionModel, SelectionView})
 
 window.main = ->
-  r = Raphael("canvas")
-  path = new Path(r)
-  path.addPathPoint(new PathPoint([50, 50], [-10, 0], [10, 0]))
-  path.addPathPoint(new PathPoint([80, 60], [-10, -5], [10, 5]))
-  path.addPathPoint(new PathPoint([60, 80], [10, 0], [-10, 0]))
-  path.close()
+  @raphael = r = Raphael("canvas")
+  @path = new Path(r)
+  @path.addPathPoint(new PathPoint([50, 50], [-10, 0], [10, 0]))
+  @path.addPathPoint(new PathPoint([80, 60], [-10, -5], [10, 5]))
+  @path.addPathPoint(new PathPoint([60, 80], [10, 0], [-10, 0]))
+  @path.close()
+
+  @selectionModel = new SelectionModel()
+  @selectionView = new SelectionView(selectionModel)
+
+  @selectionModel.setSelected(@path)
