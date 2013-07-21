@@ -279,8 +279,8 @@ class NodeEditor
     handleOut = @node.getAbsoluteHandleOut()
     point = @node.point
 
-    linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]]
-    @lineElement.attr(path: linePath)
+    linePath = "M#{handleIn.x},#{handleIn.y}L#{point.x},#{point.y}L#{handleOut.x},#{handleOut.y}"
+    @lineElement.attr(d: linePath)
 
     @handleElements.members[0].attr(cx: handleIn.x, cy: handleIn.y)
     @handleElements.members[1].attr(cx: handleOut.x, cy: handleOut.y)

@@ -486,9 +486,9 @@
       handleIn = this.node.getAbsoluteHandleIn();
       handleOut = this.node.getAbsoluteHandleOut();
       point = this.node.point;
-      linePath = [['M', handleIn.x, handleIn.y], ['L', point.x, point.y], ['L', handleOut.x, handleOut.y]];
+      linePath = "M" + handleIn.x + "," + handleIn.y + "L" + point.x + "," + point.y + "L" + handleOut.x + "," + handleOut.y;
       this.lineElement.attr({
-        path: linePath
+        d: linePath
       });
       this.handleElements.members[0].attr({
         cx: handleIn.x,
