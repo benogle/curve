@@ -61,3 +61,14 @@ describe 'Curve.SelectionView', ->
 
     expect($('svg circle').length).toEqual 1
     expect($('svg path').length).toEqual 2
+
+  it 'cleans up when selecting nothing', ->
+    @model.setSelected(@path)
+
+    expect($('svg circle').length).toEqual 1
+    expect($('svg path').length).toEqual 2
+
+    @model.clearSelected()
+
+    expect($('svg circle').length).toEqual 0
+    expect($('svg path').length).toEqual 1

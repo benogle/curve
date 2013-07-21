@@ -149,7 +149,26 @@ class SelectionView
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:selectedNode', @onChangeSelectedNode
 
-  #render: ->
+  renderSelectedObject: ->
+    return unless object = @model.selected
+
+    @model.selected.render(@path)
+
+    @nodes = raphael.set() unless @nodes
+
+    nodeDifference = object.nodes.length - @nodes.length
+    if nodeDifference > 0
+      @nodes.push(raphael.circle(0, 0, @nodeSize)) for i in [0...nodeDifference]
+    else if nodeDifference < 0
+      for i in [object.nodes.length...@nodes.length]
+        @nodes[i].remove()
+        @nodes.exclude(@nodes[i])
+
+    for i in object.nodes.length
+      node = object.nodes[i]
+      @nodes[i].attr(cx: node.point.x, cy: node.point.y)
+
+    @nodes.attr(@nodeAttrs)
 
   onChangeSelected: ({object}) =>
     @setSelectedObject(object)
@@ -157,17 +176,14 @@ class SelectionView
     @setSelectedNode(object)
 
   setSelectedObject: (object) ->
-    @nodes.remove() if @nodes
+    if @nodes
+      @nodes.remove()
+      @nodes = null
+    @path.remove() if @path
+    @path = null
+    @path = object.path.clone().toFront().attr(@selectionAttrs) if object
 
-    return unless object
-
-    @path = object.path.clone().toFront().attr(@selectionAttrs)
-    @nodes = raphael.set()
-
-    for node in object.nodes
-      @nodes.push(raphael.circle(node.point.x, node.point.y, @nodeSize))
-
-    @nodes.attr(@nodeAttrs)
+    @renderSelectedObject()
 
   setSelectedNode: (node) ->
 

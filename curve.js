@@ -239,6 +239,39 @@
       this.model.on('change:selectedNode', this.onChangeSelectedNode);
     }
 
+    SelectionView.prototype.renderSelectedObject = function() {
+      var i, node, nodeDifference, object, _i, _j, _k, _len, _ref, _ref1, _ref2;
+
+      if (!(object = this.model.selected)) {
+        return;
+      }
+      this.model.selected.render(this.path);
+      if (!this.nodes) {
+        this.nodes = raphael.set();
+      }
+      nodeDifference = object.nodes.length - this.nodes.length;
+      if (nodeDifference > 0) {
+        for (i = _i = 0; 0 <= nodeDifference ? _i < nodeDifference : _i > nodeDifference; i = 0 <= nodeDifference ? ++_i : --_i) {
+          this.nodes.push(raphael.circle(0, 0, this.nodeSize));
+        }
+      } else if (nodeDifference < 0) {
+        for (i = _j = _ref = object.nodes.length, _ref1 = this.nodes.length; _ref <= _ref1 ? _j < _ref1 : _j > _ref1; i = _ref <= _ref1 ? ++_j : --_j) {
+          this.nodes[i].remove();
+          this.nodes.exclude(this.nodes[i]);
+        }
+      }
+      _ref2 = object.nodes.length;
+      for (_k = 0, _len = _ref2.length; _k < _len; _k++) {
+        i = _ref2[_k];
+        node = object.nodes[i];
+        this.nodes[i].attr({
+          cx: node.point.x,
+          cy: node.point.y
+        });
+      }
+      return this.nodes.attr(this.nodeAttrs);
+    };
+
     SelectionView.prototype.onChangeSelected = function(_arg) {
       var object;
 
@@ -254,22 +287,18 @@
     };
 
     SelectionView.prototype.setSelectedObject = function(object) {
-      var node, _i, _len, _ref;
-
       if (this.nodes) {
         this.nodes.remove();
+        this.nodes = null;
       }
-      if (!object) {
-        return;
+      if (this.path) {
+        this.path.remove();
       }
-      this.path = object.path.clone().toFront().attr(this.selectionAttrs);
-      this.nodes = raphael.set();
-      _ref = object.nodes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];
-        this.nodes.push(raphael.circle(node.point.x, node.point.y, this.nodeSize));
+      this.path = null;
+      if (object) {
+        this.path = object.path.clone().toFront().attr(this.selectionAttrs);
       }
-      return this.nodes.attr(this.nodeAttrs);
+      return this.renderSelectedObject();
     };
 
     SelectionView.prototype.setSelectedNode = function(node) {};
