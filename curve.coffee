@@ -131,16 +131,6 @@ class SelectionModel extends EventEmitter
 #
 class SelectionView
   nodeSize: 5
-  selectionAttrs:
-    fill: null
-    stroke: '#09C'
-    "stroke-width": 2,
-    "stroke-linecap": "round"
-  nodeAttrs:
-    fill: '#fff'
-    stroke: '#069'
-    "stroke-width": 1,
-    "stroke-linecap": "round"
 
   constructor: (@model) ->
     @path = null
@@ -158,17 +148,21 @@ class SelectionView
 
     nodeDifference = object.nodes.length - @nodes.length
     if nodeDifference > 0
-      @nodes.push(raphael.circle(0, 0, @nodeSize)) for i in [0...nodeDifference]
+      for i in [0...nodeDifference]
+        circle = raphael.circle(0, 0, @nodeSize)
+        circle.node.setAttribute('class','selected-node')
+        @nodes.push(circle)
     else if nodeDifference < 0
       for i in [object.nodes.length...@nodes.length]
         @nodes[i].remove()
         @nodes.exclude(@nodes[i])
 
-    for i in object.nodes.length
+    for i in [0...object.nodes.length]
       node = object.nodes[i]
       @nodes[i].attr(cx: node.point.x, cy: node.point.y)
 
-    @nodes.attr(@nodeAttrs)
+  renderSelectedNode: ->
+    return unless node = @model.selectedNode
 
   onChangeSelected: ({object}) =>
     @setSelectedObject(object)
@@ -179,9 +173,12 @@ class SelectionView
     if @nodes
       @nodes.remove()
       @nodes = null
+
     @path.remove() if @path
     @path = null
-    @path = object.path.clone().toFront().attr(@selectionAttrs) if object
+    if object
+      @path = object.path.clone().toFront()
+      @path.node.setAttribute('class', 'selected-path')
 
     @renderSelectedObject()
 
