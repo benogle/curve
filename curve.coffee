@@ -117,11 +117,13 @@ class SelectionModel extends EventEmitter
     @selectedNode = null
 
   setSelected: (selected) ->
+    return if selected == @selected
     old = @selected
     @selected = selected
     @emit 'change:selected', object: @selected, old: old
 
   setSelectedNode: (selectedNode) ->
+    return if selectedNode == @selectedNode
     old = @selectedNode
     @selectedNode = selectedNode
     @emit 'change:selectedNode', node: @selectedNode, old: old
@@ -165,7 +167,7 @@ class SelectionView
   _createNodeEditors: (object) ->
     if object
       nodeDiff = object.nodes.length - @nodeEditors.length
-      @nodeEditors.push(new NodeEditor()) for i in [0...nodeDiff] if nodeDiff > 0
+      @nodeEditors.push(new NodeEditor(@model)) for i in [0...nodeDiff] if nodeDiff > 0
 
     for i in [0...@nodeEditors.length]
       @nodeEditors[i].setNode(object and object.nodes[i] or null)
@@ -184,7 +186,7 @@ class NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: ->
+  constructor: (@selectionModel) ->
     @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
@@ -233,9 +235,14 @@ class NodeEditor
 
     @show()
 
+  onDraggingNode: (dx, dy, x, y, event) =>
+    console.log('dragging', arguments)
+
   _setupNodeElement: ->
     @nodeElement = raphael.circle(0, 0, @nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
+    @nodeElement.click => @selectionModel.setSelectedNode(@node)
+    @nodeElement.drag @onDraggingNode, => @selectionModel.setSelectedNode(@node)
 
   _setupLineElement: ->
     @lineElement = raphael.path([])

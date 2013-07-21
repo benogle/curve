@@ -188,6 +188,9 @@
     SelectionModel.prototype.setSelected = function(selected) {
       var old;
 
+      if (selected === this.selected) {
+        return;
+      }
       old = this.selected;
       this.selected = selected;
       return this.emit('change:selected', {
@@ -199,6 +202,9 @@
     SelectionModel.prototype.setSelectedNode = function(selectedNode) {
       var old;
 
+      if (selectedNode === this.selectedNode) {
+        return;
+      }
       old = this.selectedNode;
       this.selectedNode = selectedNode;
       return this.emit('change:selectedNode', {
@@ -273,7 +279,7 @@
         nodeDiff = object.nodes.length - this.nodeEditors.length;
         if (nodeDiff > 0) {
           for (i = _i = 0; 0 <= nodeDiff ? _i < nodeDiff : _i > nodeDiff; i = 0 <= nodeDiff ? ++_i : --_i) {
-            this.nodeEditors.push(new NodeEditor());
+            this.nodeEditors.push(new NodeEditor(this.model));
           }
         }
       }
@@ -316,7 +322,9 @@
 
     lineElement = null;
 
-    function NodeEditor() {
+    function NodeEditor(selectionModel) {
+      this.selectionModel = selectionModel;
+      this.onDraggingNode = __bind(this.onDraggingNode, this);
       this._setupNodeElement();
       this._setupLineElement();
       this._setupHandleElements();
@@ -385,9 +393,21 @@
       return this.show();
     };
 
+    NodeEditor.prototype.onDraggingNode = function(dx, dy, x, y, event) {
+      return console.log('dragging', arguments);
+    };
+
     NodeEditor.prototype._setupNodeElement = function() {
+      var _this = this;
+
       this.nodeElement = raphael.circle(0, 0, this.nodeSize);
-      return this.nodeElement.node.setAttribute('class', 'node-editor-node');
+      this.nodeElement.node.setAttribute('class', 'node-editor-node');
+      this.nodeElement.click(function() {
+        return _this.selectionModel.setSelectedNode(_this.node);
+      });
+      return this.nodeElement.drag(this.onDraggingNode, function() {
+        return _this.selectionModel.setSelectedNode(_this.node);
+      });
     };
 
     NodeEditor.prototype._setupLineElement = function() {
