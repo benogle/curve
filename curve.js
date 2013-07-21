@@ -1,5 +1,5 @@
 (function() {
-  var Curve, Node, NodeEditor, ObjectSelection, Path, Point, SelectionModel, SelectionView, attrs, utils,
+  var Curve, Node, NodeEditor, ObjectSelection, Path, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -253,9 +253,24 @@
     __extends(SelectionModel, _super);
 
     function SelectionModel() {
+      this.preselected = null;
       this.selected = null;
       this.selectedNode = null;
     }
+
+    SelectionModel.prototype.setPreselected = function(preselected) {
+      var old;
+
+      if (preselected === this.preselected) {
+        return;
+      }
+      old = this.preselected;
+      this.preselected = preselected;
+      return this.emit('change:preselected', {
+        object: this.preselected,
+        old: old
+      });
+    };
 
     SelectionModel.prototype.setSelected = function(selected) {
       var old;
@@ -289,6 +304,10 @@
       return this.setSelected(null);
     };
 
+    SelectionModel.prototype.clearPreselected = function() {
+      return this.setPreselected(null);
+    };
+
     SelectionModel.prototype.clearSelectedNode = function() {
       return this.setSelectedNode(null);
     };
@@ -303,11 +322,16 @@
     function SelectionView(model) {
       this.model = model;
       this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
+      this.onChangePreselected = __bind(this.onChangePreselected, this);
       this.onChangeSelected = __bind(this.onChangeSelected, this);
       this.path = null;
       this.nodeEditors = [];
       this.objectSelection = new ObjectSelection();
+      this.objectPreselection = new ObjectSelection({
+        "class": 'object-preselection'
+      });
       this.model.on('change:selected', this.onChangeSelected);
+      this.model.on('change:preselected', this.onChangePreselected);
       this.model.on('change:selectedNode', this.onChangeSelectedNode);
     }
 
@@ -316,6 +340,13 @@
 
       object = _arg.object;
       return this.setSelectedObject(object);
+    };
+
+    SelectionView.prototype.onChangePreselected = function(_arg) {
+      var object;
+
+      object = _arg.object;
+      return this.objectPreselection.setObject(object);
     };
 
     SelectionView.prototype.onChangeSelectedNode = function(_arg) {
@@ -373,8 +404,14 @@
   })();
 
   ObjectSelection = (function() {
-    function ObjectSelection() {
+    function ObjectSelection(options) {
+      var _base, _ref;
+
+      this.options = options != null ? options : {};
       this.render = __bind(this.render, this);
+      if ((_ref = (_base = this.options)["class"]) == null) {
+        _base["class"] = 'object-selection';
+      }
     }
 
     ObjectSelection.prototype.setObject = function(object) {
@@ -387,7 +424,7 @@
       this.path = null;
       if (this.object) {
         this.path = svg.path('').front();
-        this.path.node.setAttribute('class', 'object-selection');
+        this.path.node.setAttribute('class', this.options["class"]);
         return this.render();
       }
     };
@@ -616,6 +653,60 @@
 
   })();
 
+  PointerTool = (function() {
+    function PointerTool(svg, _arg) {
+      var _ref;
+
+      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
+      this.onMouseMove = __bind(this.onMouseMove, this);
+      this._evrect = svg.node.createSVGRect();
+      this._evrect.width = this._evrect.height = 1;
+    }
+
+    PointerTool.prototype.activate = function() {
+      return svg.on('mousemove', this.onMouseMove);
+    };
+
+    PointerTool.prototype.deactivate = function() {
+      return svg.off('mousemove', this.onMouseMove);
+    };
+
+    PointerTool.prototype.onMouseMove = function(e) {
+      return this._hitWithIntersectionList(e);
+    };
+
+    PointerTool.prototype._hitWithTarget = function(e) {
+      var obj;
+
+      obj = null;
+      if (e.target !== svg.node) {
+        obj = utils.getObjectFromNode(e.target);
+      }
+      return this.selectionModel.setPreselected(obj);
+    };
+
+    PointerTool.prototype._hitWithIntersectionList = function(e) {
+      var i, nodes, obj, _i, _ref;
+
+      this._evrect.x = e.clientX;
+      this._evrect.y = e.clientY;
+      nodes = svg.node.getIntersectionList(this._evrect, null);
+      obj = null;
+      if (nodes.length) {
+        for (i = _i = _ref = nodes.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+          obj = utils.getObjectFromNode(nodes[i]);
+          if (obj) {
+            break;
+          }
+        }
+      }
+      return this.selectionModel.setPreselected(obj);
+    };
+
+    return PointerTool;
+
+  })();
+
   _.extend(window.Curve, {
     Path: Path,
     Curve: Curve,
@@ -646,7 +737,12 @@
     this.selectionModel = new SelectionModel();
     this.selectionView = new SelectionView(selectionModel);
     this.selectionModel.setSelected(this.path1);
-    return this.selectionModel.setSelectedNode(this.path1.nodes[2]);
+    this.selectionModel.setSelectedNode(this.path1.nodes[2]);
+    this.tool = new PointerTool(this.svg, {
+      selectionModel: selectionModel,
+      selectionView: selectionView
+    });
+    return this.tool.activate();
   };
 
 }).call(this);

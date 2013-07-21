@@ -151,8 +151,15 @@ class Node extends EventEmitter
 #
 class SelectionModel extends EventEmitter
   constructor: ->
+    @preselected = null
     @selected = null
     @selectedNode = null
+
+  setPreselected: (preselected) ->
+    return if preselected == @preselected
+    old = @preselected
+    @preselected = preselected
+    @emit 'change:preselected', object: @preselected, old: old
 
   setSelected: (selected) ->
     return if selected == @selected
@@ -168,7 +175,8 @@ class SelectionModel extends EventEmitter
 
   clearSelected: ->
     @setSelected(null)
-
+  clearPreselected: ->
+    @setPreselected(null)
   clearSelectedNode: ->
     @setSelectedNode(null)
 
@@ -179,13 +187,18 @@ class SelectionView
   constructor: (@model) ->
     @path = null
     @nodeEditors = []
+
     @objectSelection = new ObjectSelection()
+    @objectPreselection = new ObjectSelection(class: 'object-preselection')
 
     @model.on 'change:selected', @onChangeSelected
+    @model.on 'change:preselected', @onChangePreselected
     @model.on 'change:selectedNode', @onChangeSelectedNode
 
   onChangeSelected: ({object}) =>
     @setSelectedObject(object)
+  onChangePreselected: ({object}) =>
+    @objectPreselection.setObject(object)
   onChangeSelectedNode: ({node, old}) =>
     nodeEditor = @_findNodeEditorForNode(old)
     nodeEditor.setEnableHandles(false) if nodeEditor
@@ -212,7 +225,8 @@ class SelectionView
 
 #
 class ObjectSelection
-  constructor: ->
+  constructor: (@options={}) ->
+    @options.class ?= 'object-selection'
 
   setObject: (object) ->
     @_unbindObject(@object)
@@ -223,7 +237,7 @@ class ObjectSelection
     @path = null
     if @object
       @path = svg.path('').front()
-      @path.node.setAttribute('class', 'object-selection')
+      @path.node.setAttribute('class', @options.class)
       @render()
 
   render: =>
@@ -374,6 +388,38 @@ class NodeEditor
       el = find(this)
       el.attr('r': self.handleSize)
 
+class PointerTool
+  constructor: (svg, {@selectionModel, @selectionView}={}) ->
+    @_evrect = svg.node.createSVGRect();
+    @_evrect.width = @_evrect.height = 1;
+
+  activate: ->
+    svg.on 'mousemove', @onMouseMove
+
+  deactivate: ->
+    svg.off 'mousemove', @onMouseMove
+
+  onMouseMove: (e) =>
+    @_hitWithIntersectionList(e)
+    # @_hitWithTarget(e)
+
+  _hitWithTarget: (e) ->
+    obj = null
+    obj = utils.getObjectFromNode(e.target) if e.target != svg.node
+    @selectionModel.setPreselected(obj)
+
+  _hitWithIntersectionList: (e) ->
+    @_evrect.x = e.clientX
+    @_evrect.y = e.clientY
+    nodes = svg.node.getIntersectionList(@_evrect, null)
+
+    obj = null
+    if nodes.length
+      for i in [nodes.length-1..0]
+        obj = utils.getObjectFromNode(nodes[i])
+        break if obj
+
+    @selectionModel.setPreselected(obj)
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
 
@@ -402,3 +448,6 @@ window.main = ->
 
   @selectionModel.setSelected(@path1)
   @selectionModel.setSelectedNode(@path1.nodes[2])
+
+  @tool = new PointerTool(@svg, {selectionModel, selectionView})
+  @tool.activate()
