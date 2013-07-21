@@ -189,7 +189,7 @@
       this.setPoint(point);
       this.setHandleIn(handleIn);
       this.setHandleOut(handleOut);
-      this.isBroken = false;
+      this.isJoined = true;
     }
 
     Node.prototype.getAbsoluteHandleIn = function() {
@@ -213,11 +213,19 @@
     };
 
     Node.prototype.setHandleIn = function(point) {
-      return this.set('handleIn', Point.create(point));
+      point = Point.create(point);
+      this.set('handleIn', point);
+      if (this.isJoined) {
+        return this.set('handleOut', new Point(0, 0).subtract(point));
+      }
     };
 
     Node.prototype.setHandleOut = function(point) {
-      return this.set('handleOut', Point.create(point));
+      point = Point.create(point);
+      this.set('handleOut', point);
+      if (this.isJoined) {
+        return this.set('handleIn', new Point(0, 0).subtract(point));
+      }
     };
 
     Node.prototype.set = function(attribute, value) {

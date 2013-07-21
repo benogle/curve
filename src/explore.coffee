@@ -107,7 +107,7 @@ class Node extends EventEmitter
     @setPoint(point)
     @setHandleIn(handleIn)
     @setHandleOut(handleOut)
-    @isBroken = false
+    @isJoined = true
 
   getAbsoluteHandleIn: ->
     @point.add(@handleIn)
@@ -122,10 +122,13 @@ class Node extends EventEmitter
   setPoint: (point) ->
     @set('point', Point.create(point))
   setHandleIn: (point) ->
-    @set('handleIn', Point.create(point))
+    point = Point.create(point)
+    @set('handleIn', point)
+    @set('handleOut', new Point(0,0).subtract(point)) if @isJoined
   setHandleOut: (point) ->
-    @set('handleOut', Point.create(point))
-
+    point = Point.create(point)
+    @set('handleOut', point)
+    @set('handleIn', new Point(0,0).subtract(point)) if @isJoined
 
   set: (attribute, value) ->
     old = @[attribute]
