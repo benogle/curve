@@ -1,8 +1,8 @@
 (function() {
   var Curve, Node, NodeEditor, Path, Point, SelectionModel, SelectionView, attrs, utils,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   window.Curve = window.Curve || {};
 
@@ -18,7 +18,8 @@
   _.extend(window.Curve, utils);
 
   attrs = {
-    fill: '#ccc'
+    fill: '#ccc',
+    stroke: 'none'
   };
 
   utils = window.Curve;
@@ -34,9 +35,11 @@
   */
 
 
-  Path = (function() {
+  Path = (function(_super) {
+    __extends(Path, _super);
+
     function Path() {
-      this.path = null;
+      this.onNodeChange = __bind(this.onNodeChange, this);      this.path = null;
       this.nodes = [];
       this.isClosed = false;
       this.path = this._createRaphaelObject([]);
@@ -93,12 +96,29 @@
       return path;
     };
 
-    Path.prototype._bindNode = function(node) {
-      var _this = this;
+    Path.prototype.onNodeChange = function(node, eventArgs) {
+      var index;
 
-      return node.on('change', function() {
-        return _this.render();
-      });
+      this.render();
+      index = this._findNodeIndex(node);
+      return this.emit('change', this, _.extend({
+        index: index
+      }, eventArgs));
+    };
+
+    Path.prototype._bindNode = function(node) {
+      return node.on('change', this.onNodeChange);
+    };
+
+    Path.prototype._findNodeIndex = function(node) {
+      var i, _i, _ref;
+
+      for (i = _i = 0, _ref = this.nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        if (this.nodes[i] === node) {
+          return i;
+        }
+      }
+      return -1;
     };
 
     Path.prototype._createRaphaelObject = function(pathArray) {
@@ -111,11 +131,9 @@
 
     return Path;
 
-  })();
+  })(EventEmitter);
 
-  Point = (function(_super) {
-    __extends(Point, _super);
-
+  Point = (function() {
     Point.create = function(x, y) {
       if (x instanceof Point) {
         return x;
@@ -133,9 +151,8 @@
       this.x = x;
       this.y = y;
       if (_.isArray(this.x)) {
-        _ref = this.x, this.x = _ref[0], this.y = _ref[1];
+        return _ref = this.x, this.x = _ref[0], this.y = _ref[1], _ref;
       }
-      return this.emit('change');
     };
 
     Point.prototype.add = function(other) {
@@ -152,7 +169,7 @@
 
     return Point;
 
-  })(EventEmitter);
+  })();
 
   Curve = (function() {
     function Curve(point1, handle1, point2, handle2) {
@@ -207,8 +224,8 @@
         value: value,
         old: old
       };
-      this.emit(event, eventArgs);
-      return this.emit('change', eventArgs);
+      this.emit(event, this, eventArgs);
+      return this.emit('change', this, eventArgs);
     };
 
     return Node;

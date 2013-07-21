@@ -8,7 +8,7 @@ utils =
 
 _.extend(window.Curve, utils)
 
-attrs = {fill: '#ccc'}
+attrs = {fill: '#ccc', stroke: 'none'}
 utils = window.Curve
 
 ###
@@ -22,7 +22,7 @@ utils = window.Curve
 ###
 
 #
-class Path
+class Path extends EventEmitter
   constructor: () ->
     @path = null
     @nodes = []
@@ -67,8 +67,19 @@ class Path
 
     path
 
+  onNodeChange: (node, eventArgs) =>
+    @render()
+
+    index = @_findNodeIndex(node)
+    @emit 'change', this, _.extend({index}, eventArgs)
+
   _bindNode: (node) ->
-    node.on 'change', => @render()
+    node.on 'change', @onNodeChange
+
+  _findNodeIndex: (node) ->
+    for i in [0...@nodes.length]
+      return i if @nodes[i] == node
+    -1
 
   _createRaphaelObject: (pathArray) ->
     path = raphael.path(pathArray).attr(attrs)
@@ -77,7 +88,7 @@ class Path
 
 
 #
-class Point extends EventEmitter
+class Point
   @create: (x, y) ->
     return x if x instanceof Point
     new Point(x, y)
@@ -87,7 +98,6 @@ class Point extends EventEmitter
 
   set: (@x, @y) ->
     [@x, @y] = @x if _.isArray(@x)
-    @emit 'change'
 
   add: (other) ->
     new Point(@x + other.x, @y + other.y)
@@ -129,8 +139,8 @@ class Node extends EventEmitter
     event = "change:#{attribute}"
     eventArgs = {event, value, old}
 
-    @emit event, eventArgs
-    @emit 'change', eventArgs
+    @emit event, this, eventArgs
+    @emit 'change', this, eventArgs
 
 #
 class SelectionModel extends EventEmitter

@@ -35,6 +35,19 @@ describe 'Curve.Path', ->
       el = $('svg path')
       expect(el.attr('d')).toMatch(/^M70,70C80,70/)
 
+    it 'kicks out event when changes', ->
+      spy = jasmine.createSpy()
+      @path.on 'change', spy
+
+      @path.nodes[0].setPoint([70, 70])
+
+      expect(spy).toHaveBeenCalled()
+      expect(spy.mostRecentCall.args[1]).toEqual
+        event: 'change:point',
+        index: 0
+        old: new Curve.Point(50, 50)
+        value: new Curve.Point(70, 70)
+
 
 describe 'Curve.SelectionModel', ->
   beforeEach ->
