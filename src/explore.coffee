@@ -288,6 +288,10 @@ class NodeEditor
 
     @show()
 
+    # make sure the handlethe user is dragging is on top. could get in the
+    # situation where the handle passed under the other, and it feels weird.
+    @_draggingHandle.toFront() if @_draggingHandle
+
   onDraggingNode: (dx, dy, x, y, event) =>
     @node.setPoint(new Point(x, y))
   onDraggingHandleIn: (dx, dy, x, y, event) =>
@@ -317,6 +321,8 @@ class NodeEditor
     @lineElement.node.setAttribute('class', 'node-editor-lines')
 
   _setupHandleElements: ->
+    self = this
+
     @handleElements = raphael.set()
     @handleElements.push(
       raphael.circle(0, 0, @handleSize),
@@ -325,11 +331,16 @@ class NodeEditor
     @handleElements[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements[1].node.setAttribute('class', 'node-editor-handle')
 
-    @handleElements[0].drag @onDraggingHandleIn
-    @handleElements[1].drag @onDraggingHandleOut
+    onStartDraggingHandle = ->
+      self._draggingHandle = this
+    onStopDraggingHandle = ->
+      self._draggingHandle = null
 
-    self = this
+    @handleElements[0].drag @onDraggingHandleIn, onStartDraggingHandle, onStopDraggingHandle
+    @handleElements[1].drag @onDraggingHandleOut, onStartDraggingHandle, onStopDraggingHandle
+
     @handleElements.hover ->
+      this.toFront()
       this.attr('r': self.handleSize+2)
     , ->
       this.attr('r': self.handleSize)

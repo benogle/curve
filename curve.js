@@ -499,7 +499,10 @@
         cx: point.x,
         cy: point.y
       });
-      return this.show();
+      this.show();
+      if (this._draggingHandle) {
+        return this._draggingHandle.toFront();
+      }
     };
 
     NodeEditor.prototype.onDraggingNode = function(dx, dy, x, y, event) {
@@ -556,16 +559,23 @@
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
-      var self;
+      var onStartDraggingHandle, onStopDraggingHandle, self;
 
+      self = this;
       this.handleElements = raphael.set();
       this.handleElements.push(raphael.circle(0, 0, this.handleSize), raphael.circle(0, 0, this.handleSize));
       this.handleElements[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
-      this.handleElements[0].drag(this.onDraggingHandleIn);
-      this.handleElements[1].drag(this.onDraggingHandleOut);
-      self = this;
+      onStartDraggingHandle = function() {
+        return self._draggingHandle = this;
+      };
+      onStopDraggingHandle = function() {
+        return self._draggingHandle = null;
+      };
+      this.handleElements[0].drag(this.onDraggingHandleIn, onStartDraggingHandle, onStopDraggingHandle);
+      this.handleElements[1].drag(this.onDraggingHandleOut, onStartDraggingHandle, onStopDraggingHandle);
       return this.handleElements.hover(function() {
+        this.toFront();
         return this.attr({
           'r': self.handleSize + 2
         });
