@@ -141,8 +141,15 @@ class Node extends EventEmitter
 #
 class SelectionModel extends EventEmitter
   constructor: ->
+    @preselected = null
     @selected = null
     @selectedNode = null
+
+  setPreselected: (preselected) ->
+    return if preselected == @preselected
+    old = @preselected
+    @preselected = preselected
+    @emit 'change:preselected', object: @preselected, old: old
 
   setSelected: (selected) ->
     return if selected == @selected
@@ -158,7 +165,8 @@ class SelectionModel extends EventEmitter
 
   clearSelected: ->
     @setSelected(null)
-
+  clearPreselected: ->
+    @setPreselected(null)
   clearSelectedNode: ->
     @setSelectedNode(null)
 
@@ -169,13 +177,18 @@ class SelectionView
   constructor: (@model) ->
     @path = null
     @nodeEditors = []
+
     @objectSelection = new ObjectSelection()
+    @objectPreselection = new ObjectSelection(class: 'object-preselection')
 
     @model.on 'change:selected', @onChangeSelected
+    @model.on 'change:preselected', @onChangePreselected
     @model.on 'change:selectedNode', @onChangeSelectedNode
 
   onChangeSelected: ({object}) =>
     @setSelectedObject(object)
+  onChangePreselected: ({object}) =>
+    @objectPreselection.setObject(object)
   onChangeSelectedNode: ({node, old}) =>
     nodeEditor = @_findNodeEditorForNode(old)
     nodeEditor.setEnableHandles(false) if nodeEditor
@@ -202,7 +215,8 @@ class SelectionView
 
 #
 class ObjectSelection
-  constructor: ->
+  constructor: (@options={}) ->
+    @options.class ?= 'object-selection'
 
   setObject: (object) ->
     @_unbindObject(@object)
@@ -213,7 +227,7 @@ class ObjectSelection
     @path = null
     if @object
       @path = svg.path('').front()
-      @path.node.setAttribute('class', 'object-selection')
+      @path.node.setAttribute('class', @options.class)
       @render()
 
   render: =>
@@ -392,3 +406,5 @@ window.main = ->
 
   @selectionModel.setSelected(@path1)
   @selectionModel.setSelectedNode(@path1.nodes[2])
+
+  @selectionModel.setPreselected(@path2)

@@ -101,6 +101,16 @@ describe 'Curve.SelectionView', ->
     expect($('svg circle.node-editor-node:eq(0)')).toHide()
     expect($('svg path.object-selection').length).toEqual 0
 
+  it 'creates nodes when PREselecting and cleans up when selecting nothing', ->
+    @model.setPreselected(@path)
+
+    expect($('svg circle.node-editor-node').length).toEqual 0
+    expect($('svg path.object-preselection').length).toEqual 1
+
+    @model.clearPreselected()
+
+    expect($('svg path.object-preselection').length).toEqual 0
+
   it 'renders node editor when selecting a node', ->
     @model.setSelected(@path)
     @model.setSelectedNode(@path.nodes[0])
