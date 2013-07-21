@@ -26,7 +26,6 @@
 
   /*
     TODO
-    * move handles
     * move entire object
     * select/deselect objects
     * make new objects
