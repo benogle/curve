@@ -3,12 +3,11 @@ utils = window.Curve
 
 ###
   TODO
-  * draw handles
   * move handles
-  * move nodes
   * move entire object
-  * select/deselect things
+  * select/deselect objects
   * make new objects
+  * replacing path array updates the interface
 ###
 
 #
@@ -294,8 +293,12 @@ class NodeEditor
   _setupNodeElement: ->
     @nodeElement = raphael.circle(0, 0, @nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
-    @nodeElement.click => @selectionModel.setSelectedNode(@node)
     @nodeElement.drag @onDraggingNode, => @selectionModel.setSelectedNode(@node)
+    @nodeElement.click => @selectionModel.setSelectedNode(@node)
+    @nodeElement.hover =>
+      @nodeElement.attr('r': @nodeSize+2)
+    , =>
+      @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
     @lineElement = raphael.path([])
@@ -309,6 +312,12 @@ class NodeEditor
     )
     @handleElements[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements[1].node.setAttribute('class', 'node-editor-handle')
+
+    self = this
+    @handleElements.hover ->
+      this.attr('r': self.handleSize+2)
+    , ->
+      this.attr('r': self.handleSize)
 
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView})

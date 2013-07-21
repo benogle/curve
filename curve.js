@@ -26,12 +26,11 @@
 
   /*
     TODO
-    * draw handles
     * move handles
-    * move nodes
     * move entire object
-    * select/deselect things
+    * select/deselect objects
     * make new objects
+    * replacing path array updates the interface
   */
 
 
@@ -509,11 +508,20 @@
 
       this.nodeElement = raphael.circle(0, 0, this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
+      this.nodeElement.drag(this.onDraggingNode, function() {
+        return _this.selectionModel.setSelectedNode(_this.node);
+      });
       this.nodeElement.click(function() {
         return _this.selectionModel.setSelectedNode(_this.node);
       });
-      return this.nodeElement.drag(this.onDraggingNode, function() {
-        return _this.selectionModel.setSelectedNode(_this.node);
+      return this.nodeElement.hover(function() {
+        return _this.nodeElement.attr({
+          'r': _this.nodeSize + 2
+        });
+      }, function() {
+        return _this.nodeElement.attr({
+          'r': _this.nodeSize
+        });
       });
     };
 
@@ -523,10 +531,22 @@
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
+      var self;
+
       this.handleElements = raphael.set();
       this.handleElements.push(raphael.circle(0, 0, this.handleSize), raphael.circle(0, 0, this.handleSize));
       this.handleElements[0].node.setAttribute('class', 'node-editor-handle');
-      return this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
+      this.handleElements[1].node.setAttribute('class', 'node-editor-handle');
+      self = this;
+      return this.handleElements.hover(function() {
+        return this.attr({
+          'r': self.handleSize + 2
+        });
+      }, function() {
+        return this.attr({
+          'r': self.handleSize
+        });
+      });
     };
 
     return NodeEditor;
