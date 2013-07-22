@@ -384,19 +384,26 @@ class PointerTool
     @_evrect.width = @_evrect.height = 1;
 
   activate: ->
+    svg.on 'click', @onClick
     svg.on 'mousemove', @onMouseMove
 
   deactivate: ->
+    svg.off 'click', @onClick
     svg.off 'mousemove', @onMouseMove
 
+  onClick: (e) =>
+    obj = @_hitWithIntersectionList(e)
+    @selectionModel.setSelected(obj)
+    return false if obj
+
   onMouseMove: (e) =>
-    @_hitWithIntersectionList(e)
-    # @_hitWithTarget(e)
+    @selectionModel.setPreselected(@_hitWithIntersectionList(e))
+    # @selectionModel.setPreselected(@_hitWithTarget(e))
 
   _hitWithTarget: (e) ->
     obj = null
     obj = utils.getObjectFromNode(e.target) if e.target != svg.node
-    @selectionModel.setPreselected(obj)
+    obj
 
   _hitWithIntersectionList: (e) ->
     @_evrect.x = e.clientX
@@ -405,11 +412,12 @@ class PointerTool
 
     obj = null
     if nodes.length
-      for i in [nodes.length-1..0]
-        obj = utils.getObjectFromNode(nodes[i])
-        break if obj
+      obj = utils.getObjectFromNode(nodes[nodes.length-1])
+      # for i in [nodes.length-1..0]
+      #   obj = utils.getObjectFromNode(nodes[i])
+      #   break if obj
 
-    @selectionModel.setPreselected(obj)
+    obj
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
 

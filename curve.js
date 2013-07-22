@@ -659,20 +659,33 @@
 
       _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
       this.onMouseMove = __bind(this.onMouseMove, this);
+      this.onClick = __bind(this.onClick, this);
       this._evrect = svg.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
     }
 
     PointerTool.prototype.activate = function() {
+      svg.on('click', this.onClick);
       return svg.on('mousemove', this.onMouseMove);
     };
 
     PointerTool.prototype.deactivate = function() {
+      svg.off('click', this.onClick);
       return svg.off('mousemove', this.onMouseMove);
     };
 
+    PointerTool.prototype.onClick = function(e) {
+      var obj;
+
+      obj = this._hitWithIntersectionList(e);
+      this.selectionModel.setSelected(obj);
+      if (obj) {
+        return false;
+      }
+    };
+
     PointerTool.prototype.onMouseMove = function(e) {
-      return this._hitWithIntersectionList(e);
+      return this.selectionModel.setPreselected(this._hitWithIntersectionList(e));
     };
 
     PointerTool.prototype._hitWithTarget = function(e) {
@@ -682,25 +695,20 @@
       if (e.target !== svg.node) {
         obj = utils.getObjectFromNode(e.target);
       }
-      return this.selectionModel.setPreselected(obj);
+      return obj;
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var i, nodes, obj, _i, _ref;
+      var nodes, obj;
 
       this._evrect.x = e.clientX;
       this._evrect.y = e.clientY;
       nodes = svg.node.getIntersectionList(this._evrect, null);
       obj = null;
       if (nodes.length) {
-        for (i = _i = _ref = nodes.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
-          obj = utils.getObjectFromNode(nodes[i]);
-          if (obj) {
-            break;
-          }
-        }
+        obj = utils.getObjectFromNode(nodes[nodes.length - 1]);
       }
-      return this.selectionModel.setPreselected(obj);
+      return obj;
     };
 
     return PointerTool;
