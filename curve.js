@@ -94,7 +94,6 @@
         path = this.path;
       }
       pathStr = this.toPathString();
-      console.log('rendering', pathStr);
       if (pathStr) {
         return path.attr({
           d: pathStr
@@ -827,9 +826,10 @@
         return _this.selectionModel.setSelectedNode(_this.currentNode);
       };
       if (this.currentObject) {
-        if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement) {
+        if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement.node) {
           this.currentObject.close();
-          return this.currentObject = null;
+          this.currentObject = null;
+          return console.log('close');
         } else {
           return makeNode();
         }

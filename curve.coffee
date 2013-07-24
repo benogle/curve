@@ -65,7 +65,6 @@ class Path extends EventEmitter
 
   render: (path=@path) ->
     pathStr = @toPathString()
-    console.log 'rendering', pathStr
     path.attr(d: pathStr) if pathStr
 
   toPathString: ->
@@ -512,9 +511,10 @@ class PenTool
       @selectionModel.setSelectedNode(@currentNode)
 
     if @currentObject
-      if @selectionView.nodeEditors.length and e.target == @selectionView.nodeEditors[0].nodeElement
+      if @selectionView.nodeEditors.length and e.target == @selectionView.nodeEditors[0].nodeElement.node
         @currentObject.close()
         @currentObject = null
+        console.log 'close'
       else
         makeNode()
     else
