@@ -13,6 +13,7 @@ utils = window.Curve
 
 ###
   TODO
+  * change path -> svgEl in cases where it makes sense
   * move entire object
   * select/deselect objects
   * make new objects
@@ -63,7 +64,9 @@ class Path extends EventEmitter
     @emit('change', this, args)
 
   render: (path=@path) ->
-    path.attr(d: @toPathString())
+    pathStr = @toPathString()
+    console.log 'rendering', pathStr
+    path.attr(d: pathStr) if pathStr
 
   toPathString: ->
     path = ''
@@ -123,9 +126,11 @@ class Point
     [@x, @y] = @x if _.isArray(@x)
 
   add: (other) ->
+    other = Point.create(other)
     new Point(@x + other.x, @y + other.y)
 
   subtract: (other) ->
+    other = Point.create(other)
     new Point(@x - other.x, @y - other.y)
 
   toArray: ->
@@ -145,9 +150,9 @@ class Node extends EventEmitter
     @point.add(@handleOut)
 
   setAbsoluteHandleIn: (point) ->
-    @setHandleIn(point.subtract(@point))
+    @setHandleIn(Point.create(point).subtract(@point))
   setAbsoluteHandleOut: (point) ->
-    @setHandleOut(point.subtract(@point))
+    @setHandleOut(Point.create(point).subtract(@point))
 
   setPoint: (point) ->
     @set('point', Point.create(point))
@@ -485,6 +490,9 @@ class PointerTool
     obj
 
 class PenTool
+  currentObject: null
+  currentNode: null
+
   constructor: (svg, {@selectionModel, @selectionView}={}) ->
 
   activate: ->
@@ -498,10 +506,27 @@ class PenTool
     svg.off 'mouseup', @onMouseUp
 
   onMouseDown: (e) =>
+    makeNode = =>
+      @currentNode = new Curve.Node([e.clientX, e.clientY], [0, 0], [0, 0])
+      @currentObject.addNode(@currentNode)
+      @selectionModel.setSelectedNode(@currentNode)
+
+    if @currentObject
+      if @selectionView.nodeEditors.length and e.target == @selectionView.nodeEditors[0].nodeElement
+        @currentObject.close()
+        @currentObject = null
+      else
+        makeNode()
+    else
+      @currentObject = new Curve.Path()
+      @selectionModel.setSelected(@currentObject)
+      makeNode()
 
   onMouseMove: (e) =>
+    @currentNode.setAbsoluteHandleOut([e.clientX, e.clientY]) if @currentNode
 
   onMouseUp: (e) =>
+    @currentNode = null
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
 
@@ -532,4 +557,7 @@ window.main = ->
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
   @tool = new PointerTool(@svg, {selectionModel, selectionView})
-  @tool.activate()
+  # @tool.activate()
+
+  @pen = new PenTool(@svg, {selectionModel, selectionView})
+  @pen.activate()

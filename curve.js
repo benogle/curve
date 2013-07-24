@@ -26,6 +26,7 @@
 
   /*
     TODO
+    * change path -> svgEl in cases where it makes sense
     * move entire object
     * select/deselect objects
     * make new objects
@@ -87,12 +88,18 @@
     };
 
     Path.prototype.render = function(path) {
+      var pathStr;
+
       if (path == null) {
         path = this.path;
       }
-      return path.attr({
-        d: this.toPathString()
-      });
+      pathStr = this.toPathString();
+      console.log('rendering', pathStr);
+      if (pathStr) {
+        return path.attr({
+          d: pathStr
+        });
+      }
     };
 
     Path.prototype.toPathString = function() {
@@ -189,10 +196,12 @@
     };
 
     Point.prototype.add = function(other) {
+      other = Point.create(other);
       return new Point(this.x + other.x, this.y + other.y);
     };
 
     Point.prototype.subtract = function(other) {
+      other = Point.create(other);
       return new Point(this.x - other.x, this.y - other.y);
     };
 
@@ -223,11 +232,11 @@
     };
 
     Node.prototype.setAbsoluteHandleIn = function(point) {
-      return this.setHandleIn(point.subtract(this.point));
+      return this.setHandleIn(Point.create(point).subtract(this.point));
     };
 
     Node.prototype.setAbsoluteHandleOut = function(point) {
-      return this.setHandleOut(point.subtract(this.point));
+      return this.setHandleOut(Point.create(point).subtract(this.point));
     };
 
     Node.prototype.setPoint = function(point) {
@@ -783,6 +792,10 @@
   })();
 
   PenTool = (function() {
+    PenTool.prototype.currentObject = null;
+
+    PenTool.prototype.currentNode = null;
+
     function PenTool(svg, _arg) {
       var _ref;
 
@@ -804,11 +817,38 @@
       return svg.off('mouseup', this.onMouseUp);
     };
 
-    PenTool.prototype.onMouseDown = function(e) {};
+    PenTool.prototype.onMouseDown = function(e) {
+      var makeNode,
+        _this = this;
 
-    PenTool.prototype.onMouseMove = function(e) {};
+      makeNode = function() {
+        _this.currentNode = new Curve.Node([e.clientX, e.clientY], [0, 0], [0, 0]);
+        _this.currentObject.addNode(_this.currentNode);
+        return _this.selectionModel.setSelectedNode(_this.currentNode);
+      };
+      if (this.currentObject) {
+        if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement) {
+          this.currentObject.close();
+          return this.currentObject = null;
+        } else {
+          return makeNode();
+        }
+      } else {
+        this.currentObject = new Curve.Path();
+        this.selectionModel.setSelected(this.currentObject);
+        return makeNode();
+      }
+    };
 
-    PenTool.prototype.onMouseUp = function(e) {};
+    PenTool.prototype.onMouseMove = function(e) {
+      if (this.currentNode) {
+        return this.currentNode.setAbsoluteHandleOut([e.clientX, e.clientY]);
+      }
+    };
+
+    PenTool.prototype.onMouseUp = function(e) {
+      return this.currentNode = null;
+    };
 
     return PenTool;
 
@@ -849,7 +889,11 @@
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    return this.tool.activate();
+    this.pen = new PenTool(this.svg, {
+      selectionModel: selectionModel,
+      selectionView: selectionView
+    });
+    return this.pen.activate();
   };
 
 }).call(this);
