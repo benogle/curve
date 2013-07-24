@@ -341,11 +341,13 @@
 
     function SelectionView(model) {
       this.model = model;
+      this.onInsertNode = __bind(this.onInsertNode, this);
       this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
       this.onChangePreselected = __bind(this.onChangePreselected, this);
       this.onChangeSelected = __bind(this.onChangeSelected, this);
       this.path = null;
       this.nodeEditors = [];
+      this._nodeEditorStash = [];
       this.objectSelection = new ObjectSelection();
       this.objectPreselection = new ObjectSelection({
         "class": 'object-preselection'
@@ -356,9 +358,11 @@
     }
 
     SelectionView.prototype.onChangeSelected = function(_arg) {
-      var object;
+      var object, old;
 
-      object = _arg.object;
+      object = _arg.object, old = _arg.old;
+      this._unbindFromObject(old);
+      this._bindToObject(object);
       return this.setSelectedObject(object);
     };
 
@@ -388,22 +392,56 @@
       return this._createNodeEditors(object);
     };
 
-    SelectionView.prototype._createNodeEditors = function(object) {
-      var i, nodeDiff, _i, _j, _ref, _results;
+    SelectionView.prototype.onInsertNode = function(object, _arg) {
+      var index, node, _ref;
 
+      _ref = _arg != null ? _arg : {}, node = _ref.node, index = _ref.index;
+      return this._insertNodeEditor(object, index);
+    };
+
+    SelectionView.prototype._bindToObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.on('insert:node', this.onInsertNode);
+    };
+
+    SelectionView.prototype._unbindFromObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.off('insert:node', this.onInsertNode);
+    };
+
+    SelectionView.prototype._createNodeEditors = function(object) {
+      var i, nodeEditor, _i, _j, _len, _ref, _ref1, _results;
+
+      this._nodeEditorStash = this.nodeEditors;
+      this.nodeEditors = [];
       if (object) {
-        nodeDiff = object.nodes.length - this.nodeEditors.length;
-        if (nodeDiff > 0) {
-          for (i = _i = 0; 0 <= nodeDiff ? _i < nodeDiff : _i > nodeDiff; i = 0 <= nodeDiff ? ++_i : --_i) {
-            this.nodeEditors.push(new NodeEditor(this.model));
-          }
+        for (i = _i = 0, _ref = object.nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+          this._insertNodeEditor(object, i);
         }
       }
+      _ref1 = this._nodeEditorStash;
       _results = [];
-      for (i = _j = 0, _ref = this.nodeEditors.length; 0 <= _ref ? _j < _ref : _j > _ref; i = 0 <= _ref ? ++_j : --_j) {
-        _results.push(this.nodeEditors[i].setNode(object && object.nodes[i] || null));
+      for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+        nodeEditor = _ref1[_j];
+        _results.push(nodeEditor.setNode(null));
       }
       return _results;
+    };
+
+    SelectionView.prototype._insertNodeEditor = function(object, index) {
+      var nodeEditor;
+
+      if (!(object && object.nodes[index])) {
+        return false;
+      }
+      nodeEditor = this._nodeEditorStash.length ? this._nodeEditorStash.pop() : new NodeEditor(this.model);
+      nodeEditor.setNode(object.nodes[index]);
+      this.nodeEditors.splice(index, 0, nodeEditor);
+      return true;
     };
 
     SelectionView.prototype._findNodeEditorForNode = function(node) {

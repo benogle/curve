@@ -87,7 +87,6 @@ describe 'Curve.Path', ->
         index: 0
         value: node
 
-
 describe 'Curve.SelectionModel', ->
   beforeEach ->
     @s = new Curve.SelectionModel()
@@ -175,6 +174,15 @@ describe 'Curve.SelectionView', ->
 
     expect($('svg circle.node-editor-handle:eq(0)')).toHide()
     expect($('svg circle.node-editor-handle:eq(1)')).toHide()
+
+  it 'makes new NodeEditors when adding nodes to object', ->
+    @model.setSelected(@path)
+
+    expect($('svg circle.node-editor-node').length).toEqual 1
+
+    @path.addNode(new Curve.Node([40, 40], [-10, 0], [10, 0]))
+
+    expect($('svg circle.node-editor-node').length).toEqual 2
 
 describe 'Curve.Node', ->
   beforeEach ->
