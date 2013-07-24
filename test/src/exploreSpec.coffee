@@ -48,6 +48,17 @@ describe 'Curve.Path', ->
         old: new Curve.Point(50, 50)
         value: new Curve.Point(70, 70)
 
+    it 'kicks out event when closed', ->
+      closespy = jasmine.createSpy()
+      changespy = jasmine.createSpy()
+      @path.on 'close', closespy
+      @path.on 'change', changespy
+
+      @path.close()
+
+      expect(closespy).toHaveBeenCalled()
+      expect(changespy).toHaveBeenCalled()
+
     it 'node added adds node to the end', ->
       node = new Curve.Node([40, 60], [0, 0], [0, 0])
 

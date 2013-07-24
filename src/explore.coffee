@@ -37,14 +37,20 @@ class Path extends EventEmitter
     @nodes.splice(index, 0, node)
     @render()
 
-    @emit 'insert:node', this,
+    args =
       event: 'insert:node'
       index: index
       value: node
+    @emit('insert:node', this, args)
+    @emit('change', this, args)
 
   close: ->
     @isClosed = true
     @render()
+
+    args = event: 'close'
+    @emit('close', this, args)
+    @emit('change', this, args)
 
   render: (path=@path) ->
     path.attr(d: @toPathString())
@@ -114,10 +120,6 @@ class Point
 
   toArray: ->
     [@x, @y]
-
-#
-class Curve
-  constructor: (@point1, @handle1, @point2, @handle2) ->
 
 #
 class Node extends EventEmitter

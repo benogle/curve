@@ -1,5 +1,5 @@
 (function() {
-  var Curve, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
+  var Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -60,19 +60,30 @@
     };
 
     Path.prototype.insertNode = function(node, index) {
+      var args;
+
       this._bindNode(node);
       this.nodes.splice(index, 0, node);
       this.render();
-      return this.emit('insert:node', this, {
+      args = {
         event: 'insert:node',
         index: index,
         value: node
-      });
+      };
+      this.emit('insert:node', this, args);
+      return this.emit('change', this, args);
     };
 
     Path.prototype.close = function() {
+      var args;
+
       this.isClosed = true;
-      return this.render();
+      this.render();
+      args = {
+        event: 'close'
+      };
+      this.emit('close', this, args);
+      return this.emit('change', this, args);
     };
 
     Path.prototype.render = function(path) {
@@ -190,18 +201,6 @@
     };
 
     return Point;
-
-  })();
-
-  Curve = (function() {
-    function Curve(point1, handle1, point2, handle2) {
-      this.point1 = point1;
-      this.handle1 = handle1;
-      this.point2 = point2;
-      this.handle2 = handle2;
-    }
-
-    return Curve;
 
   })();
 
