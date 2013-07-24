@@ -335,7 +335,10 @@ class NodeEditor
     @nodeElement = svg.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
 
-    @nodeElement.click => @selectionModel.setSelectedNode(@node)
+    @nodeElement.click (e) =>
+      e.stopPropagation()
+      @selectionModel.setSelectedNode(@node)
+      false
 
     @nodeElement.draggable()
     @nodeElement.dragstart = => @selectionModel.setSelectedNode(@node)

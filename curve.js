@@ -576,8 +576,10 @@
 
       this.nodeElement = svg.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
-      this.nodeElement.click(function() {
-        return _this.selectionModel.setSelectedNode(_this.node);
+      this.nodeElement.click(function(e) {
+        e.stopPropagation();
+        _this.selectionModel.setSelectedNode(_this.node);
+        return false;
       });
       this.nodeElement.draggable();
       this.nodeElement.dragstart = function() {
