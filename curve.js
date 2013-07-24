@@ -1,5 +1,5 @@
 (function() {
-  var Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
+  var IDS, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -26,7 +26,9 @@
 
   /*
     TODO
+    * experiment with loading a file then editing it
     * change path -> svgEl in cases where it makes sense
+    * removing nodes with keyboard
     * move entire object
     * select/deselect objects
     * make new objects
@@ -46,6 +48,8 @@
   */
 
 
+  IDS = 0;
+
   Path = (function(_super) {
     __extends(Path, _super);
 
@@ -54,7 +58,12 @@
       this.nodes = [];
       this.isClosed = false;
       this.path = this._createSVGObject();
+      this.id = IDS++;
     }
+
+    Path.prototype.toString = function() {
+      return "Path " + this.id;
+    };
 
     Path.prototype.addNode = function(node) {
       return this.insertNode(node, this.nodes.length);
@@ -404,7 +413,8 @@
       var index, node, _ref;
 
       _ref = _arg != null ? _arg : {}, node = _ref.node, index = _ref.index;
-      return this._insertNodeEditor(object, index);
+      this._insertNodeEditor(object, index);
+      return null;
     };
 
     SelectionView.prototype._bindToObject = function(object) {
@@ -828,8 +838,7 @@
       if (this.currentObject) {
         if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement.node) {
           this.currentObject.close();
-          this.currentObject = null;
-          return console.log('close');
+          return this.currentObject = null;
         } else {
           return makeNode();
         }

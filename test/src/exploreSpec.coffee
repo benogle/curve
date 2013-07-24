@@ -181,8 +181,10 @@ describe 'Curve.SelectionView', ->
     expect($('svg circle.node-editor-node').length).toEqual 1
 
     @path.addNode(new Curve.Node([40, 40], [-10, 0], [10, 0]))
-
     expect($('svg circle.node-editor-node').length).toEqual 2
+
+    @path.addNode(new Curve.Node([10, 40], [-10, 0], [10, 0]))
+    expect($('svg circle.node-editor-node').length).toEqual 3
 
 describe 'Curve.Node', ->
   beforeEach ->

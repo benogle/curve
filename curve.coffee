@@ -13,7 +13,9 @@ utils = window.Curve
 
 ###
   TODO
+  * experiment with loading a file then editing it
   * change path -> svgEl in cases where it makes sense
+  * removing nodes with keyboard
   * move entire object
   * select/deselect objects
   * make new objects
@@ -32,6 +34,7 @@ utils = window.Curve
     * group for tool nodes
 ###
 
+IDS = 0
 #
 class Path extends EventEmitter
   constructor: () ->
@@ -39,6 +42,11 @@ class Path extends EventEmitter
     @nodes = []
     @isClosed = false
     @path = @_createSVGObject()
+
+    @id = IDS++
+
+  toString: ->
+    "Path #{@id}"
 
   addNode: (node) ->
     @insertNode(node, @nodes.length)
@@ -241,6 +249,7 @@ class SelectionView
 
   onInsertNode: (object, {node, index}={}) =>
     @_insertNodeEditor(object, index)
+    null # Force null. _insertNodeEditor returns true and tells event emitter 'once'. Ugh
 
   _bindToObject: (object) ->
     return unless object
@@ -514,7 +523,6 @@ class PenTool
       if @selectionView.nodeEditors.length and e.target == @selectionView.nodeEditors[0].nodeElement.node
         @currentObject.close()
         @currentObject = null
-        console.log 'close'
       else
         makeNode()
     else
