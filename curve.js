@@ -424,7 +424,7 @@
       this.path = null;
       if (this.object) {
         this.path = svg.path('').front();
-        this.path.node.setAttribute('class', this.options["class"]);
+        this.path.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
         return this.render();
       }
     };
@@ -699,14 +699,21 @@
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var nodes, obj;
+      var clas, i, nodes, obj, _i, _ref;
 
       this._evrect.x = e.clientX;
       this._evrect.y = e.clientY;
       nodes = svg.node.getIntersectionList(this._evrect, null);
       obj = null;
       if (nodes.length) {
-        obj = utils.getObjectFromNode(nodes[nodes.length - 1]);
+        for (i = _i = _ref = nodes.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+          clas = nodes[i].getAttribute('class');
+          if (clas && clas.indexOf('invisible-to-hit-test') > -1) {
+            continue;
+          }
+          obj = utils.getObjectFromNode(nodes[i]);
+          break;
+        }
       }
       return obj;
     };

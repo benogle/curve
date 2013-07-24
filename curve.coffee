@@ -237,7 +237,7 @@ class ObjectSelection
     @path = null
     if @object
       @path = svg.path('').front()
-      @path.node.setAttribute('class', @options.class)
+      @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
 
   render: =>
@@ -422,10 +422,11 @@ class PointerTool
 
     obj = null
     if nodes.length
-      obj = utils.getObjectFromNode(nodes[nodes.length-1])
-      # for i in [nodes.length-1..0]
-      #   obj = utils.getObjectFromNode(nodes[i])
-      #   break if obj
+      for i in [nodes.length-1..0]
+        clas = nodes[i].getAttribute('class')
+        continue if clas and clas.indexOf('invisible-to-hit-test') > -1
+        obj = utils.getObjectFromNode(nodes[i])
+        break
 
     obj
 
