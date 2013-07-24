@@ -15,6 +15,10 @@ utils = window.Curve
   * probably need a doc object
     * Can pass it to everything that needs to use svg
     * would have access to the tools n junk
+  * proper z-index of elements
+    * group for doc at the bottom
+    * group for selection
+    * group for tool nodes
 ###
 
 #
