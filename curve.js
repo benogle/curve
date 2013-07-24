@@ -30,6 +30,14 @@
     * select/deselect objects
     * make new objects
     * replacing path array updates the interface
+  
+    Large
+    * how to deal with events and tools and things?
+      * like NodeEditor is dragging something, the pointer tool should be deactivated.
+      * a tool manager? can push/pop tools?
+    * probably need a doc object
+      * Can pass it to everything that needs to use svg
+      * would have access to the tools n junk
   */
 
 
