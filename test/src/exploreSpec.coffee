@@ -48,6 +48,34 @@ describe 'Curve.Path', ->
         old: new Curve.Point(50, 50)
         value: new Curve.Point(70, 70)
 
+    it 'node added adds node to the end', ->
+      node = new Curve.Node([40, 60], [0, 0], [0, 0])
+
+      spy = jasmine.createSpy()
+      @path.on 'insert:node', spy
+
+      @path.addNode(node)
+
+      expect(@path.nodes[3]).toEqual node
+      expect(spy.mostRecentCall.args[1]).toEqual
+        event: 'insert:node',
+        index: 3
+        value: node
+
+    it 'node inserted inserts node in right place', ->
+      node = new Curve.Node([40, 60], [0, 0], [0, 0])
+
+      spy = jasmine.createSpy()
+      @path.on 'insert:node', spy
+
+      @path.insertNode(node, 0)
+
+      expect(@path.nodes[0]).toEqual node
+      expect(spy.mostRecentCall.args[1]).toEqual
+        event: 'insert:node',
+        index: 0
+        value: node
+
 
 describe 'Curve.SelectionModel', ->
   beforeEach ->

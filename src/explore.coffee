@@ -30,9 +30,17 @@ class Path extends EventEmitter
     @path = @_createSVGObject()
 
   addNode: (node) ->
+    @insertNode(node, @nodes.length)
+
+  insertNode: (node, index) ->
     @_bindNode(node)
-    @nodes.push(node)
+    @nodes.splice(index, 0, node)
     @render()
+
+    @emit 'insert:node', this,
+      event: 'insert:node'
+      index: index
+      value: node
 
   close: ->
     @isClosed = true
@@ -434,6 +442,25 @@ class PointerTool
         break
 
     obj
+
+class PenTool
+  constructor: (svg, {@selectionModel, @selectionView}={}) ->
+
+  activate: ->
+    svg.on 'mousedown', @onMouseDown
+    svg.on 'mousemove', @onMouseMove
+    svg.on 'mouseup', @onMouseUp
+
+  deactivate: ->
+    svg.off 'mousedown', @onMouseDown
+    svg.off 'mousemove', @onMouseMove
+    svg.off 'mouseup', @onMouseUp
+
+  onMouseDown: (e) =>
+
+  onMouseMove: (e) =>
+
+  onMouseUp: (e) =>
 
 _.extend(window.Curve, {Path, Curve, Point, Node, SelectionModel, SelectionView, NodeEditor})
 

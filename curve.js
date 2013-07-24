@@ -1,5 +1,5 @@
 (function() {
-  var Curve, Node, NodeEditor, ObjectSelection, Path, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
+  var Curve, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -56,9 +56,18 @@
     }
 
     Path.prototype.addNode = function(node) {
+      return this.insertNode(node, this.nodes.length);
+    };
+
+    Path.prototype.insertNode = function(node, index) {
       this._bindNode(node);
-      this.nodes.push(node);
-      return this.render();
+      this.nodes.splice(index, 0, node);
+      this.render();
+      return this.emit('insert:node', this, {
+        event: 'insert:node',
+        index: index,
+        value: node
+      });
     };
 
     Path.prototype.close = function() {
@@ -733,6 +742,38 @@
     };
 
     return PointerTool;
+
+  })();
+
+  PenTool = (function() {
+    function PenTool(svg, _arg) {
+      var _ref;
+
+      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
+      this.onMouseUp = __bind(this.onMouseUp, this);
+      this.onMouseMove = __bind(this.onMouseMove, this);
+      this.onMouseDown = __bind(this.onMouseDown, this);
+    }
+
+    PenTool.prototype.activate = function() {
+      svg.on('mousedown', this.onMouseDown);
+      svg.on('mousemove', this.onMouseMove);
+      return svg.on('mouseup', this.onMouseUp);
+    };
+
+    PenTool.prototype.deactivate = function() {
+      svg.off('mousedown', this.onMouseDown);
+      svg.off('mousemove', this.onMouseMove);
+      return svg.off('mouseup', this.onMouseUp);
+    };
+
+    PenTool.prototype.onMouseDown = function(e) {};
+
+    PenTool.prototype.onMouseMove = function(e) {};
+
+    PenTool.prototype.onMouseUp = function(e) {};
+
+    return PenTool;
 
   })();
 
