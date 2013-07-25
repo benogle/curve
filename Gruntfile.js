@@ -49,7 +49,13 @@ module.exports = function(grunt) {
     jasmine: {
       src: '<%= pkg.name %>.js',
       options: {
-        specs: ['test/lib/exploreSpec.js'],
+        specs: [
+          'test/lib/nodeSpec.js',
+          'test/lib/node-editorSpec.js',
+          'test/lib/pathSpec.js',
+          'test/lib/selection-modelSpec.js',
+          'test/lib/selection-viewSpec.js'
+        ],
         helpers: 'test/lib/**/*Helper.js',
         vendor: [
           'test/vendor/event-emitter.js',
