@@ -23,6 +23,10 @@
 
 window.main = ->
   @svg = SVG("canvas")
+  Curve.import(@svg, Curve.Examples.heckert)
+
+window._main = ->
+  @svg = SVG("canvas")
 
   @path1 = new Path()
   @path1.addNode(new Node([50, 50], [-10, 0], [10, 0]))

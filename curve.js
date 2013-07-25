@@ -1,5 +1,5 @@
 (function() {
-  var IDS, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, utils,
+  var IDS, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, convertNodes, objectifyAttributes, objectifyTransformations, utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -43,6 +43,11 @@
 
   window.main = function() {
     this.svg = SVG("canvas");
+    return Curve["import"](this.svg, Curve.Examples.heckert);
+  };
+
+  window._main = function() {
+    this.svg = SVG("canvas");
     this.path1 = new Path();
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
     this.path1.addNode(new Node([80, 60], [-10, -5], [10, 5]));
@@ -71,6 +76,180 @@
       selectionView: selectionView
     });
     return this.pen.activate();
+  };
+
+  convertNodes = function(nodes, context, level, store, block) {
+    var attr, child, clips, element, grandchild, i, j, transform, type, _i, _j, _ref, _ref1, _ref2;
+
+    for (i = _i = 0, _ref = nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      child = nodes[i];
+      attr = {};
+      clips = [];
+      type = child.nodeName.toLowerCase();
+      attr = objectifyAttributes(child);
+      switch (type) {
+        case 'path':
+          element = context[type]();
+          break;
+        case 'polygon':
+          element = context[type]();
+          break;
+        case 'polyline':
+          element = context[type]();
+          break;
+        case 'rect':
+          element = context[type](0, 0);
+          break;
+        case 'circle':
+          element = context[type](0, 0);
+          break;
+        case 'ellipse':
+          element = context[type](0, 0);
+          break;
+        case 'line':
+          element = context.line(0, 0, 0, 0);
+          break;
+        case 'text':
+          if (child.childNodes.length === 0) {
+            element = context[type](child.textContent);
+          } else {
+            element = null;
+            for (j = _j = 0, _ref1 = child.childNodes.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
+              grandchild = child.childNodes[j];
+              if (grandchild.nodeName.toLowerCase() === 'tspan') {
+                if (element === null) {
+                  element = context[type](grandchild.textContent);
+                } else {
+                  element.tspan(grandchild.textContent).attr(objectifyAttributes(grandchild));
+                }
+              }
+            }
+          }
+          break;
+        case 'image':
+          element = context.image(attr['xlink:href']);
+          break;
+        case 'g':
+        case 'svg':
+          element = context[type === 'g' ? 'group' : 'nested']();
+          convertNodes(child.childNodes, element, level + 1, store, block);
+          break;
+        case 'defs':
+          convertNodes(child.childNodes, context.defs(), level + 1, store, block);
+          break;
+        case 'use':
+          element = context.use();
+          break;
+        case 'clippath':
+        case 'mask':
+          element = context[(_ref2 = type === 'mask') != null ? _ref2 : {
+            'mask': 'clip'
+          }]();
+          convertNodes(child.childNodes, element, level + 1, store, block);
+          break;
+        case 'lineargradient':
+        case 'radialgradient':
+          element = context.defs().gradient(type.split('gradient')[0], function(stop) {
+            var _k, _ref3, _results;
+
+            _results = [];
+            for (j = _k = 0, _ref3 = child.childNodes.length; 0 <= _ref3 ? _k < _ref3 : _k > _ref3; j = 0 <= _ref3 ? ++_k : --_k) {
+              _results.push(stop.at(objectifyAttributes(child.childNodes[j])).style(child.childNodes[j].getAttribute('style')));
+            }
+            return _results;
+          });
+          break;
+        case '#comment':
+        case '#text':
+        case 'metadata':
+        case 'desc':
+          break;
+        default:
+          console.log('SVG Import got unexpected type ' + type, child);
+      }
+      if (element) {
+        transform = objectifyTransformations(attr.transform);
+        delete attr.transform;
+        element.attr(attr).transform(transform);
+        if (element.attr('id')) {
+          store[element.attr('id')] = element;
+        }
+        if (type === 'text') {
+          element.rebuild();
+        }
+        if (typeof block === 'function') {
+          block.call(element);
+        }
+      }
+    }
+    return context;
+  };
+
+  objectifyAttributes = function(child) {
+    var attr, attrs, i, _i, _ref;
+
+    attrs = child.attributes || [];
+    attr = {};
+    if (attrs.length) {
+      for (i = _i = _ref = attrs.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+        attr[attrs[i].nodeName] = attrs[i].nodeValue;
+      }
+    }
+    return attr;
+  };
+
+  objectifyTransformations = function(transform) {
+    var def, i, list, t, trans, v, _i, _ref;
+
+    trans = {};
+    list = (transform || '').match(/[A-Za-z]+\([^\)]+\)/g) || [];
+    def = SVG.defaults.trans();
+    if (list.length) {
+      for (i = _i = _ref = list.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+        t = list[i].match(/([A-Za-z]+)\(([^\)]+)\)/);
+        v = (t[2] || '').replace(/^\s+/, '').replace(/,/g, ' ').replace(/\s+/g, ' ').split(' ');
+        switch (t[1]) {
+          case 'matrix':
+            trans.a = parseFloat(v[0]) || def.a;
+            trans.b = parseFloat(v[1]) || def.b;
+            trans.c = parseFloat(v[2]) || def.c;
+            trans.d = parseFloat(v[3]) || def.d;
+            trans.e = parseFloat(v[4]) || def.e;
+            trans.f = parseFloat(v[5]) || def.f;
+            break;
+          case 'rotate':
+            trans.rotation = parseFloat(v[0]) || def.rotation;
+            trans.cx = parseFloat(v[1]) || def.cx;
+            trans.cy = parseFloat(v[2]) || def.cy;
+            break;
+          case 'scale':
+            trans.scaleX = parseFloat(v[0]) || def.scaleX;
+            trans.scaleY = parseFloat(v[1]) || def.scaleY;
+            break;
+          case 'skewX':
+            trans.skewX = parseFloat(v[0]) || def.skewX;
+            break;
+          case 'skewY':
+            trans.skewY = parseFloat(v[0]) || def.skewY;
+            break;
+          case 'translate':
+            trans.x = parseFloat(v[0]) || def.x;
+            trans.y = parseFloat(v[1]) || def.y;
+        }
+      }
+    }
+    return trans;
+  };
+
+  Curve["import"] = function(svgDocument, svgString, elementCallback) {
+    var store, well;
+
+    well = document.createElement('div');
+    store = {};
+    well.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
+    convertNodes(well.childNodes, svgDocument, 0, store, elementCallback);
+    well = null;
+    return store;
   };
 
   utils = window.Curve;
