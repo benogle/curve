@@ -67,6 +67,9 @@ window._main = ->
   @pen = new PenTool(@svg, {selectionModel, selectionView})
   @pen.activate()
 
+# svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
+#
+# Converted to coffeescript and modified by benogle
 
 # Convert nodes to svg.js elements
 convertNodes = (nodes, context, level, store, block) ->
