@@ -5,18 +5,18 @@
   // Convert nodes to svg.js elements
   convertNodes = function(nodes, context, level, store, block) {
     var i, l, j, key, element, type, child, attr, transform, clips
-    
+
     for (i = 0, l = nodes.length; i < l; i++) {
       child = nodes[i]
       attr  = {}
       clips = []
-      
+
       /* get node type */
       type = child.nodeName.toLowerCase()
-      
+
       /*  objectify attributes */
       attr = objectifyAttributes(child)
-     
+
       /* create elements */
       switch(type) {
         case 'rect':
@@ -30,20 +30,20 @@
         case 'text':
           if (child.childNodes.length == 0) {
             element = context[type](child.textContent)
-  
+
           } else {
             var grandchild
-  
+
             element = null
-  
+
             for (j = 0; j < child.childNodes.length; j++) {
               grandchild = child.childNodes[j]
-  
+
               if (grandchild.nodeName.toLowerCase() == 'tspan') {
                 if (element === null)
                   /* first time through call the text() function on the current context */
                   element = context[type](grandchild.textContent)
-  
+
                 else
                   /* for the remaining times create additional tspans */
                   element
@@ -51,7 +51,7 @@
                     .attr(objectifyAttributes(grandchild))
               }
             }
-  
+
           }
         break
         case 'path':
@@ -98,16 +98,7 @@
           console.log('SVG Import got unexpected type ' + type, child)
         break
       }
-      
-      /* parse unexpected attributes */
-      switch(type) {
-        case 'circle':
-          attr.rx = attr.r
-          attr.ry = attr.r
-          delete attr.r
-        break
-      }
-      
+
       if (element) {
         /* parse transform attribute */
         transform = objectifyTransformations(attr.transform)
@@ -117,21 +108,21 @@
         element
           .attr(attr)
           .transform(transform)
-  
+
         /* store element by id */
         if (element.attr('id'))
           store[element.attr('id')] = element
-  
+
         /* now that we've set the attributes "rebuild" the text to correctly set the attributes */
         if (type == 'text')
           element.rebuild()
-  
+
         /* call block if given */
         if (typeof block == 'function')
           block.call(element)
       }
     }
-    
+
     return context
   }
 
@@ -140,11 +131,11 @@
     var i
       , attrs = child.attributes || []
       , attr  = {}
-    
+
     /* gether attributes */
     for (i = attrs.length - 1; i >= 0; i--)
       attr[attrs[i].nodeName] = attrs[i].nodeValue
-  
+
     return attr
   }
 
@@ -202,21 +193,21 @@
       /* create temporary div to receive svg content */
       var well = document.createElement('div')
         , store = {}
-      
+
       /* properly close svg tags and add them to the DOM */
       well.innerHTML = raw
         .replace(/\n/, '')
         .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
-      
+
       /* convert nodes to svg elements */
       convertNodes(well.childNodes, this, 0, store, block)
-      
+
       /* mark temporary div for garbage collection */
       well = null
-      
+
       return store
     }
-    
+
   })
 
 }).call(this)
