@@ -8,7 +8,7 @@ utils =
 
 _.extend(window.Curve, utils)
 
-attrs = {fill: '#ccc', stroke: 'none'}
+attrs = {fill: '#eee', stroke: 'none'}
 utils = window.Curve
 
 ###

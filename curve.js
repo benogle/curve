@@ -18,7 +18,7 @@
   _.extend(window.Curve, utils);
 
   attrs = {
-    fill: '#ccc',
+    fill: '#eee',
     stroke: 'none'
   };
 
