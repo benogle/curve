@@ -1,5 +1,5 @@
 (function() {
-  var IDS, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, convertNodes, objectifyAttributes, objectifyTransformations, utils,
+  var COMMAND, IDS, NUMBER, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, convertNodes, lexPath, objectifyAttributes, objectifyTransformations, parsePath, utils, _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -581,6 +581,61 @@
 
   })();
 
+  _ref = ['COMMAND', 'NUMBER'], COMMAND = _ref[0], NUMBER = _ref[1];
+
+  lexPath = function(pathString) {
+    var ch, currentToken, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens, _i, _len;
+
+    numberMatch = '0123456789.';
+    separatorMatch = ' ,';
+    tokens = [];
+    currentToken = null;
+    saveCurrentTokenWhenDifferentThan = function(command) {
+      if (currentToken && currentToken.type !== command) {
+        return saveCurrentToken();
+      }
+    };
+    saveCurrentToken = function() {
+      if (!currentToken) {
+        return;
+      }
+      if (currentToken.string.join) {
+        currentToken.string = currentToken.string.join('');
+      }
+      tokens.push(currentToken);
+      return currentToken = null;
+    };
+    for (_i = 0, _len = pathString.length; _i < _len; _i++) {
+      ch = pathString[_i];
+      if (numberMatch.indexOf(ch) > -1) {
+        saveCurrentTokenWhenDifferentThan(NUMBER);
+        if (!currentToken) {
+          currentToken = {
+            type: NUMBER,
+            string: []
+          };
+        }
+        currentToken.string.push(ch);
+      } else if (separatorMatch.indexOf(ch) > -1) {
+        saveCurrentToken();
+      } else {
+        saveCurrentToken();
+        tokens.push({
+          type: COMMAND,
+          string: ch
+        });
+      }
+    }
+    return tokens;
+  };
+
+  parsePath = function(pathTokens) {};
+
+  _.extend(window.Curve, {
+    lexPath: lexPath,
+    parsePath: parsePath
+  });
+
   attrs = {
     fill: '#eee',
     stroke: 'none'
@@ -675,7 +730,7 @@
     };
 
     Path.prototype.toPathString = function() {
-      var lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref;
+      var lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref1;
 
       path = '';
       lastPoint = null;
@@ -688,9 +743,9 @@
         curve = curve.concat(toNode.point.toArray());
         return 'C' + curve.join(',');
       };
-      _ref = this.nodes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];
+      _ref1 = this.nodes;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        node = _ref1[_i];
         if (path) {
           path += makeCurve(lastNode, node);
         } else {
@@ -720,9 +775,9 @@
     };
 
     Path.prototype._findNodeIndex = function(node) {
-      var i, _i, _ref;
+      var i, _i, _ref1;
 
-      for (i = _i = 0, _ref = this.nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      for (i = _i = 0, _ref1 = this.nodes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
         if (this.nodes[i] === node) {
           return i;
         }
@@ -755,9 +810,9 @@
     PenTool.prototype.currentNode = null;
 
     function PenTool(svg, _arg) {
-      var _ref;
+      var _ref1;
 
-      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
+      _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseUp = __bind(this.onMouseUp, this);
       this.onMouseMove = __bind(this.onMouseMove, this);
       this.onMouseDown = __bind(this.onMouseDown, this);
@@ -825,12 +880,12 @@
     }
 
     Point.prototype.set = function(x, y) {
-      var _ref;
+      var _ref1;
 
       this.x = x;
       this.y = y;
       if (_.isArray(this.x)) {
-        return _ref = this.x, this.x = _ref[0], this.y = _ref[1], _ref;
+        return _ref1 = this.x, this.x = _ref1[0], this.y = _ref1[1], _ref1;
       }
     };
 
@@ -860,9 +915,9 @@
 
   PointerTool = (function() {
     function PointerTool(svg, _arg) {
-      var _ref;
+      var _ref1;
 
-      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
+      _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseMove = __bind(this.onMouseMove, this);
       this.onClick = __bind(this.onClick, this);
       this._evrect = svg.node.createSVGRect();
@@ -904,14 +959,14 @@
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var clas, i, nodes, obj, _i, _ref;
+      var clas, i, nodes, obj, _i, _ref1;
 
       this._evrect.x = e.clientX;
       this._evrect.y = e.clientY;
       nodes = svg.node.getIntersectionList(this._evrect, null);
       obj = null;
       if (nodes.length) {
-        for (i = _i = _ref = nodes.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+        for (i = _i = _ref1 = nodes.length - 1; _ref1 <= 0 ? _i <= 0 : _i >= 0; i = _ref1 <= 0 ? ++_i : --_i) {
           clas = nodes[i].getAttribute('class');
           if (clas && clas.indexOf('invisible-to-hit-test') > -1) {
             continue;
@@ -1055,9 +1110,9 @@
     };
 
     SelectionView.prototype.onInsertNode = function(object, _arg) {
-      var index, node, _ref;
+      var index, node, _ref1;
 
-      _ref = _arg != null ? _arg : {}, node = _ref.node, index = _ref.index;
+      _ref1 = _arg != null ? _arg : {}, node = _ref1.node, index = _ref1.index;
       this._insertNodeEditor(object, index);
       return null;
     };
@@ -1077,19 +1132,19 @@
     };
 
     SelectionView.prototype._createNodeEditors = function(object) {
-      var i, nodeEditor, _i, _j, _len, _ref, _ref1, _results;
+      var i, nodeEditor, _i, _j, _len, _ref1, _ref2, _results;
 
       this._nodeEditorStash = this.nodeEditors;
       this.nodeEditors = [];
       if (object) {
-        for (i = _i = 0, _ref = object.nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        for (i = _i = 0, _ref1 = object.nodes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
           this._insertNodeEditor(object, i);
         }
       }
-      _ref1 = this._nodeEditorStash;
+      _ref2 = this._nodeEditorStash;
       _results = [];
-      for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-        nodeEditor = _ref1[_j];
+      for (_j = 0, _len = _ref2.length; _j < _len; _j++) {
+        nodeEditor = _ref2[_j];
         _results.push(nodeEditor.setNode(null));
       }
       return _results;
@@ -1108,11 +1163,11 @@
     };
 
     SelectionView.prototype._findNodeEditorForNode = function(node) {
-      var nodeEditor, _i, _len, _ref;
+      var nodeEditor, _i, _len, _ref1;
 
-      _ref = this.nodeEditors;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        nodeEditor = _ref[_i];
+      _ref1 = this.nodeEditors;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        nodeEditor = _ref1[_i];
         if (nodeEditor.node === node) {
           return nodeEditor;
         }

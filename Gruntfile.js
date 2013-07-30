@@ -53,6 +53,7 @@ module.exports = function(grunt) {
           'test/lib/nodeSpec.js',
           'test/lib/node-editorSpec.js',
           'test/lib/pathSpec.js',
+          'test/lib/path-parserSpec.js',
           'test/lib/selection-modelSpec.js',
           'test/lib/selection-viewSpec.js'
         ],
