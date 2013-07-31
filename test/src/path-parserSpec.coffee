@@ -71,11 +71,13 @@ describe 'Curve.parsePath', ->
     expect(_.pick(subject.nodes[0].handleIn, 'x', 'y')).toEqual x: -10, y: 0
     expect(_.pick(subject.nodes[0].handleOut, 'x', 'y')).toEqual x: 10, y: 0
     expect(subject.nodes[0].isJoined).toEqual true
+    expect(subject.nodes[0].isMoveNode).toEqual true
 
     expect(_.pick(subject.nodes[1].point, 'x', 'y')).toEqual x: 80, y: 60
     expect(_.pick(subject.nodes[1].handleIn, 'x', 'y')).toEqual x: -10, y: -5
     expect(_.pick(subject.nodes[1].handleOut, 'x', 'y')).toEqual x: 10, y: 5
     expect(subject.nodes[1].isJoined).toEqual true
+    expect(subject.nodes[1].isMoveNode).toEqual false
 
     expect(_.pick(subject.nodes[2].point, 'x', 'y')).toEqual x: 60, y: 80
     expect(_.pick(subject.nodes[2].handleIn, 'x', 'y')).toEqual x: 8, y: 23
@@ -103,6 +105,27 @@ describe 'Curve.parsePath', ->
     expect(_.pick(subject.nodes[3].point, 'x', 'y')).toEqual x: 50, y: 50
     expect(_.pick(subject.nodes[3].handleIn, 'x', 'y')).toEqual x: -10, y: 0
     expect(subject.nodes[3].handleOut).toEqual null
+
+  it 'parses closed, non-wrapped shapes', ->
+    path = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80Z M30,40L15,16Z'
+    subject = Curve.parsePath(path)
+    expect(subject.closed).toEqual true
+    expect(subject.nodes.length).toEqual 5
+
+    expect(subject.nodes[2].isMoveNode).toEqual false
+    expect(subject.nodes[2].isCloseNode).toEqual true
+
+    expect(_.pick(subject.nodes[3].point, 'x', 'y')).toEqual x: 30, y: 40
+    expect(subject.nodes[3].handleOut).toEqual null
+    expect(subject.nodes[3].handleIn).toEqual null
+    expect(subject.nodes[3].isMoveNode).toEqual true
+    expect(subject.nodes[3].isCloseNode).toEqual false
+
+    expect(_.pick(subject.nodes[4].point, 'x', 'y')).toEqual x: 15, y: 16
+    expect(subject.nodes[4].handleOut).toEqual null
+    expect(subject.nodes[4].handleIn).toEqual null
+    expect(subject.nodes[4].isMoveNode).toEqual false
+    expect(subject.nodes[4].isCloseNode).toEqual true
 
   it 'parses non closed shapes', ->
     path = 'M10,10C20,10 70,55 80,60C90,65 68,103 60,80'

@@ -41,12 +41,19 @@
   */
 
 
-  window._main = function() {
+  window.main = function() {
     this.svg = SVG("canvas");
-    return Curve["import"](this.svg, Curve.Examples.heckert);
+    Curve["import"](this.svg, Curve.Examples.heckert);
+    this.selectionModel = new SelectionModel();
+    this.selectionView = new SelectionView(this.selectionModel);
+    this.tool = new PointerTool(this.svg, {
+      selectionModel: this.selectionModel,
+      selectionView: this.selectionView
+    });
+    return this.tool.activate();
   };
 
-  window.main = function() {
+  window._main = function() {
     this.svg = SVG("canvas");
     this.path1 = new Path();
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
@@ -242,8 +249,17 @@
   };
 
   Curve["import"] = function(svgDocument, svgString, elementCallback) {
-    var store, well;
+    var IMPORT_FNS, store, well;
 
+    window.paths = [];
+    IMPORT_FNS = {
+      path: function(el) {
+        if (!el) {
+          return;
+        }
+        return Curve.Path.parseFromEl(el);
+      }
+    };
     well = document.createElement('div');
     store = {};
     well.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
@@ -252,7 +268,9 @@
       var nodeType;
 
       nodeType = this.node.nodeName;
-      window.paths.push(EDITORS[nodeType] ? typeof EDITORS[nodeType] === "function" ? new EDITORS[nodeType](this) : void 0 : void 0);
+      if (IMPORT_FNS[nodeType]) {
+        window.paths = window.paths.concat(IMPORT_FNS[nodeType](this));
+      }
       return null;
     });
     well = null;
@@ -483,6 +501,8 @@
       if (handleOut) {
         this.setHandleOut(handleOut);
       }
+      this.isMoveNode = false;
+      this.isCloseNode = false;
     }
 
     Node.prototype.getAbsoluteHandleIn = function() {
@@ -609,7 +629,6 @@
   parsePath = function(pathString) {
     var tokens;
 
-    console.log('parsing', pathString);
     tokens = lexPath(pathString);
     return parseTokens(groupCommands(tokens));
   };
@@ -631,6 +650,7 @@
         return;
       }
       node = new Curve.Node(movePoint);
+      node.isMoveNode = true;
       movePoint = null;
       result.nodes.push(node);
       return node;
@@ -688,6 +708,10 @@
           break;
         case 'Z':
         case 'z':
+          lastNode = result.nodes[result.nodes.length - 1];
+          if (lastNode) {
+            lastNode.isCloseNode = true;
+          }
           result.closed = true;
       }
     }
@@ -720,7 +744,6 @@
           break;
         }
       }
-      console.log(command.type, command);
       commands.push(command);
     }
     return commands;
@@ -776,7 +799,8 @@
   _.extend(window.Curve, {
     lexPath: lexPath,
     parsePath: parsePath,
-    groupCommands: groupCommands
+    groupCommands: groupCommands,
+    parseTokens: parseTokens
   });
 
   attrs = {
@@ -814,6 +838,56 @@
 
   Path = (function(_super) {
     __extends(Path, _super);
+
+    Path.parseFromEl = function(svgEl) {
+      var path, paths, _i, _len;
+
+      attrs = svgEl.attr();
+      delete attrs.id;
+      delete attrs.d;
+      paths = Path.parse(svgEl.attr('d'));
+      for (_i = 0, _len = paths.length; _i < _len; _i++) {
+        path = paths[_i];
+        path.svgEl.before(svgEl);
+        path.svgEl.attr(attrs);
+        console.log('setting attrs', attrs, svgEl);
+      }
+      svgEl.remove();
+      return paths;
+    };
+
+    Path.parse = function(pathString) {
+      var command, commands, currentPath, parsedPath, path, pathCommands, paths, result, saveCurrentPath, _i, _j, _len, _len1;
+
+      commands = Curve.groupCommands(Curve.lexPath(pathString));
+      paths = [];
+      currentPath = null;
+      saveCurrentPath = function() {
+        if (currentPath) {
+          paths.push(currentPath);
+        }
+        return currentPath = [];
+      };
+      for (_i = 0, _len = commands.length; _i < _len; _i++) {
+        command = commands[_i];
+        if (command.type === 'M') {
+          saveCurrentPath();
+        }
+        currentPath.push(command);
+      }
+      saveCurrentPath();
+      result = [];
+      for (_j = 0, _len1 = paths.length; _j < _len1; _j++) {
+        pathCommands = paths[_j];
+        parsedPath = Curve.parseTokens(pathCommands);
+        path = new Path();
+        path.nodes = parsedPath.nodes;
+        path.isClosed = parsedPath.closed;
+        result.push(path);
+        path.render();
+      }
+      return result;
+    };
 
     function Path(svgEl) {
       this.onNodeChange = __bind(this.onNodeChange, this);      this.path = null;

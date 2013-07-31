@@ -46,6 +46,13 @@ describe 'Curve.Path', ->
 
       expect(@path.toPathString()).toEqual pathString
 
+    xit 'handles move nodes', ->
+      pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80Z M10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
+      node = svg.path(pathString)
+      @path = new Curve.Path(node)
+
+      expect(@path.toPathString()).toEqual pathString
+
   describe 'updating', ->
     beforeEach ->
       @path = new Curve.Path()

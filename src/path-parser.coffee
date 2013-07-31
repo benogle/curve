@@ -1,7 +1,7 @@
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->
-  console.log 'parsing', pathString
+  #console.log 'parsing', pathString
   tokens = lexPath(pathString)
   parseTokens(groupCommands(tokens))
 
@@ -18,6 +18,7 @@ parseTokens = (groupedCommands) ->
   makeMoveNode = ->
     return unless movePoint
     node = new Curve.Node(movePoint)
+    node.isMoveNode = true
     movePoint = null
     result.nodes.push(node)
     node
@@ -69,6 +70,8 @@ parseTokens = (groupedCommands) ->
           result.nodes.push(curveNode)
 
       when 'Z', 'z'
+        lastNode = result.nodes[result.nodes.length - 1]
+        lastNode.isCloseNode = true if lastNode
         result.closed = true
 
   node.computeIsjoined() for node in result.nodes
@@ -93,7 +96,7 @@ groupCommands = (pathTokens) ->
       else
         break
 
-    console.log command.type, command
+    #console.log command.type, command
     commands.push(command)
 
   commands
@@ -132,4 +135,4 @@ lexPath = (pathString) ->
   saveCurrentToken()
   tokens
 
-_.extend(window.Curve, {lexPath, parsePath, groupCommands})
+_.extend(window.Curve, {lexPath, parsePath, groupCommands, parseTokens})

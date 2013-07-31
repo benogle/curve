@@ -31,11 +31,17 @@ _.extend(window.Curve, utils)
     * group for tool nodes
 ###
 
-window._main = ->
+window.main = ->
   @svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
-window.main = ->
+  @selectionModel = new SelectionModel()
+  @selectionView = new SelectionView(@selectionModel)
+
+  @tool = new PointerTool(@svg, {@selectionModel, @selectionView})
+  @tool.activate()
+
+window._main = ->
   @svg = SVG("canvas")
 
   @path1 = new Path()
@@ -221,6 +227,12 @@ objectifyTransformations = (transform) ->
   trans
 
 Curve.import = (svgDocument, svgString, elementCallback) ->
+  window.paths = []
+  IMPORT_FNS =
+    path: (el) ->
+      return unless el
+      Curve.Path.parseFromEl(el)
+
   # create temporary div to receive svg content
   well = document.createElement('div')
   store = {}
@@ -234,7 +246,7 @@ Curve.import = (svgDocument, svgString, elementCallback) ->
 
   convertNodes well.childNodes, svgDocument, 0, store, ->
     nodeType = this.node.nodeName
-    window.paths.push(new EDITORS[nodeType]?(this) if EDITORS[nodeType])
+    window.paths = window.paths.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
     null
 
   # mark temporary div for garbage collection
@@ -395,6 +407,9 @@ class Node extends EventEmitter
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
 
+    @isMoveNode = false
+    @isCloseNode = false
+
   getAbsoluteHandleIn: ->
     if @handleIn
       @point.add(@handleIn)
@@ -469,7 +484,7 @@ class ObjectSelection
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->
-  console.log 'parsing', pathString
+  #console.log 'parsing', pathString
   tokens = lexPath(pathString)
   parseTokens(groupCommands(tokens))
 
@@ -486,6 +501,7 @@ parseTokens = (groupedCommands) ->
   makeMoveNode = ->
     return unless movePoint
     node = new Curve.Node(movePoint)
+    node.isMoveNode = true
     movePoint = null
     result.nodes.push(node)
     node
@@ -537,6 +553,8 @@ parseTokens = (groupedCommands) ->
           result.nodes.push(curveNode)
 
       when 'Z', 'z'
+        lastNode = result.nodes[result.nodes.length - 1]
+        lastNode.isCloseNode = true if lastNode
         result.closed = true
 
   node.computeIsjoined() for node in result.nodes
@@ -561,7 +579,7 @@ groupCommands = (pathTokens) ->
       else
         break
 
-    console.log command.type, command
+    #console.log command.type, command
     commands.push(command)
 
   commands
@@ -600,7 +618,7 @@ lexPath = (pathString) ->
   saveCurrentToken()
   tokens
 
-_.extend(window.Curve, {lexPath, parsePath, groupCommands})
+_.extend(window.Curve, {lexPath, parsePath, groupCommands, parseTokens})
 
 attrs = {fill: '#eee', stroke: 'none'}
 utils = window.Curve
@@ -631,6 +649,50 @@ utils = window.Curve
 IDS = 0
 #
 class Path extends EventEmitter
+  # dragons
+  @parseFromEl: (svgEl) ->
+    attrs = svgEl.attr()
+    delete attrs.id
+    delete attrs.d
+    paths = Path.parse(svgEl.attr('d'))
+
+    for path in paths
+      path.svgEl.before(svgEl)
+      path.svgEl.attr(attrs)
+      console.log 'setting attrs', attrs, svgEl
+
+    svgEl.remove()
+
+    paths
+
+  @parse: (pathString) ->
+    commands = Curve.groupCommands(Curve.lexPath(pathString))
+
+    paths = []
+    currentPath = null
+
+    saveCurrentPath = ->
+      paths.push(currentPath) if currentPath
+      currentPath = []
+
+    for command in commands
+      saveCurrentPath() if command.type == 'M'
+      currentPath.push(command)
+
+    saveCurrentPath()
+
+    result = []
+    for pathCommands in paths
+      parsedPath = Curve.parseTokens(pathCommands)
+      path = new Path()
+      path.nodes = parsedPath.nodes
+      path.isClosed = parsedPath.closed
+      result.push(path)
+
+      path.render()
+
+    result
+
   constructor: (svgEl) ->
     @path = null
     @nodes = []

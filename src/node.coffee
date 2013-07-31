@@ -7,6 +7,9 @@ class Node extends EventEmitter
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
 
+    @isMoveNode = false
+    @isCloseNode = false
+
   getAbsoluteHandleIn: ->
     if @handleIn
       @point.add(@handleIn)
