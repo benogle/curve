@@ -47,7 +47,7 @@ class SelectionView
 
   _unbindFromObject: (object) ->
     return unless object
-    object.off 'insert:node', @onInsertNode
+    object.removeListener 'insert:node', @onInsertNode
 
   _createNodeEditors: (object) ->
     @_nodeEditorStash = @nodeEditors
