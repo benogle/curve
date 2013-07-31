@@ -1,4 +1,7 @@
+ObjectSelection = require './object-selection'
+
 _ = require 'underscore'
+
 #
 module.exports =
 class SelectionView

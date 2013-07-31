@@ -1,5 +1,6 @@
 
 #
+module.exports =
 class ObjectSelection
   constructor: (@options={}) ->
     @options.class ?= 'object-selection'

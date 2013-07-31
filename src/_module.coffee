@@ -1,3 +1,6 @@
+_ = require 'underscore'
+$ = require 'jquery'
+
 window.Curve = window.Curve or {}
 
 utils =
