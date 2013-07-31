@@ -1,5 +1,9 @@
+{EventEmitter} = require 'events'
+
+_ = require 'underscore'
 
 #
+module.exports =
 class SelectionModel extends EventEmitter
   constructor: ->
     @preselected = null

@@ -1,5 +1,6 @@
 utils = window.Curve
 
+module.exports =
 class PointerTool
   constructor: (svg, {@selectionModel, @selectionView}={}) ->
     @_evrect = svg.node.createSVGRect();

@@ -1,6 +1,7 @@
 {
   "name": "curve",
   "version": "0.0.1",
+  "main": "./src/svg-document",
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-cli": "~0.1",
