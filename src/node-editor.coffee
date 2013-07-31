@@ -89,7 +89,7 @@ class NodeEditor
     node.on 'change', @render
   _unbindNode: (node) ->
     return unless node
-    node.off 'change', @render
+    node.removeListener 'change', @render
 
   _setupNodeElement: ->
     @nodeElement = svg.circle(@nodeSize)
