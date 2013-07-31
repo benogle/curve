@@ -71,11 +71,11 @@
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    this.tool.activate();
-    return this.pen = new PenTool(this.svg, {
+    this.pen = new PenTool(this.svg, {
       selectionModel: selectionModel,
       selectionView: selectionView
     });
+    return this.pen.activate();
   };
 
   convertNodes = function(nodes, context, level, store, block) {

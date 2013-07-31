@@ -62,10 +62,10 @@ window.main = ->
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
   @tool = new PointerTool(@svg, {selectionModel, selectionView})
-  @tool.activate()
+  #@tool.activate()
 
   @pen = new PenTool(@svg, {selectionModel, selectionView})
-  #@pen.activate()
+  @pen.activate()
 
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
@@ -400,7 +400,7 @@ class Node extends EventEmitter
     if @handleOut
       @point.add(@handleOut)
     else
-        @point
+      @point
 
   setAbsoluteHandleIn: (point) ->
     @setHandleIn(Point.create(point).subtract(@point))

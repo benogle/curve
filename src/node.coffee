@@ -16,7 +16,7 @@ class Node extends EventEmitter
     if @handleOut
       @point.add(@handleOut)
     else
-        @point
+      @point
 
   setAbsoluteHandleIn: (point) ->
     @setHandleIn(Point.create(point).subtract(@point))
