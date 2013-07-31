@@ -46,7 +46,7 @@ class Node extends EventEmitter
     @set('handleIn', new Point(0,0).subtract(point)) if @isJoined
 
   computeIsjoined: ->
-    @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and @handleIn.x == -@handleOut.x and @handleIn.y == -@handleOut.y)
+    @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and Math.round(@handleIn.x) == Math.round(-@handleOut.x) and Math.round(@handleIn.y) == Math.round(-@handleOut.y))
 
   set: (attribute, value) ->
     old = @[attribute]
