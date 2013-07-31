@@ -50,6 +50,26 @@ parseTokens = (groupedCommands) ->
         currentPoint = slicePoint(params, 0)
         result.nodes.push(new Curve.Node(currentPoint))
 
+      when 'H', 'h'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'h'
+
+        currentPoint = [params[0], currentPoint[1]]
+        result.nodes.push(new Curve.Node(currentPoint))
+
+      when 'V', 'v'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'v'
+
+        currentPoint = [currentPoint[0], params[0]]
+        result.nodes.push(new Curve.Node(currentPoint))
+
       when 'C', 'c'
         moveNode = makeMoveNode()
         firstNode = moveNode if moveNode
@@ -83,6 +103,7 @@ parseTokens = (groupedCommands) ->
 
 # Returns a list of svg commands with their parameters.
 groupCommands = (pathTokens) ->
+  console.log 'grouping tokens', pathTokens
   commands = []
   for i in [0...pathTokens.length]
     token = pathTokens[i]
@@ -100,7 +121,7 @@ groupCommands = (pathTokens) ->
       else
         break
 
-    #console.log command.type, command
+    console.log command.type, command
     commands.push(command)
 
   commands
@@ -108,7 +129,7 @@ groupCommands = (pathTokens) ->
 # Breaks pathString into tokens
 lexPath = (pathString) ->
   numberMatch = '-0123456789.'
-  separatorMatch = ' ,'
+  separatorMatch = ' ,\n\t'
 
   tokens = []
   currentToken = null
@@ -125,6 +146,7 @@ lexPath = (pathString) ->
   for ch in pathString
     if numberMatch.indexOf(ch) > -1
       saveCurrentTokenWhenDifferentThan(NUMBER)
+      saveCurrentToken() if ch == '-'
 
       currentToken = {type: NUMBER, string: []} unless currentToken
       currentToken.string.push(ch)
