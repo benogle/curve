@@ -84,18 +84,23 @@ class Path extends EventEmitter
       curve = curve.concat(toNode.point.toArray())
       'C' + curve.join(',')
 
+    closePath = (firstNode, lastNode)->
+      closingPath = ''
+      closingPath += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
+      closingPath += 'Z'
+
     for node in @nodes
       if node.isMoveNode or !path
+        firstNode = node
         path += 'M' + node.point.toArray().join(',')
       else
         path += makeCurve(lastNode, node)
-      path += 'Z' if node.isCloseNode
+
       lastNode = node
+      path += closePath(firstNode, lastNode) if node.isCloseNode
 
     if @isClosed and path[path.length - 1] != 'Z'
-      [firstNode, lastNode] = [@nodes[0], @nodes[@nodes.length-1]]
-      path += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
-      path += 'Z'
+      closePath(firstNode, @nodes[@nodes.length-1])
 
     path
 
