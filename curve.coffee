@@ -230,8 +230,7 @@ Curve.import = (svgDocument, svgString, elementCallback) ->
   window.paths = []
   IMPORT_FNS =
     path: (el) ->
-      return unless el
-      Curve.Path.parseFromEl(el)
+      [new Curve.Path(el)]
 
   # create temporary div to receive svg content
   well = document.createElement('div')
@@ -649,50 +648,6 @@ utils = window.Curve
 IDS = 0
 #
 class Path extends EventEmitter
-  # dragons
-  @parseFromEl: (svgEl) ->
-    attrs = svgEl.attr()
-    delete attrs.id
-    delete attrs.d
-    paths = Path.parse(svgEl.attr('d'))
-
-    for path in paths
-      path.svgEl.before(svgEl)
-      path.svgEl.attr(attrs)
-      console.log 'setting attrs', attrs, svgEl
-
-    svgEl.remove()
-
-    paths
-
-  @parse: (pathString) ->
-    commands = Curve.groupCommands(Curve.lexPath(pathString))
-
-    paths = []
-    currentPath = null
-
-    saveCurrentPath = ->
-      paths.push(currentPath) if currentPath
-      currentPath = []
-
-    for command in commands
-      saveCurrentPath() if command.type == 'M'
-      currentPath.push(command)
-
-    saveCurrentPath()
-
-    result = []
-    for pathCommands in paths
-      parsedPath = Curve.parseTokens(pathCommands)
-      path = new Path()
-      path.nodes = parsedPath.nodes
-      path.isClosed = parsedPath.closed
-      result.push(path)
-
-      path.render()
-
-    result
-
   constructor: (svgEl) ->
     @path = null
     @nodes = []
@@ -744,14 +699,14 @@ class Path extends EventEmitter
       'C' + curve.join(',')
 
     for node in @nodes
-      if path
-        path += makeCurve(lastNode, node)
+      if node.isMoveNode or !path
+        path += 'M' + node.point.toArray().join(',')
       else
-        path = 'M' + node.point.toArray().join(',')
-
+        path += makeCurve(lastNode, node)
+      path += 'Z' if node.isCloseNode
       lastNode = node
 
-    if @isClosed
+    if @isClosed and path[path.length - 1] != 'Z'
       [firstNode, lastNode] = [@nodes[0], @nodes[@nodes.length-1]]
       path += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
       path += 'Z'
@@ -769,6 +724,8 @@ class Path extends EventEmitter
 
     parsedPath = utils.parsePath(pathString)
     @nodes = parsedPath.nodes
+    @_bindNode(node) for node in @nodes
+
     @close() if parsedPath.closed
 
   _bindNode: (node) ->
@@ -1012,6 +969,16 @@ class SelectionView
 _.extend(window.Curve, {SelectionView})
 
 Curve.Examples =
+  cloud: '''<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><path d="M512,384L320,576h128v320h128V576h128L512,384z M832,320c-8.75,0-17.125,1.406-25.625,2.562
+	C757.625,208.188,644.125,128,512,128c-132.156,0-245.562,80.188-294.406,194.562C209.156,321.406,200.781,320,192,320
+	C85.938,320,0,406,0,512c0,106.062,85.938,192,192,192c20.531,0,39.875-4.25,58.375-10.438
+	C284.469,731.375,331.312,756.75,384,764.5v-65.25c-49.844-10.375-91.594-42.812-112.625-87.75C249.531,629,222.219,640,192,640
+	c-70.656,0-128-57.375-128-128c0-70.656,57.344-128,128-128c25.281,0,48.625,7.562,68.406,20.156
+	C281.344,283.781,385.594,192,512,192c126.5,0,229.75,92.219,250.5,212.75c20-13,43.875-20.75,69.5-20.75
+	c70.625,0,128,57.344,128,128c0,70.625-57.375,128-128,128c-10.25,0-20-1.5-29.625-3.75C773.438,677.125,725.938,704,672,704
+	c-11.062,0-21.625-1.625-32-4v64.938c10.438,1.688,21.062,3.062,32,3.062c61.188,0,116.5-24.688,157-64.438c1,0,1.875,0.438,3,0.438
+	c106.062,0,192-85.938,192-192C1024,406,938.062,320,832,320z"/></svg>'''
+
   heckert: '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
     <svg
        xmlns:svg="http://www.w3.org/2000/svg"

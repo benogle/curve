@@ -27,50 +27,6 @@ utils = window.Curve
 IDS = 0
 #
 class Path extends EventEmitter
-  # dragons
-  @parseFromEl: (svgEl) ->
-    attrs = svgEl.attr()
-    delete attrs.id
-    delete attrs.d
-    paths = Path.parse(svgEl.attr('d'))
-
-    for path in paths
-      path.svgEl.before(svgEl)
-      path.svgEl.attr(attrs)
-      console.log 'setting attrs', attrs, svgEl
-
-    svgEl.remove()
-
-    paths
-
-  @parse: (pathString) ->
-    commands = Curve.groupCommands(Curve.lexPath(pathString))
-
-    paths = []
-    currentPath = null
-
-    saveCurrentPath = ->
-      paths.push(currentPath) if currentPath
-      currentPath = []
-
-    for command in commands
-      saveCurrentPath() if command.type == 'M'
-      currentPath.push(command)
-
-    saveCurrentPath()
-
-    result = []
-    for pathCommands in paths
-      parsedPath = Curve.parseTokens(pathCommands)
-      path = new Path()
-      path.nodes = parsedPath.nodes
-      path.isClosed = parsedPath.closed
-      result.push(path)
-
-      path.render()
-
-    result
-
   constructor: (svgEl) ->
     @path = null
     @nodes = []
@@ -122,14 +78,14 @@ class Path extends EventEmitter
       'C' + curve.join(',')
 
     for node in @nodes
-      if path
-        path += makeCurve(lastNode, node)
+      if node.isMoveNode or !path
+        path += 'M' + node.point.toArray().join(',')
       else
-        path = 'M' + node.point.toArray().join(',')
-
+        path += makeCurve(lastNode, node)
+      path += 'Z' if node.isCloseNode
       lastNode = node
 
-    if @isClosed
+    if @isClosed and path[path.length - 1] != 'Z'
       [firstNode, lastNode] = [@nodes[0], @nodes[@nodes.length-1]]
       path += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
       path += 'Z'
@@ -147,6 +103,8 @@ class Path extends EventEmitter
 
     parsedPath = utils.parsePath(pathString)
     @nodes = parsedPath.nodes
+    @_bindNode(node) for node in @nodes
+
     @close() if parsedPath.closed
 
   _bindNode: (node) ->

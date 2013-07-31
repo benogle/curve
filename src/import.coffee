@@ -155,8 +155,7 @@ Curve.import = (svgDocument, svgString, elementCallback) ->
   window.paths = []
   IMPORT_FNS =
     path: (el) ->
-      return unless el
-      Curve.Path.parseFromEl(el)
+      [new Curve.Path(el)]
 
   # create temporary div to receive svg content
   well = document.createElement('div')
