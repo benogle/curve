@@ -1,3 +1,5 @@
+$ = require 'jquery'
+
 utils = window.Curve
 
 module.exports =
@@ -29,8 +31,9 @@ class PointerTool
     obj
 
   _hitWithIntersectionList: (e) ->
-    @_evrect.x = e.clientX
-    @_evrect.y = e.clientY
+    {left, top} = $(svg.node).offset()
+    @_evrect.x = e.clientX - left
+    @_evrect.y = e.clientY - top
     nodes = svg.node.getIntersectionList(@_evrect, null)
 
     obj = null
