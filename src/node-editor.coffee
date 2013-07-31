@@ -1,4 +1,8 @@
+_ = require 'underscore'
+
 utils = window.Curve
+
+{Point} = window.Curve
 
 #
 class NodeEditor
