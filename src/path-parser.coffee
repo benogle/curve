@@ -1,6 +1,7 @@
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->
+  #console.log 'parsing', pathString
   tokens = lexPath(pathString)
   parseTokens(groupCommands(tokens))
 
@@ -17,6 +18,7 @@ parseTokens = (groupedCommands) ->
   makeMoveNode = ->
     return unless movePoint
     node = new Curve.Node(movePoint)
+    node.isMoveNode = true
     movePoint = null
     result.nodes.push(node)
     node
@@ -33,6 +35,16 @@ parseTokens = (groupedCommands) ->
     switch command.type
       when 'M'
         movePoint = currentPoint = command.parameters
+
+      when 'L', 'l'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'l'
+
+        currentPoint = slicePoint(params, 0)
+        result.nodes.push(new Curve.Node(currentPoint))
 
       when 'C', 'c'
         moveNode = makeMoveNode()
@@ -58,6 +70,8 @@ parseTokens = (groupedCommands) ->
           result.nodes.push(curveNode)
 
       when 'Z', 'z'
+        lastNode = result.nodes[result.nodes.length - 1]
+        lastNode.isCloseNode = true if lastNode
         result.closed = true
 
   node.computeIsjoined() for node in result.nodes
@@ -82,13 +96,14 @@ groupCommands = (pathTokens) ->
       else
         break
 
+    #console.log command.type, command
     commands.push(command)
 
   commands
 
 # Breaks pathString into tokens
 lexPath = (pathString) ->
-  numberMatch = '0123456789.'
+  numberMatch = '-0123456789.'
   separatorMatch = ' ,'
 
   tokens = []
@@ -120,4 +135,4 @@ lexPath = (pathString) ->
   saveCurrentToken()
   tokens
 
-_.extend(window.Curve, {lexPath, parsePath, groupCommands})
+_.extend(window.Curve, {lexPath, parsePath, groupCommands, parseTokens})

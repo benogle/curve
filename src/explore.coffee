@@ -26,9 +26,9 @@ window.main = ->
   Curve.import(@svg, Curve.Examples.heckert)
 
   @selectionModel = new SelectionModel()
-  @selectionView = new SelectionView(selectionModel)
+  @selectionView = new SelectionView(@selectionModel)
 
-  @tool = new PointerTool(@svg, {selectionModel, selectionView})
+  @tool = new PointerTool(@svg, {@selectionModel, @selectionView})
   @tool.activate()
 
 window._main = ->
