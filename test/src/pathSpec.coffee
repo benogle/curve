@@ -22,6 +22,30 @@ describe 'Curve.Path', ->
     el = $('svg path')
     expect(Curve.getObjectFromNode(el[0])).toEqual path
 
+  it 'handles null handles', ->
+    path = new Curve.Path()
+    path.addNode(new Curve.Node([60, 80]))
+    path.addNode(new Curve.Node([70, 90]))
+    path.render()
+
+    el = $('svg path')
+    expect(el.attr('d')).toEqual('M60,80C60,80,70,90,70,90')
+
+  describe 'creating from path string', ->
+    it 'can be created', ->
+      pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
+      node = svg.path(pathString)
+      @path = new Curve.Path(node)
+
+      expect(@path.toPathString()).toEqual pathString
+
+    it 'can be created with non-wrapped closed shapes', ->
+      pathString = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
+      node = svg.path(pathString)
+      @path = new Curve.Path(node)
+
+      expect(@path.toPathString()).toEqual pathString
+
   describe 'updating', ->
     beforeEach ->
       @path = new Curve.Path()

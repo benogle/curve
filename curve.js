@@ -41,12 +41,12 @@
   */
 
 
-  window._main = function() {
+  window.main = function() {
     this.svg = SVG("canvas");
     return Curve["import"](this.svg, Curve.Examples.heckert);
   };
 
-  window.main = function() {
+  window._main = function() {
     this.svg = SVG("canvas");
     this.path1 = new Path();
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
@@ -479,11 +479,19 @@
     }
 
     Node.prototype.getAbsoluteHandleIn = function() {
-      return this.point.add(this.handleIn);
+      if (this.handleIn) {
+        return this.point.add(this.handleIn);
+      } else {
+        return this.point;
+      }
     };
 
     Node.prototype.getAbsoluteHandleOut = function() {
-      return this.point.add(this.handleOut);
+      if (this.handleOut) {
+        return this.point.add(this.handleOut);
+      } else {
+        return this.point;
+      }
     };
 
     Node.prototype.setAbsoluteHandleIn = function(point) {
@@ -785,11 +793,11 @@
   Path = (function(_super) {
     __extends(Path, _super);
 
-    function Path() {
+    function Path(svgEl) {
       this.onNodeChange = __bind(this.onNodeChange, this);      this.path = null;
       this.nodes = [];
       this.isClosed = false;
-      this.path = this._createSVGObject();
+      this._setupSVGObject(svgEl);
       this.id = IDS++;
     }
 
@@ -828,22 +836,22 @@
       return this.emit('change', this, args);
     };
 
-    Path.prototype.render = function(path) {
+    Path.prototype.render = function(svgEl) {
       var pathStr;
 
-      if (path == null) {
-        path = this.path;
+      if (svgEl == null) {
+        svgEl = this.svgEl;
       }
       pathStr = this.toPathString();
       if (pathStr) {
-        return path.attr({
+        return svgEl.attr({
           d: pathStr
         });
       }
     };
 
     Path.prototype.toPathString = function() {
-      var lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref1;
+      var firstNode, lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref1, _ref2;
 
       path = '';
       lastPoint = null;
@@ -867,7 +875,10 @@
         lastNode = node;
       }
       if (this.isClosed) {
-        path += makeCurve(this.nodes[this.nodes.length - 1], this.nodes[0]);
+        _ref2 = [this.nodes[0], this.nodes[this.nodes.length - 1]], firstNode = _ref2[0], lastNode = _ref2[1];
+        if (lastNode.handleOut || firstNode.handleIn) {
+          path += makeCurve(lastNode, firstNode);
+        }
         path += 'Z';
       }
       return path;
@@ -881,6 +892,19 @@
       return this.emit('change', this, _.extend({
         index: index
       }, eventArgs));
+    };
+
+    Path.prototype._parseFromPathString = function(pathString) {
+      var parsedPath;
+
+      if (!pathString) {
+        return;
+      }
+      parsedPath = utils.parsePath(pathString);
+      this.nodes = parsedPath.nodes;
+      if (parsedPath.closed) {
+        return this.close();
+      }
     };
 
     Path.prototype._bindNode = function(node) {
@@ -898,15 +922,13 @@
       return -1;
     };
 
-    Path.prototype._createSVGObject = function(pathString) {
-      var path;
-
-      if (pathString == null) {
-        pathString = '';
+    Path.prototype._setupSVGObject = function(svgEl) {
+      this.svgEl = svgEl;
+      if (!this.svgEl) {
+        this.svgEl = svg.path().attr(attrs);
       }
-      path = svg.path(pathString).attr(attrs);
-      utils.setObjectOnNode(path.node, this);
-      return path;
+      utils.setObjectOnNode(this.svgEl.node, this);
+      return this._parseFromPathString(this.svgEl.attr('d'));
     };
 
     return Path;

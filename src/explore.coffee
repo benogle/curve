@@ -21,11 +21,11 @@
     * group for tool nodes
 ###
 
-window._main = ->
+window.main = ->
   @svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
-window.main = ->
+window._main = ->
   @svg = SVG("canvas")
 
   @path1 = new Path()

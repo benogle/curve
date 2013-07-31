@@ -27,11 +27,12 @@ utils = window.Curve
 IDS = 0
 #
 class Path extends EventEmitter
-  constructor: () ->
+  constructor: (svgEl) ->
     @path = null
     @nodes = []
     @isClosed = false
-    @path = @_createSVGObject()
+
+    @_setupSVGObject(svgEl)
 
     @id = IDS++
 
@@ -61,9 +62,9 @@ class Path extends EventEmitter
     @emit('close', this, args)
     @emit('change', this, args)
 
-  render: (path=@path) ->
+  render: (svgEl=@svgEl) ->
     pathStr = @toPathString()
-    path.attr(d: pathStr) if pathStr
+    svgEl.attr(d: pathStr) if pathStr
 
   toPathString: ->
     path = ''
@@ -85,7 +86,8 @@ class Path extends EventEmitter
       lastNode = node
 
     if @isClosed
-      path += makeCurve(@nodes[@nodes.length-1], @nodes[0])
+      [firstNode, lastNode] = [@nodes[0], @nodes[@nodes.length-1]]
+      path += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
       path += 'Z'
 
     path
@@ -96,6 +98,13 @@ class Path extends EventEmitter
     index = @_findNodeIndex(node)
     @emit 'change', this, _.extend({index}, eventArgs)
 
+  _parseFromPathString: (pathString) ->
+    return unless pathString
+
+    parsedPath = utils.parsePath(pathString)
+    @nodes = parsedPath.nodes
+    @close() if parsedPath.closed
+
   _bindNode: (node) ->
     node.on 'change', @onNodeChange
 
@@ -104,9 +113,9 @@ class Path extends EventEmitter
       return i if @nodes[i] == node
     -1
 
-  _createSVGObject: (pathString='') ->
-    path = svg.path(pathString).attr(attrs)
-    utils.setObjectOnNode(path.node, this)
-    path
+  _setupSVGObject: (@svgEl) ->
+    @svgEl = svg.path().attr(attrs) unless @svgEl
+    utils.setObjectOnNode(@svgEl.node, this)
+    @_parseFromPathString(@svgEl.attr('d'))
 
 _.extend(window.Curve, {Path})
