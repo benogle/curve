@@ -41,12 +41,19 @@
   */
 
 
-  window._main = function() {
+  window.main = function() {
     this.svg = SVG("canvas");
-    return Curve["import"](this.svg, Curve.Examples.heckert);
+    Curve["import"](this.svg, Curve.Examples.heckert);
+    this.selectionModel = new SelectionModel();
+    this.selectionView = new SelectionView(selectionModel);
+    this.tool = new PointerTool(this.svg, {
+      selectionModel: selectionModel,
+      selectionView: selectionView
+    });
+    return this.tool.activate();
   };
 
-  window.main = function() {
+  window._main = function() {
     this.svg = SVG("canvas");
     this.path1 = new Path();
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
@@ -71,11 +78,11 @@
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    this.pen = new PenTool(this.svg, {
+    this.tool.activate();
+    return this.pen = new PenTool(this.svg, {
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    return this.pen.activate();
   };
 
   convertNodes = function(nodes, context, level, store, block) {
@@ -241,13 +248,26 @@
     return trans;
   };
 
-  Curve["import"] = function(svgDocument, svgString, elementCallback) {
-    var store, well;
+  Curve["import"] = function(svgDocument, svgString) {
+    var EDITORS, store, well;
 
+    EDITORS = {
+      path: Curve.Path
+    };
     well = document.createElement('div');
     store = {};
     well.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
-    convertNodes(well.childNodes, svgDocument, 0, store, elementCallback);
+    convertNodes(well.childNodes, svgDocument, 0, store, function() {
+      var nodeType;
+
+      nodeType = this.node.nodeName;
+      if (EDITORS[nodeType]) {
+        if (typeof EDITORS[nodeType] === "function") {
+          new EDITORS[nodeType](this);
+        }
+      }
+      return null;
+    });
     well = null;
     return store;
   };

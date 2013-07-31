@@ -151,7 +151,10 @@ objectifyTransformations = (transform) ->
 
   trans
 
-Curve.import = (svgDocument, svgString, elementCallback) ->
+Curve.import = (svgDocument, svgString) ->
+  EDITORS =
+    path: Curve.Path
+
   # create temporary div to receive svg content
   well = document.createElement('div')
   store = {}
@@ -162,7 +165,10 @@ Curve.import = (svgDocument, svgString, elementCallback) ->
     .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
 
   # convert nodes to svg elements
-  convertNodes(well.childNodes, svgDocument, 0, store, elementCallback)
+  convertNodes well.childNodes, svgDocument, 0, store, ->
+    nodeType = this.node.nodeName
+    new EDITORS[nodeType]?(this) if EDITORS[nodeType]
+    null
 
   # mark temporary div for garbage collection
   well = null
