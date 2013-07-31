@@ -26,4 +26,4 @@ class ObjectSelection
 
   _unbindObject: (object) ->
     return unless object
-    object.off 'change', @render
+    object.removeListener 'change', @render
