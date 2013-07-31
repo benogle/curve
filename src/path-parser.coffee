@@ -1,6 +1,7 @@
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->
+  console.log 'parsing', pathString
   tokens = lexPath(pathString)
   parseTokens(groupCommands(tokens))
 
@@ -33,6 +34,16 @@ parseTokens = (groupedCommands) ->
     switch command.type
       when 'M'
         movePoint = currentPoint = command.parameters
+
+      when 'L', 'l'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'l'
+
+        currentPoint = slicePoint(params, 0)
+        result.nodes.push(new Curve.Node(currentPoint))
 
       when 'C', 'c'
         moveNode = makeMoveNode()
@@ -82,13 +93,14 @@ groupCommands = (pathTokens) ->
       else
         break
 
+    console.log command.type, command
     commands.push(command)
 
   commands
 
 # Breaks pathString into tokens
 lexPath = (pathString) ->
-  numberMatch = '0123456789.'
+  numberMatch = '-0123456789.'
   separatorMatch = ' ,'
 
   tokens = []

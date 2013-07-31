@@ -161,8 +161,12 @@ Curve.import = (svgDocument, svgString, elementCallback) ->
     .replace(/\n/, '')
     .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
 
-  # convert nodes to svg elements
-  convertNodes(well.childNodes, svgDocument, 0, store, elementCallback)
+  window.paths = []
+
+  convertNodes well.childNodes, svgDocument, 0, store, ->
+    nodeType = this.node.nodeName
+    window.paths.push(new EDITORS[nodeType]?(this) if EDITORS[nodeType])
+    null
 
   # mark temporary div for garbage collection
   well = null

@@ -62,10 +62,10 @@ window.main = ->
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
   @tool = new PointerTool(@svg, {selectionModel, selectionView})
-  #@tool.activate()
+  @tool.activate()
 
   @pen = new PenTool(@svg, {selectionModel, selectionView})
-  @pen.activate()
+  #@pen.activate()
 
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
@@ -230,8 +230,12 @@ Curve.import = (svgDocument, svgString, elementCallback) ->
     .replace(/\n/, '')
     .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
 
-  # convert nodes to svg elements
-  convertNodes(well.childNodes, svgDocument, 0, store, elementCallback)
+  window.paths = []
+
+  convertNodes well.childNodes, svgDocument, 0, store, ->
+    nodeType = this.node.nodeName
+    window.paths.push(new EDITORS[nodeType]?(this) if EDITORS[nodeType])
+    null
 
   # mark temporary div for garbage collection
   well = null
@@ -465,6 +469,7 @@ class ObjectSelection
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->
+  console.log 'parsing', pathString
   tokens = lexPath(pathString)
   parseTokens(groupCommands(tokens))
 
@@ -497,6 +502,16 @@ parseTokens = (groupedCommands) ->
     switch command.type
       when 'M'
         movePoint = currentPoint = command.parameters
+
+      when 'L', 'l'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'l'
+
+        currentPoint = slicePoint(params, 0)
+        result.nodes.push(new Curve.Node(currentPoint))
 
       when 'C', 'c'
         moveNode = makeMoveNode()
@@ -546,13 +561,14 @@ groupCommands = (pathTokens) ->
       else
         break
 
+    console.log command.type, command
     commands.push(command)
 
   commands
 
 # Breaks pathString into tokens
 lexPath = (pathString) ->
-  numberMatch = '0123456789.'
+  numberMatch = '-0123456789.'
   separatorMatch = ' ,'
 
   tokens = []

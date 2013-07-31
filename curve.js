@@ -71,11 +71,11 @@
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    this.pen = new PenTool(this.svg, {
+    this.tool.activate();
+    return this.pen = new PenTool(this.svg, {
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    return this.pen.activate();
   };
 
   convertNodes = function(nodes, context, level, store, block) {
@@ -247,7 +247,14 @@
     well = document.createElement('div');
     store = {};
     well.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
-    convertNodes(well.childNodes, svgDocument, 0, store, elementCallback);
+    window.paths = [];
+    convertNodes(well.childNodes, svgDocument, 0, store, function() {
+      var nodeType;
+
+      nodeType = this.node.nodeName;
+      window.paths.push(EDITORS[nodeType] ? typeof EDITORS[nodeType] === "function" ? new EDITORS[nodeType](this) : void 0 : void 0);
+      return null;
+    });
     well = null;
     return store;
   };
@@ -602,6 +609,7 @@
   parsePath = function(pathString) {
     var tokens;
 
+    console.log('parsing', pathString);
     tokens = lexPath(pathString);
     return parseTokens(groupCommands(tokens));
   };
@@ -640,6 +648,19 @@
       switch (command.type) {
         case 'M':
           movePoint = currentPoint = command.parameters;
+          break;
+        case 'L':
+        case 'l':
+          moveNode = makeMoveNode();
+          if (moveNode) {
+            firstNode = moveNode;
+          }
+          params = command.parameters;
+          if (command.type === 'l') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = slicePoint(params, 0);
+          result.nodes.push(new Curve.Node(currentPoint));
           break;
         case 'C':
         case 'c':
@@ -699,6 +720,7 @@
           break;
         }
       }
+      console.log(command.type, command);
       commands.push(command);
     }
     return commands;
@@ -707,7 +729,7 @@
   lexPath = function(pathString) {
     var ch, currentToken, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens, _i, _len;
 
-    numberMatch = '0123456789.';
+    numberMatch = '-0123456789.';
     separatorMatch = ' ,';
     tokens = [];
     currentToken = null;
