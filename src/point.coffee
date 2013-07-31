@@ -22,4 +22,8 @@ class Point
   toArray: ->
     [@x, @y]
 
+  equals: (other) ->
+    other = Point.create(other)
+    other.x == @x and other.y == @y
+
 _.extend(window.Curve, {Point})

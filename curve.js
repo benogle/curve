@@ -1,5 +1,5 @@
 (function() {
-  var COMMAND, IDS, NUMBER, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, convertNodes, lexPath, objectifyAttributes, objectifyTransformations, parsePath, utils, _ref,
+  var COMMAND, IDS, NUMBER, Node, NodeEditor, ObjectSelection, Path, PenTool, Point, PointerTool, SelectionModel, SelectionView, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, utils, _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -41,12 +41,12 @@
   */
 
 
-  window.main = function() {
+  window._main = function() {
     this.svg = SVG("canvas");
     return Curve["import"](this.svg, Curve.Examples.heckert);
   };
 
-  window._main = function() {
+  window.main = function() {
     this.svg = SVG("canvas");
     this.path1 = new Path();
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
@@ -71,11 +71,11 @@
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    this.pen = new PenTool(this.svg, {
+    this.tool.activate();
+    return this.pen = new PenTool(this.svg, {
       selectionModel: selectionModel,
       selectionView: selectionView
     });
-    return this.pen.activate();
   };
 
   convertNodes = function(nodes, context, level, store, block) {
@@ -467,11 +467,15 @@
   Node = (function(_super) {
     __extends(Node, _super);
 
-    function Node(point, handleIn, handleOut) {
+    function Node(point, handleIn, handleOut, isJoined) {
+      this.isJoined = isJoined != null ? isJoined : false;
       this.setPoint(point);
-      this.setHandleIn(handleIn);
-      this.setHandleOut(handleOut);
-      this.isJoined = true;
+      if (handleIn) {
+        this.setHandleIn(handleIn);
+      }
+      if (handleOut) {
+        this.setHandleOut(handleOut);
+      }
     }
 
     Node.prototype.getAbsoluteHandleIn = function() {
@@ -508,6 +512,10 @@
       if (this.isJoined) {
         return this.set('handleIn', new Point(0, 0).subtract(point));
       }
+    };
+
+    Node.prototype.computeIsjoined = function() {
+      return this.isJoined = (!this.handleIn && !this.handleOut) || (this.handleIn && this.handleOut && this.handleIn.x === -this.handleOut.x && this.handleIn.y === -this.handleOut.y);
     };
 
     Node.prototype.set = function(attribute, value) {
@@ -583,6 +591,111 @@
 
   _ref = ['COMMAND', 'NUMBER'], COMMAND = _ref[0], NUMBER = _ref[1];
 
+  parsePath = function(pathString) {
+    var tokens;
+
+    tokens = lexPath(pathString);
+    return parseTokens(groupCommands(tokens));
+  };
+
+  parseTokens = function(groupedCommands) {
+    var command, currentPoint, curveNode, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, makeMoveNode, moveNode, movePoint, nextCommand, node, params, result, slicePoint, _i, _j, _len, _ref1, _ref2, _ref3;
+
+    result = {
+      closed: false,
+      nodes: []
+    };
+    currentPoint = null;
+    firstHandle = null;
+    movePoint = null;
+    makeMoveNode = function() {
+      var node;
+
+      if (!movePoint) {
+        return;
+      }
+      node = new Curve.Node(movePoint);
+      movePoint = null;
+      result.nodes.push(node);
+      return node;
+    };
+    slicePoint = function(array, index) {
+      return [array[index], array[index + 1]];
+    };
+    makeAbsolute = function(array) {
+      return _.map(array, function(val, i) {
+        return val + currentPoint[i % 2];
+      });
+    };
+    for (i = _i = 0, _ref1 = groupedCommands.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+      command = groupedCommands[i];
+      switch (command.type) {
+        case 'M':
+          movePoint = currentPoint = command.parameters;
+          break;
+        case 'C':
+        case 'c':
+          moveNode = makeMoveNode();
+          if (moveNode) {
+            firstNode = moveNode;
+          }
+          params = command.parameters;
+          if (command.type === 'c') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = slicePoint(params, 4);
+          handleIn = slicePoint(params, 2);
+          handleOut = slicePoint(params, 0);
+          lastNode = result.nodes[result.nodes.length - 1];
+          lastNode.setAbsoluteHandleOut(handleOut);
+          nextCommand = groupedCommands[i + 1];
+          if (nextCommand && ((_ref2 = nextCommand.type) === 'z' || _ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint)) {
+            firstNode.setAbsoluteHandleIn(handleIn);
+          } else {
+            curveNode = new Curve.Node(currentPoint);
+            curveNode.setAbsoluteHandleIn(handleIn);
+            result.nodes.push(curveNode);
+          }
+          break;
+        case 'Z':
+        case 'z':
+          result.closed = true;
+      }
+    }
+    _ref3 = result.nodes;
+    for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
+      node = _ref3[_j];
+      node.computeIsjoined();
+    }
+    return result;
+  };
+
+  groupCommands = function(pathTokens) {
+    var command, commands, i, nextToken, token, _i, _ref1;
+
+    commands = [];
+    for (i = _i = 0, _ref1 = pathTokens.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+      token = pathTokens[i];
+      if (token.type !== COMMAND) {
+        continue;
+      }
+      command = {
+        type: token.string,
+        parameters: []
+      };
+      while (nextToken = pathTokens[i + 1]) {
+        if (nextToken.type === NUMBER) {
+          command.parameters.push(parseFloat(nextToken.string));
+          i++;
+        } else {
+          break;
+        }
+      }
+      commands.push(command);
+    }
+    return commands;
+  };
+
   lexPath = function(pathString) {
     var ch, currentToken, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens, _i, _len;
 
@@ -626,14 +739,14 @@
         });
       }
     }
+    saveCurrentToken();
     return tokens;
   };
 
-  parsePath = function(pathTokens) {};
-
   _.extend(window.Curve, {
     lexPath: lexPath,
-    parsePath: parsePath
+    parsePath: parsePath,
+    groupCommands: groupCommands
   });
 
   attrs = {
@@ -901,6 +1014,11 @@
 
     Point.prototype.toArray = function() {
       return [this.x, this.y];
+    };
+
+    Point.prototype.equals = function(other) {
+      other = Point.create(other);
+      return other.x === this.x && other.y === this.y;
     };
 
     return Point;

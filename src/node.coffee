@@ -2,11 +2,10 @@ utils = window.Curve
 
 #
 class Node extends EventEmitter
-  constructor: (point, handleIn, handleOut) ->
+  constructor: (point, handleIn, handleOut, @isJoined=false) ->
     @setPoint(point)
-    @setHandleIn(handleIn)
-    @setHandleOut(handleOut)
-    @isJoined = true
+    @setHandleIn(handleIn) if handleIn
+    @setHandleOut(handleOut) if handleOut
 
   getAbsoluteHandleIn: ->
     @point.add(@handleIn)
@@ -28,6 +27,9 @@ class Node extends EventEmitter
     point = Point.create(point)
     @set('handleOut', point)
     @set('handleIn', new Point(0,0).subtract(point)) if @isJoined
+
+  computeIsjoined: ->
+    @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and @handleIn.x == -@handleOut.x and @handleIn.y == -@handleOut.y)
 
   set: (attribute, value) ->
     old = @[attribute]

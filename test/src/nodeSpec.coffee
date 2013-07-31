@@ -1,6 +1,6 @@
 describe 'Curve.Node', ->
   beforeEach ->
-    @s = new Curve.Node([50, 50], [-10, 0], [10, 0])
+    @s = new Curve.Node([50, 50], [-10, 0], [10, 0], true)
 
   describe 'joined handles', ->
     it 'updating one handle updates the other', ->

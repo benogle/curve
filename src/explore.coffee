@@ -21,11 +21,11 @@
     * group for tool nodes
 ###
 
-window.main = ->
+window._main = ->
   @svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
-window._main = ->
+window.main = ->
   @svg = SVG("canvas")
 
   @path1 = new Path()
@@ -52,7 +52,7 @@ window._main = ->
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
   @tool = new PointerTool(@svg, {selectionModel, selectionView})
-  # @tool.activate()
+  @tool.activate()
 
   @pen = new PenTool(@svg, {selectionModel, selectionView})
-  @pen.activate()
+  #@pen.activate()
