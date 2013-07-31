@@ -17,13 +17,14 @@ class PointerTool
     svg.off 'mousemove', @onMouseMove
 
   onClick: (e) =>
-    obj = @_hitWithIntersectionList(e)
+    # obj = @_hitWithIntersectionList(e)
+    obj = @_hitWithTarget(e)
     @selectionModel.setSelected(obj)
     return false if obj
 
   onMouseMove: (e) =>
-    @selectionModel.setPreselected(@_hitWithIntersectionList(e))
-    # @selectionModel.setPreselected(@_hitWithTarget(e))
+    # @selectionModel.setPreselected(@_hitWithIntersectionList(e))
+    @selectionModel.setPreselected(@_hitWithTarget(e))
 
   _hitWithTarget: (e) ->
     obj = null

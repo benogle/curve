@@ -12,6 +12,7 @@ class SelectionModel extends EventEmitter
 
   setPreselected: (preselected) ->
     return if preselected == @preselected
+    return if preselected == @selected
     old = @preselected
     @preselected = preselected
     @emit 'change:preselected', object: @preselected, old: old
