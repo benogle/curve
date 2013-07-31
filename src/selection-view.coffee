@@ -1,6 +1,7 @@
-ObjectSelection = require './object-selection'
-
 _ = require 'underscore'
+
+require './node-editor'
+ObjectSelection = require './object-selection'
 
 #
 module.exports =
@@ -65,7 +66,7 @@ class SelectionView
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
-      new NodeEditor(@model)
+      new window.Curve.NodeEditor(@model)
 
     nodeEditor.setNode(object.nodes[index])
     @nodeEditors.splice(index, 0, nodeEditor)
