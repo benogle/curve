@@ -97,6 +97,7 @@ class NodeEditor
 
     @nodeElement.click (e) =>
       e.stopPropagation()
+      @setEnableHandles(true)
       @selectionModel.setSelectedNode(@node)
       false
 
@@ -122,6 +123,10 @@ class NodeEditor
     )
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')
+
+    @handleElements.click (e) =>
+      e.stopPropagation()
+      false
 
     onStartDraggingHandle = ->
       self._draggingHandle = this
