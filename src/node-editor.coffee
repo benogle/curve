@@ -1,3 +1,4 @@
+$ = require 'jquery'
 _ = require 'underscore'
 
 utils = window.Curve
@@ -71,11 +72,17 @@ class NodeEditor
     @_draggingHandle.front() if @_draggingHandle
 
   onDraggingNode: (delta, event) =>
-    @node.setPoint(new Point(event.clientX, event.clientY))
+    @node.setPoint(@pointForEvent(event))
   onDraggingHandleIn: (delta, event) =>
-    @node.setAbsoluteHandleIn(new Point(event.clientX, event.clientY))
+    @node.setAbsoluteHandleIn(@pointForEvent(event))
   onDraggingHandleOut: (delta, event) =>
-    @node.setAbsoluteHandleOut(new Point(event.clientX, event.clientY))
+    @node.setAbsoluteHandleOut(@pointForEvent(event))
+
+  pointForEvent: (event) ->
+    {clientX, clientY} = event
+    {top, left} = $(window.svg.node).offset()
+
+    new Point(event.clientX - left, event.clientY - top)
 
   _bindNode: (node) ->
     return unless node
