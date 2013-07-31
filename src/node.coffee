@@ -1,4 +1,12 @@
+{EventEmitter} = require 'events'
+
+_ = require 'underscore'
+
+require './point'
+
 utils = window.Curve
+
+{Point} = window.Curve
 
 #
 class Node extends EventEmitter

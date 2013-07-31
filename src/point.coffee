@@ -1,3 +1,4 @@
+_ = require 'underscore'
 
 #
 class Point

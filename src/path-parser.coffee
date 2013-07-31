@@ -1,3 +1,7 @@
+_ = require 'underscore'
+
+require './node'
+
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->

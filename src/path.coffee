@@ -1,3 +1,9 @@
+{EventEmitter} = require 'events'
+
+_ = require 'underscore'
+
+require './path-parser'
+
 attrs = {fill: '#eee', stroke: 'none'}
 utils = window.Curve
 
@@ -26,6 +32,7 @@ utils = window.Curve
 
 IDS = 0
 #
+module.exports =
 class Path extends EventEmitter
   constructor: (svgEl) ->
     @path = null
