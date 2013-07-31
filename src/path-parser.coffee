@@ -65,7 +65,9 @@ parseTokens = (groupedCommands) ->
         firstNode = moveNode if moveNode
 
         params = command.parameters
-        params = makeAbsolute(params) if command.type == 'v'
+        if command.type == 'v'
+          params = makeAbsolute([0, params[0]])
+          params = params.slice(1)
 
         currentPoint = [currentPoint[0], params[0]]
         result.nodes.push(new Curve.Node(currentPoint))
