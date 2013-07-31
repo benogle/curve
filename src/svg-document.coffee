@@ -1,5 +1,7 @@
 {SVG} = require '../test/vendor/svg'
 
+require '../test/vendor/svg.circle.js'
+require '../test/vendor/svg.draggable.js'
 require './_module'
 require './import'
 PointerTool = require './pointer-tool'
