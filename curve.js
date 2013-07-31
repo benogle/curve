@@ -41,12 +41,12 @@
   */
 
 
-  window.main = function() {
+  window._main = function() {
     this.svg = SVG("canvas");
     return Curve["import"](this.svg, Curve.Examples.heckert);
   };
 
-  window._main = function() {
+  window.main = function() {
     this.svg = SVG("canvas");
     this.path1 = new Path();
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
@@ -58,7 +58,7 @@
     this.path2.addNode(new Node([220, 100], [-10, -5], [10, 5]));
     this.path2.addNode(new Node([160, 120], [10, 0], [-10, 0]));
     this.path2.close();
-    this.path2.path.attr({
+    this.path2.svgEl.attr({
       fill: 'none',
       stroke: '#333',
       'stroke-width': 2

@@ -31,11 +31,11 @@ _.extend(window.Curve, utils)
     * group for tool nodes
 ###
 
-window.main = ->
+window._main = ->
   @svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
-window._main = ->
+window.main = ->
   @svg = SVG("canvas")
 
   @path1 = new Path()
@@ -50,7 +50,7 @@ window._main = ->
   @path2.addNode(new Node([160, 120], [10, 0], [-10, 0]))
   @path2.close()
 
-  @path2.path.attr
+  @path2.svgEl.attr
     fill: 'none'
     stroke: '#333'
     'stroke-width': 2
