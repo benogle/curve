@@ -25,10 +25,10 @@ window.main = ->
   @svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
-  @selectionModel = new SelectionModel()
-  @selectionView = new SelectionView(@selectionModel)
+  @selectionModel = new Curve.SelectionModel()
+  @selectionView = new Curve.SelectionView(@selectionModel)
 
-  @tool = new PointerTool(@svg, {@selectionModel, @selectionView})
+  @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
   @tool.activate()
 
 window._main = ->
@@ -51,14 +51,14 @@ window._main = ->
     stroke: '#333'
     'stroke-width': 2
 
-  @selectionModel = new SelectionModel()
-  @selectionView = new SelectionView(selectionModel)
+  @selectionModel = new Curve.SelectionModel()
+  @selectionView = new Curve.SelectionView(selectionModel)
 
   @selectionModel.setSelected(@path1)
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
-  @tool = new PointerTool(@svg, {selectionModel, selectionView})
+  @tool = new Curve.PointerTool(@svg, {selectionModel, selectionView})
   @tool.activate()
 
-  @pen = new PenTool(@svg, {selectionModel, selectionView})
+  @pen = new Curve.PenTool(@svg, {selectionModel, selectionView})
   #@pen.activate()

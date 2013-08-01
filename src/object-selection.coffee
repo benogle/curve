@@ -1,7 +1,6 @@
 
 #
-module.exports =
-class ObjectSelection
+class Curve.ObjectSelection
   constructor: (@options={}) ->
     @options.class ?= 'object-selection'
 

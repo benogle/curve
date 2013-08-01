@@ -1,10 +1,7 @@
-{EventEmitter} = require 'events'
-
-_ = require 'underscore'
+EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 #
-module.exports =
-class SelectionModel extends EventEmitter
+class Curve.SelectionModel extends EventEmitter
   constructor: ->
     @preselected = null
     @selected = null
@@ -35,5 +32,3 @@ class SelectionModel extends EventEmitter
     @setPreselected(null)
   clearSelectedNode: ->
     @setSelectedNode(null)
-
-_.extend(window.Curve, {SelectionModel})

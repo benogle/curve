@@ -1,12 +1,8 @@
-$ = require 'jquery'
-_ = require 'underscore'
-
-utils = window.Curve
-
-{Point} = window.Curve
+_ = window._ or require 'underscore'
+$ = window.jQuery or require 'jquery'
 
 #
-class NodeEditor
+class Curve.NodeEditor
   nodeSize: 5
   handleSize: 3
 
@@ -82,7 +78,7 @@ class NodeEditor
     {clientX, clientY} = event
     {top, left} = $(window.svg.node).offset()
 
-    new Point(event.clientX - left, event.clientY - top)
+    new Curve.Point(event.clientX - left, event.clientY - top)
 
   _bindNode: (node) ->
     return unless node
@@ -155,5 +151,3 @@ class NodeEditor
     @handleElements.on 'mouseout', ->
       el = find(this)
       el.attr('r': self.handleSize)
-
-_.extend(window.Curve, {NodeEditor})

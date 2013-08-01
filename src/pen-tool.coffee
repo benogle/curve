@@ -1,5 +1,5 @@
 #
-class PenTool
+class Curve.PenTool
   currentObject: null
   currentNode: null
 

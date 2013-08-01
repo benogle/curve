@@ -1,22 +1,18 @@
-{SVG} = require '../test/vendor/svg'
+try
+  require '../test/vendor/svg.circle.js'
+  require '../test/vendor/svg.draggable.js'
+catch e
 
-require '../test/vendor/svg.circle.js'
-require '../test/vendor/svg.draggable.js'
-require './_module'
-require './import'
-PointerTool = require './pointer-tool'
-SelectionModel = require './selection-model'
-SelectionView = require './selection-view'
+SVG = window.SVG or require('../test/vendor/svg').SVG
 
-module.exports =
 class SvgDocument
   constructor: (svgContent, rootNode) ->
     @svg = SVG(rootNode)
     window.svg = @svg #FIXME lol
     Curve.import(@svg, svgContent)
 
-    @selectionModel = new SelectionModel()
-    @selectionView = new SelectionView(@selectionModel)
+    @selectionModel = new Curve.SelectionModel()
+    @selectionView = new Curve.SelectionView(@selectionModel)
 
-    @tool = new PointerTool(@svg, {@selectionModel, @selectionView})
+    @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
     @tool.activate()

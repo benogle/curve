@@ -1,11 +1,8 @@
-{EventEmitter} = require 'events'
+_ = window._ or require 'underscore'
 
-_ = require 'underscore'
-
-require './path-parser'
+EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 attrs = {fill: '#eee', stroke: 'none'}
-utils = window.Curve
 
 ###
   TODO
@@ -32,8 +29,7 @@ utils = window.Curve
 
 IDS = 0
 #
-module.exports =
-class Path extends EventEmitter
+class Curve.Path extends EventEmitter
   constructor: (svgEl) ->
     @path = null
     @nodes = []
@@ -113,7 +109,7 @@ class Path extends EventEmitter
   _parseFromPathString: (pathString) ->
     return unless pathString
 
-    parsedPath = utils.parsePath(pathString)
+    parsedPath = Curve.PathParser.parsePath(pathString)
     @nodes = parsedPath.nodes
     @_bindNode(node) for node in @nodes
 
@@ -129,7 +125,5 @@ class Path extends EventEmitter
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = svg.path().attr(attrs) unless @svgEl
-    utils.setObjectOnNode(@svgEl.node, this)
+    Curve.Utils.setObjectOnNode(@svgEl.node, this)
     @_parseFromPathString(@svgEl.attr('d'))
-
-_.extend(window.Curve, {Path})

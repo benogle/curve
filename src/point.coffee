@@ -1,4 +1,4 @@
-_ = require 'underscore'
+_ = window._ or require 'underscore'
 
 #
 class Point
@@ -27,4 +27,4 @@ class Point
     other = Point.create(other)
     other.x == @x and other.y == @y
 
-_.extend(window.Curve, {Point})
+Curve.Point = Point

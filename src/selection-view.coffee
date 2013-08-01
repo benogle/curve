@@ -1,11 +1,6 @@
-_ = require 'underscore'
-
-require './node-editor'
-ObjectSelection = require './object-selection'
 
 #
-module.exports =
-class SelectionView
+class Curve.SelectionView
   nodeSize: 5
 
   constructor: (@model) ->
@@ -13,8 +8,8 @@ class SelectionView
     @nodeEditors = []
     @_nodeEditorStash = []
 
-    @objectSelection = new ObjectSelection()
-    @objectPreselection = new ObjectSelection(class: 'object-preselection')
+    @objectSelection = new Curve.ObjectSelection()
+    @objectPreselection = new Curve.ObjectSelection(class: 'object-preselection')
 
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:preselected', @onChangePreselected
@@ -76,5 +71,3 @@ class SelectionView
     for nodeEditor in @nodeEditors
       return nodeEditor if nodeEditor.node == node
     null
-
-_.extend(window.Curve, {SelectionView})

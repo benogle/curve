@@ -1,9 +1,6 @@
-$ = require 'jquery'
+$ = window.jQuery or require 'underscore'
 
-utils = window.Curve
-
-module.exports =
-class PointerTool
+class Curve.PointerTool
   constructor: (svg, {@selectionModel, @selectionView}={}) ->
     @_evrect = svg.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
@@ -28,7 +25,7 @@ class PointerTool
 
   _hitWithTarget: (e) ->
     obj = null
-    obj = utils.getObjectFromNode(e.target) if e.target != svg.node
+    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != svg.node
     obj
 
   _hitWithIntersectionList: (e) ->
@@ -42,7 +39,7 @@ class PointerTool
       for i in [nodes.length-1..0]
         clas = nodes[i].getAttribute('class')
         continue if clas and clas.indexOf('invisible-to-hit-test') > -1
-        obj = utils.getObjectFromNode(nodes[i])
+        obj = Curve.Utils.getObjectFromNode(nodes[i])
         break
 
     obj
