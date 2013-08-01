@@ -342,6 +342,7 @@ class Curve.NodeEditor
 
     @nodeElement.click (e) =>
       e.stopPropagation()
+      @setEnableHandles(true)
       @selectionModel.setSelectedNode(@node)
       false
 
@@ -367,6 +368,10 @@ class Curve.NodeEditor
     )
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')
+
+    @handleElements.click (e) =>
+      e.stopPropagation()
+      false
 
     onStartDraggingHandle = ->
       self._draggingHandle = this
@@ -438,7 +443,7 @@ class Curve.Node extends EventEmitter
     @set('handleIn', new Curve.Point(0,0).subtract(point)) if @isJoined
 
   computeIsjoined: ->
-    @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and @handleIn.x == -@handleOut.x and @handleIn.y == -@handleOut.y)
+    @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and Math.round(@handleIn.x) == Math.round(-@handleOut.x) and Math.round(@handleIn.y) == Math.round(-@handleOut.y))
 
   set: (attribute, value) ->
     old = @[attribute]
@@ -863,13 +868,14 @@ class Curve.PointerTool
     svg.off 'mousemove', @onMouseMove
 
   onClick: (e) =>
-    obj = @_hitWithIntersectionList(e)
+    # obj = @_hitWithIntersectionList(e)
+    obj = @_hitWithTarget(e)
     @selectionModel.setSelected(obj)
     return false if obj
 
   onMouseMove: (e) =>
-    @selectionModel.setPreselected(@_hitWithIntersectionList(e))
-    # @selectionModel.setPreselected(@_hitWithTarget(e))
+    # @selectionModel.setPreselected(@_hitWithIntersectionList(e))
+    @selectionModel.setPreselected(@_hitWithTarget(e))
 
   _hitWithTarget: (e) ->
     obj = null
@@ -903,6 +909,7 @@ class Curve.SelectionModel extends EventEmitter
 
   setPreselected: (preselected) ->
     return if preselected == @preselected
+    return if preselected == @selected
     old = @preselected
     @preselected = preselected
     @emit 'change:preselected', object: @preselected, old: old
@@ -989,7 +996,7 @@ class Curve.SelectionView
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
-      new window.Curve.NodeEditor(@model)
+      new Curve.NodeEditor(@model)
 
     nodeEditor.setNode(object.nodes[index])
     @nodeEditors.splice(index, 0, nodeEditor)
@@ -1000,12 +1007,7 @@ class Curve.SelectionView
       return nodeEditor if nodeEditor.node == node
     null
 
-try
-  require '../test/vendor/svg.circle.js'
-  require '../test/vendor/svg.draggable.js'
-catch e
-
-SVG = window.SVG or require('../test/vendor/svg').SVG
+SVG = window.SVG or require('./test/vendor/svg').SVG
 
 class SvgDocument
   constructor: (svgContent, rootNode) ->
@@ -1018,6 +1020,8 @@ class SvgDocument
 
     @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
     @tool.activate()
+
+Curve.SvgDocument = SvgDocument
 
 Curve.Examples =
   cloud: '''<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><path d="M512,384L320,576h128v320h128V576h128L512,384z M832,320c-8.75,0-17.125,1.406-25.625,2.562

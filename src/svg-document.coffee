@@ -1,9 +1,4 @@
-try
-  require '../test/vendor/svg.circle.js'
-  require '../test/vendor/svg.draggable.js'
-catch e
-
-SVG = window.SVG or require('../test/vendor/svg').SVG
+SVG = window.SVG or require('./test/vendor/svg').SVG
 
 class SvgDocument
   constructor: (svgContent, rootNode) ->
@@ -16,3 +11,5 @@ class SvgDocument
 
     @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
     @tool.activate()
+
+Curve.SvgDocument = SvgDocument

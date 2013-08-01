@@ -61,7 +61,7 @@ class Curve.SelectionView
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
-      new window.Curve.NodeEditor(@model)
+      new Curve.NodeEditor(@model)
 
     nodeEditor.setNode(object.nodes[index])
     @nodeEditors.splice(index, 0, nodeEditor)
