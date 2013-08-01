@@ -34,13 +34,13 @@ window.main = ->
 window._main = ->
   @svg = SVG("canvas")
 
-  @path1 = new Path()
+  @path1 = new Path(@svg)
   @path1.addNode(new Node([50, 50], [-10, 0], [10, 0]))
   @path1.addNode(new Node([80, 60], [-10, -5], [10, 5]))
   @path1.addNode(new Node([60, 80], [10, 0], [-10, 0]))
   @path1.close()
 
-  @path2 = new Path()
+  @path2 = new Path(@svg)
   @path2.addNode(new Node([150, 50], [-10, 0], [10, 0]))
   @path2.addNode(new Node([220, 100], [-10, -5], [10, 5]))
   @path2.addNode(new Node([160, 120], [10, 0], [-10, 0]))

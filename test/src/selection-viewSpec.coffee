@@ -6,7 +6,7 @@ describe 'Curve.SelectionView', ->
   beforeEach ->
     @model = new Curve.SelectionModel()
     @s = new Curve.SelectionView(@model)
-    @path = new Curve.Path()
+    @path = new Curve.Path(svg)
     @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
     @path.close()
 

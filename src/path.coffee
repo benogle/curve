@@ -30,7 +30,7 @@ attrs = {fill: '#eee', stroke: 'none'}
 IDS = 0
 #
 class Curve.Path extends EventEmitter
-  constructor: (svgEl) ->
+  constructor: (@svgDocument, {svgEl}={}) ->
     @path = null
     @nodes = []
     @isClosed = false

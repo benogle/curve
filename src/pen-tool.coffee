@@ -3,7 +3,7 @@ class Curve.PenTool
   currentObject: null
   currentNode: null
 
-  constructor: (svg, {@selectionModel, @selectionView}={}) ->
+  constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
 
   activate: ->
     svg.on 'mousedown', @onMouseDown
@@ -28,7 +28,7 @@ class Curve.PenTool
       else
         makeNode()
     else
-      @currentObject = new Curve.Path()
+      @currentObject = new Curve.Path(@svgDocument)
       @selectionModel.setSelected(@currentObject)
       makeNode()
 

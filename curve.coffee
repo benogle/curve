@@ -41,13 +41,13 @@ window.main = ->
 window._main = ->
   @svg = SVG("canvas")
 
-  @path1 = new Path()
+  @path1 = new Path(@svg)
   @path1.addNode(new Node([50, 50], [-10, 0], [10, 0]))
   @path1.addNode(new Node([80, 60], [-10, -5], [10, 5]))
   @path1.addNode(new Node([60, 80], [10, 0], [-10, 0]))
   @path1.close()
 
-  @path2 = new Path()
+  @path2 = new Path(@svg)
   @path2.addNode(new Node([150, 50], [-10, 0], [10, 0]))
   @path2.addNode(new Node([220, 100], [-10, -5], [10, 5]))
   @path2.addNode(new Node([160, 120], [10, 0], [-10, 0]))
@@ -226,7 +226,7 @@ objectifyTransformations = (transform) ->
 Curve.import = (svgDocument, svgString) ->
   window.paths = []
   IMPORT_FNS =
-    path: (el) -> [new Curve.Path(el)]
+    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
 
   # create temporary div to receive svg content
   well = document.createElement('div')
@@ -683,7 +683,7 @@ attrs = {fill: '#eee', stroke: 'none'}
 IDS = 0
 #
 class Curve.Path extends EventEmitter
-  constructor: (svgEl) ->
+  constructor: (@svgDocument, {svgEl}={}) ->
     @path = null
     @nodes = []
     @isClosed = false
@@ -786,7 +786,7 @@ class Curve.PenTool
   currentObject: null
   currentNode: null
 
-  constructor: (svg, {@selectionModel, @selectionView}={}) ->
+  constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
 
   activate: ->
     svg.on 'mousedown', @onMouseDown
@@ -811,7 +811,7 @@ class Curve.PenTool
       else
         makeNode()
     else
-      @currentObject = new Curve.Path()
+      @currentObject = new Curve.Path(@svgDocument)
       @selectionModel.setSelected(@currentObject)
       makeNode()
 

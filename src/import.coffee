@@ -154,7 +154,7 @@ objectifyTransformations = (transform) ->
 Curve.import = (svgDocument, svgString) ->
   window.paths = []
   IMPORT_FNS =
-    path: (el) -> [new Curve.Path(el)]
+    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
 
   # create temporary div to receive svg content
   well = document.createElement('div')

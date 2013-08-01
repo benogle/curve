@@ -4,7 +4,7 @@ describe 'Curve.Path', ->
     window.svg = SVG("canvas")
 
   it 'can be created', ->
-    path = new Curve.Path()
+    path = new Curve.Path(svg)
     path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
     path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
     path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
@@ -15,7 +15,7 @@ describe 'Curve.Path', ->
     expect(el.attr('d')).toMatch(/Z$/)
 
   it 'is associated with the node', ->
-    path = new Curve.Path()
+    path = new Curve.Path(svg)
     path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
     path.render()
 
@@ -23,7 +23,7 @@ describe 'Curve.Path', ->
     expect(Curve.Utils.getObjectFromNode(el[0])).toEqual path
 
   it 'handles null handles', ->
-    path = new Curve.Path()
+    path = new Curve.Path(svg)
     path.addNode(new Curve.Node([60, 80]))
     path.addNode(new Curve.Node([70, 90]))
     path.render()
@@ -35,27 +35,27 @@ describe 'Curve.Path', ->
     it 'can be created', ->
       pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
       node = svg.path(pathString)
-      @path = new Curve.Path(node)
+      @path = new Curve.Path(svg, svgEl: node)
 
       expect(@path.toPathString()).toEqual pathString
 
     it 'can be created with non-wrapped closed shapes', ->
       pathString = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
       node = svg.path(pathString)
-      @path = new Curve.Path(node)
+      @path = new Curve.Path(svg, svgEl: node)
 
       expect(@path.toPathString()).toEqual pathString
 
     it 'handles move nodes', ->
       pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80ZM10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
       node = svg.path(pathString)
-      @path = new Curve.Path(node)
+      @path = new Curve.Path(svg, svgEl: node)
 
       expect(@path.toPathString()).toEqual pathString
 
   describe 'updating', ->
     beforeEach ->
-      @path = new Curve.Path()
+      @path = new Curve.Path(svg)
       @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
       @path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
       @path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))

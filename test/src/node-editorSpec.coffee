@@ -3,7 +3,7 @@ describe 'Curve.NodeEditor', ->
     loadFixtures 'canvas.html'
     window.svg = SVG("canvas")
 
-    @path = new Curve.Path()
+    @path = new Curve.Path(svg)
     @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
     @path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
     @path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
