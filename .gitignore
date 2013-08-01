@@ -5,3 +5,4 @@ node_modules/*
 cssbelt.coffee
 .grunt
 npm-debug.log
+_SpecRunner.html
