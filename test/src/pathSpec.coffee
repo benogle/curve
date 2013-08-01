@@ -20,7 +20,7 @@ describe 'Curve.Path', ->
     path.render()
 
     el = $('svg path')
-    expect(Curve.getObjectFromNode(el[0])).toEqual path
+    expect(Curve.Utils.getObjectFromNode(el[0])).toEqual path
 
   it 'handles null handles', ->
     path = new Curve.Path()
@@ -47,7 +47,7 @@ describe 'Curve.Path', ->
       expect(@path.toPathString()).toEqual pathString
 
     it 'handles move nodes', ->
-      pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80Z M10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
+      pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80ZM10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
       node = svg.path(pathString)
       @path = new Curve.Path(node)
 

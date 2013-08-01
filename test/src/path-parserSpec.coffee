@@ -1,11 +1,11 @@
-describe 'Curve.lexPath', ->
+describe 'Curve.PathParser.lexPath', ->
   [path] = []
 
   beforeEach ->
 
   it 'works with spaces', ->
     path = 'M 101.454,311.936 C 98,316 92,317 89,315Z'
-    tokens = Curve.lexPath(path)
+    tokens = Curve.PathParser.lexPath(path)
 
     expect(tokens).toEqual [
       { type: 'COMMAND', string: 'M' },
@@ -23,7 +23,7 @@ describe 'Curve.lexPath', ->
 
   it 'works with no spaces', ->
     path = 'M101.454,311.936C98,316,92,317,89,315Z'
-    tokens = Curve.lexPath(path)
+    tokens = Curve.PathParser.lexPath(path)
 
     expect(tokens).toEqual [
       { type: 'COMMAND', string: 'M' },
@@ -39,10 +39,10 @@ describe 'Curve.lexPath', ->
       { type: 'COMMAND', string: 'Z' }
     ]
 
-describe 'Curve.groupCommands', ->
+describe 'Curve.PathParser.groupCommands', ->
   it 'groups commands properly', ->
     path = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-    groupsOfCommands = Curve.groupCommands(Curve.lexPath(path))
+    groupsOfCommands = Curve.PathParser.groupCommands(Curve.PathParser.lexPath(path))
 
     expect(groupsOfCommands[0]).toEqual type: 'M', parameters: [50, 50]
     expect(groupsOfCommands[1]).toEqual type: 'C', parameters: [60, 50, 70, 55, 80, 60]
@@ -52,18 +52,18 @@ describe 'Curve.groupCommands', ->
 
   it 'groups commands properly with no close', ->
     path = 'M50,50C50,80,40,50,60,70'
-    groupsOfCommands = Curve.groupCommands(Curve.lexPath(path))
+    groupsOfCommands = Curve.PathParser.groupCommands(Curve.PathParser.lexPath(path))
 
     expect(groupsOfCommands[0]).toEqual type: 'M', parameters: [50, 50]
     expect(groupsOfCommands[1]).toEqual type: 'C', parameters: [50, 80, 40, 50, 60, 70]
 
 
-describe 'Curve.parsePath', ->
+describe 'Curve.PathParser.parsePath', ->
   [path, tokens] = []
 
   it 'parses closed, wrapped shapes', ->
     path = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-    subject = Curve.parsePath(path)
+    subject = Curve.PathParser.parsePath(path)
     expect(subject.closed).toEqual true
     expect(subject.nodes.length).toEqual 3
 
@@ -86,7 +86,7 @@ describe 'Curve.parsePath', ->
 
   it 'parses closed, non-wrapped shapes', ->
     path = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-    subject = Curve.parsePath(path)
+    subject = Curve.PathParser.parsePath(path)
     expect(subject.closed).toEqual true
     expect(subject.nodes.length).toEqual 4
 
@@ -108,7 +108,7 @@ describe 'Curve.parsePath', ->
 
   it 'parses closed, non-wrapped shapes', ->
     path = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80Z M30,40L15,16Z'
-    subject = Curve.parsePath(path)
+    subject = Curve.PathParser.parsePath(path)
     expect(subject.closed).toEqual true
     expect(subject.nodes.length).toEqual 5
 
@@ -129,7 +129,7 @@ describe 'Curve.parsePath', ->
 
   it 'parses non closed shapes', ->
     path = 'M10,10C20,10 70,55 80,60C90,65 68,103 60,80'
-    subject = Curve.parsePath(path)
+    subject = Curve.PathParser.parsePath(path)
     expect(subject.closed).toEqual false
     expect(subject.nodes.length).toEqual 3
 

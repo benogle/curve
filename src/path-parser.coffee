@@ -1,6 +1,6 @@
-_ = require 'underscore'
+_ = window._ or require 'underscore'
 
-require './node'
+{Node} = Curve
 
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
@@ -21,7 +21,7 @@ parseTokens = (groupedCommands) ->
   movePoint = null
   makeMoveNode = ->
     return unless movePoint
-    node = new Curve.Node(movePoint)
+    node = new Node(movePoint)
     node.isMoveNode = true
     movePoint = null
     result.nodes.push(node)
@@ -48,7 +48,7 @@ parseTokens = (groupedCommands) ->
         params = makeAbsolute(params) if command.type == 'l'
 
         currentPoint = slicePoint(params, 0)
-        result.nodes.push(new Curve.Node(currentPoint))
+        result.nodes.push(new Node(currentPoint))
 
       when 'H', 'h'
         moveNode = makeMoveNode()
@@ -58,7 +58,7 @@ parseTokens = (groupedCommands) ->
         params = makeAbsolute(params) if command.type == 'h'
 
         currentPoint = [params[0], currentPoint[1]]
-        result.nodes.push(new Curve.Node(currentPoint))
+        result.nodes.push(new Node(currentPoint))
 
       when 'V', 'v'
         moveNode = makeMoveNode()
@@ -70,7 +70,7 @@ parseTokens = (groupedCommands) ->
           params = params.slice(1)
 
         currentPoint = [currentPoint[0], params[0]]
-        result.nodes.push(new Curve.Node(currentPoint))
+        result.nodes.push(new Node(currentPoint))
 
       when 'C', 'c'
         moveNode = makeMoveNode()
@@ -91,7 +91,7 @@ parseTokens = (groupedCommands) ->
         if nextCommand and nextCommand.type in ['z', 'Z'] and firstNode and firstNode.point.equals(currentPoint)
           firstNode.setAbsoluteHandleIn(handleIn)
         else
-          curveNode = new Curve.Node(currentPoint)
+          curveNode = new Node(currentPoint)
           curveNode.setAbsoluteHandleIn(handleIn)
           result.nodes.push(curveNode)
 
@@ -163,4 +163,4 @@ lexPath = (pathString) ->
   saveCurrentToken()
   tokens
 
-_.extend(window.Curve, {lexPath, parsePath, groupCommands, parseTokens})
+Curve.PathParser = {lexPath, parsePath, groupCommands, parseTokens}

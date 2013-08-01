@@ -17,6 +17,7 @@ describe 'Curve.NodeEditor', ->
       @s.setNode(@path.nodes[0])
 
     it 'dragging a handle updates the path and the node editor', ->
+      spyOn($.fn, 'offset').andReturn top: 0, left: 0
       @s.onDraggingHandleOut({x:10, y:10}, {clientX: 70, clientY: 60})
 
       expect(@path.nodes[0].handleOut).toEqual new Curve.Point([20, 10])

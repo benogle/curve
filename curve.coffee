@@ -1,12 +1,9 @@
-window.Curve = window.Curve or {}
+Curve = {}
 
-utils =
-  getObjectFromNode: (domNode) ->
-    $.data(domNode, 'curve.object')
-  setObjectOnNode: (domNode, object) ->
-    $.data(domNode, 'curve.object', object)
-
-_.extend(window.Curve, utils)
+if typeof module != 'undefined'
+  module.exports = Curve
+else
+  window.Curve = Curve
 
 ###
   TODO
@@ -35,10 +32,10 @@ window.main = ->
   @svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
-  @selectionModel = new SelectionModel()
-  @selectionView = new SelectionView(@selectionModel)
+  @selectionModel = new Curve.SelectionModel()
+  @selectionView = new Curve.SelectionView(@selectionModel)
 
-  @tool = new PointerTool(@svg, {@selectionModel, @selectionView})
+  @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
   @tool.activate()
 
 window._main = ->
@@ -61,16 +58,16 @@ window._main = ->
     stroke: '#333'
     'stroke-width': 2
 
-  @selectionModel = new SelectionModel()
-  @selectionView = new SelectionView(selectionModel)
+  @selectionModel = new Curve.SelectionModel()
+  @selectionView = new Curve.SelectionView(selectionModel)
 
   @selectionModel.setSelected(@path1)
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
-  @tool = new PointerTool(@svg, {selectionModel, selectionView})
+  @tool = new Curve.PointerTool(@svg, {selectionModel, selectionView})
   @tool.activate()
 
-  @pen = new PenTool(@svg, {selectionModel, selectionView})
+  @pen = new Curve.PenTool(@svg, {selectionModel, selectionView})
   #@pen.activate()
 
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
@@ -250,10 +247,11 @@ Curve.import = (svgDocument, svgString) ->
 
   store
 
-utils = window.Curve
+_ = window._ or require 'underscore'
+$ = window.jQuery or require 'jquery'
 
 #
-class NodeEditor
+class Curve.NodeEditor
   nodeSize: 5
   handleSize: 3
 
@@ -319,18 +317,24 @@ class NodeEditor
     @_draggingHandle.front() if @_draggingHandle
 
   onDraggingNode: (delta, event) =>
-    @node.setPoint(new Point(event.clientX, event.clientY))
+    @node.setPoint(@pointForEvent(event))
   onDraggingHandleIn: (delta, event) =>
-    @node.setAbsoluteHandleIn(new Point(event.clientX, event.clientY))
+    @node.setAbsoluteHandleIn(@pointForEvent(event))
   onDraggingHandleOut: (delta, event) =>
-    @node.setAbsoluteHandleOut(new Point(event.clientX, event.clientY))
+    @node.setAbsoluteHandleOut(@pointForEvent(event))
+
+  pointForEvent: (event) ->
+    {clientX, clientY} = event
+    {top, left} = $(window.svg.node).offset()
+
+    new Curve.Point(event.clientX - left, event.clientY - top)
 
   _bindNode: (node) ->
     return unless node
     node.on 'change', @render
   _unbindNode: (node) ->
     return unless node
-    node.off 'change', @render
+    node.removeListener 'change', @render
 
   _setupNodeElement: ->
     @nodeElement = svg.circle(@nodeSize)
@@ -392,12 +396,12 @@ class NodeEditor
       el = find(this)
       el.attr('r': self.handleSize)
 
-_.extend(window.Curve, {NodeEditor})
+_ = window._ or require 'underscore'
 
-utils = window.Curve
+EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 #
-class Node extends EventEmitter
+class Curve.Node extends EventEmitter
   constructor: (point, handleIn, handleOut, @isJoined=false) ->
     @setPoint(point)
     @setHandleIn(handleIn) if handleIn
@@ -427,11 +431,11 @@ class Node extends EventEmitter
   setHandleIn: (point) ->
     point = Point.create(point)
     @set('handleIn', point)
-    @set('handleOut', new Point(0,0).subtract(point)) if @isJoined
+    @set('handleOut', new Curve.Point(0,0).subtract(point)) if @isJoined
   setHandleOut: (point) ->
     point = Point.create(point)
     @set('handleOut', point)
-    @set('handleIn', new Point(0,0).subtract(point)) if @isJoined
+    @set('handleIn', new Curve.Point(0,0).subtract(point)) if @isJoined
 
   computeIsjoined: ->
     @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and @handleIn.x == -@handleOut.x and @handleIn.y == -@handleOut.y)
@@ -446,11 +450,9 @@ class Node extends EventEmitter
     @emit event, this, eventArgs
     @emit 'change', this, eventArgs
 
-_.extend(window.Curve, {Node})
-
 
 #
-class ObjectSelection
+class Curve.ObjectSelection
   constructor: (@options={}) ->
     @options.class ?= 'object-selection'
 
@@ -475,7 +477,11 @@ class ObjectSelection
 
   _unbindObject: (object) ->
     return unless object
-    object.off 'change', @render
+    object.removeListener 'change', @render
+
+_ = window._ or require 'underscore'
+
+{Node} = Curve
 
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
@@ -496,7 +502,7 @@ parseTokens = (groupedCommands) ->
   movePoint = null
   makeMoveNode = ->
     return unless movePoint
-    node = new Curve.Node(movePoint)
+    node = new Node(movePoint)
     node.isMoveNode = true
     movePoint = null
     result.nodes.push(node)
@@ -523,7 +529,29 @@ parseTokens = (groupedCommands) ->
         params = makeAbsolute(params) if command.type == 'l'
 
         currentPoint = slicePoint(params, 0)
-        result.nodes.push(new Curve.Node(currentPoint))
+        result.nodes.push(new Node(currentPoint))
+
+      when 'H', 'h'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'h'
+
+        currentPoint = [params[0], currentPoint[1]]
+        result.nodes.push(new Node(currentPoint))
+
+      when 'V', 'v'
+        moveNode = makeMoveNode()
+        firstNode = moveNode if moveNode
+
+        params = command.parameters
+        if command.type == 'v'
+          params = makeAbsolute([0, params[0]])
+          params = params.slice(1)
+
+        currentPoint = [currentPoint[0], params[0]]
+        result.nodes.push(new Node(currentPoint))
 
       when 'C', 'c'
         moveNode = makeMoveNode()
@@ -544,7 +572,7 @@ parseTokens = (groupedCommands) ->
         if nextCommand and nextCommand.type in ['z', 'Z'] and firstNode and firstNode.point.equals(currentPoint)
           firstNode.setAbsoluteHandleIn(handleIn)
         else
-          curveNode = new Curve.Node(currentPoint)
+          curveNode = new Node(currentPoint)
           curveNode.setAbsoluteHandleIn(handleIn)
           result.nodes.push(curveNode)
 
@@ -558,6 +586,7 @@ parseTokens = (groupedCommands) ->
 
 # Returns a list of svg commands with their parameters.
 groupCommands = (pathTokens) ->
+  console.log 'grouping tokens', pathTokens
   commands = []
   for i in [0...pathTokens.length]
     token = pathTokens[i]
@@ -575,7 +604,7 @@ groupCommands = (pathTokens) ->
       else
         break
 
-    #console.log command.type, command
+    console.log command.type, command
     commands.push(command)
 
   commands
@@ -583,7 +612,7 @@ groupCommands = (pathTokens) ->
 # Breaks pathString into tokens
 lexPath = (pathString) ->
   numberMatch = '-0123456789.'
-  separatorMatch = ' ,'
+  separatorMatch = ' ,\n\t'
 
   tokens = []
   currentToken = null
@@ -600,6 +629,7 @@ lexPath = (pathString) ->
   for ch in pathString
     if numberMatch.indexOf(ch) > -1
       saveCurrentTokenWhenDifferentThan(NUMBER)
+      saveCurrentToken() if ch == '-'
 
       currentToken = {type: NUMBER, string: []} unless currentToken
       currentToken.string.push(ch)
@@ -614,10 +644,13 @@ lexPath = (pathString) ->
   saveCurrentToken()
   tokens
 
-_.extend(window.Curve, {lexPath, parsePath, groupCommands, parseTokens})
+Curve.PathParser = {lexPath, parsePath, groupCommands, parseTokens}
+
+_ = window._ or require 'underscore'
+
+EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 attrs = {fill: '#eee', stroke: 'none'}
-utils = window.Curve
 
 ###
   TODO
@@ -644,7 +677,7 @@ utils = window.Curve
 
 IDS = 0
 #
-class Path extends EventEmitter
+class Curve.Path extends EventEmitter
   constructor: (svgEl) ->
     @path = null
     @nodes = []
@@ -695,18 +728,23 @@ class Path extends EventEmitter
       curve = curve.concat(toNode.point.toArray())
       'C' + curve.join(',')
 
+    closePath = (firstNode, lastNode)->
+      closingPath = ''
+      closingPath += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
+      closingPath += 'Z'
+
     for node in @nodes
       if node.isMoveNode or !path
+        firstNode = node
         path += 'M' + node.point.toArray().join(',')
       else
         path += makeCurve(lastNode, node)
-      path += 'Z' if node.isCloseNode
+
       lastNode = node
+      path += closePath(firstNode, lastNode) if node.isCloseNode
 
     if @isClosed and path[path.length - 1] != 'Z'
-      [firstNode, lastNode] = [@nodes[0], @nodes[@nodes.length-1]]
-      path += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
-      path += 'Z'
+      closePath(firstNode, @nodes[@nodes.length-1])
 
     path
 
@@ -719,7 +757,7 @@ class Path extends EventEmitter
   _parseFromPathString: (pathString) ->
     return unless pathString
 
-    parsedPath = utils.parsePath(pathString)
+    parsedPath = Curve.PathParser.parsePath(pathString)
     @nodes = parsedPath.nodes
     @_bindNode(node) for node in @nodes
 
@@ -735,13 +773,11 @@ class Path extends EventEmitter
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = svg.path().attr(attrs) unless @svgEl
-    utils.setObjectOnNode(@svgEl.node, this)
+    Curve.Utils.setObjectOnNode(@svgEl.node, this)
     @_parseFromPathString(@svgEl.attr('d'))
 
-_.extend(window.Curve, {Path})
-
 #
-class PenTool
+class Curve.PenTool
   currentObject: null
   currentNode: null
 
@@ -780,6 +816,7 @@ class PenTool
   onMouseUp: (e) =>
     @currentNode = null
 
+_ = window._ or require 'underscore'
 
 #
 class Point
@@ -808,11 +845,11 @@ class Point
     other = Point.create(other)
     other.x == @x and other.y == @y
 
-_.extend(window.Curve, {Point})
+Curve.Point = Point
 
-utils = window.Curve
+$ = window.jQuery or require 'underscore'
 
-class PointerTool
+class Curve.PointerTool
   constructor: (svg, {@selectionModel, @selectionView}={}) ->
     @_evrect = svg.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
@@ -836,12 +873,13 @@ class PointerTool
 
   _hitWithTarget: (e) ->
     obj = null
-    obj = utils.getObjectFromNode(e.target) if e.target != svg.node
+    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != svg.node
     obj
 
   _hitWithIntersectionList: (e) ->
-    @_evrect.x = e.clientX
-    @_evrect.y = e.clientY
+    {left, top} = $(svg.node).offset()
+    @_evrect.x = e.clientX - left
+    @_evrect.y = e.clientY - top
     nodes = svg.node.getIntersectionList(@_evrect, null)
 
     obj = null
@@ -849,14 +887,15 @@ class PointerTool
       for i in [nodes.length-1..0]
         clas = nodes[i].getAttribute('class')
         continue if clas and clas.indexOf('invisible-to-hit-test') > -1
-        obj = utils.getObjectFromNode(nodes[i])
+        obj = Curve.Utils.getObjectFromNode(nodes[i])
         break
 
     obj
 
+EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 #
-class SelectionModel extends EventEmitter
+class Curve.SelectionModel extends EventEmitter
   constructor: ->
     @preselected = null
     @selected = null
@@ -887,11 +926,9 @@ class SelectionModel extends EventEmitter
   clearSelectedNode: ->
     @setSelectedNode(null)
 
-_.extend(window.Curve, {SelectionModel})
-
 
 #
-class SelectionView
+class Curve.SelectionView
   nodeSize: 5
 
   constructor: (@model) ->
@@ -899,8 +936,8 @@ class SelectionView
     @nodeEditors = []
     @_nodeEditorStash = []
 
-    @objectSelection = new ObjectSelection()
-    @objectPreselection = new ObjectSelection(class: 'object-preselection')
+    @objectSelection = new Curve.ObjectSelection()
+    @objectPreselection = new Curve.ObjectSelection(class: 'object-preselection')
 
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:preselected', @onChangePreselected
@@ -933,7 +970,7 @@ class SelectionView
 
   _unbindFromObject: (object) ->
     return unless object
-    object.off 'insert:node', @onInsertNode
+    object.removeListener 'insert:node', @onInsertNode
 
   _createNodeEditors: (object) ->
     @_nodeEditorStash = @nodeEditors
@@ -952,7 +989,7 @@ class SelectionView
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
-      new NodeEditor(@model)
+      new window.Curve.NodeEditor(@model)
 
     nodeEditor.setNode(object.nodes[index])
     @nodeEditors.splice(index, 0, nodeEditor)
@@ -963,7 +1000,24 @@ class SelectionView
       return nodeEditor if nodeEditor.node == node
     null
 
-_.extend(window.Curve, {SelectionView})
+try
+  require '../test/vendor/svg.circle.js'
+  require '../test/vendor/svg.draggable.js'
+catch e
+
+SVG = window.SVG or require('../test/vendor/svg').SVG
+
+class SvgDocument
+  constructor: (svgContent, rootNode) ->
+    @svg = SVG(rootNode)
+    window.svg = @svg #FIXME lol
+    Curve.import(@svg, svgContent)
+
+    @selectionModel = new Curve.SelectionModel()
+    @selectionView = new Curve.SelectionView(@selectionModel)
+
+    @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
+    @tool.activate()
 
 Curve.Examples =
   cloud: '''<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><path d="M512,384L320,576h128v320h128V576h128L512,384z M832,320c-8.75,0-17.125,1.406-25.625,2.562
@@ -1006,3 +1060,12 @@ Curve.Examples =
       </g>
     </svg>
   '''
+
+_ = window._ or require 'underscore'
+$ = window.jQuery or require 'jquery'
+
+Curve.Utils =
+  getObjectFromNode: (domNode) ->
+    $.data(domNode, 'curve.object')
+  setObjectOnNode: (domNode, object) ->
+    $.data(domNode, 'curve.object', object)

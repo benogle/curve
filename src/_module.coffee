@@ -1,12 +1,6 @@
-_ = require 'underscore'
-$ = require 'jquery'
+Curve = {}
 
-window.Curve = window.Curve or {}
-
-utils =
-  getObjectFromNode: (domNode) ->
-    $.data(domNode, 'curve.object')
-  setObjectOnNode: (domNode, object) ->
-    $.data(domNode, 'curve.object', object)
-
-_.extend(window.Curve, utils)
+if typeof module != 'undefined'
+  module.exports = Curve
+else
+  window.Curve = Curve

@@ -2,8 +2,6 @@
 #
 # Converted to coffeescript and modified by benogle
 
-Path = require './path'
-
 # Convert nodes to svg.js elements
 convertNodes = (nodes, context, level, store, block) ->
   for i in [0...nodes.length]
@@ -156,7 +154,7 @@ objectifyTransformations = (transform) ->
 Curve.import = (svgDocument, svgString) ->
   window.paths = []
   IMPORT_FNS =
-    path: (el) -> [new Path(el)]
+    path: (el) -> [new Curve.Path(el)]
 
   # create temporary div to receive svg content
   well = document.createElement('div')
