@@ -1371,7 +1371,7 @@
 
   })();
 
-  SVG = window.SVG || require('./test/vendor/svg').SVG;
+  SVG = window.SVG || require('./vendor/svg').SVG;
 
   SvgDocument = (function() {
     function SvgDocument(svgContent, rootNode) {

@@ -1,4 +1,4 @@
-SVG = window.SVG or require('./test/vendor/svg').SVG
+SVG = window.SVG or require('./vendor/svg').SVG
 
 class SvgDocument
   constructor: (svgContent, rootNode) ->
