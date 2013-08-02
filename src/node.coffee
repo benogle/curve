@@ -3,14 +3,11 @@ _ = window._ or require 'underscore'
 EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 #
-class Curve.Node extends EventEmitter
+class Node extends EventEmitter
   constructor: (point, handleIn, handleOut, @isJoined=false) ->
     @setPoint(point)
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
-
-    @isMoveNode = false
-    @isCloseNode = false
 
   getAbsoluteHandleIn: ->
     if @handleIn
@@ -51,3 +48,5 @@ class Curve.Node extends EventEmitter
 
     @emit event, this, eventArgs
     @emit 'change', this, eventArgs
+
+Curve.Node = Node

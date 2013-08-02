@@ -502,7 +502,7 @@
 
   EventEmitter = window.EventEmitter || require('events').EventEmitter;
 
-  Curve.Node = (function(_super) {
+  Node = (function(_super) {
     __extends(Node, _super);
 
     function Node(point, handleIn, handleOut, isJoined) {
@@ -514,8 +514,6 @@
       if (handleOut) {
         this.setHandleOut(handleOut);
       }
-      this.isMoveNode = false;
-      this.isCloseNode = false;
     }
 
     Node.prototype.getAbsoluteHandleIn = function() {
@@ -585,6 +583,8 @@
 
   })(EventEmitter);
 
+  Curve.Node = Node;
+
   Curve.ObjectSelection = (function() {
     function ObjectSelection(svgDocument, options) {
       var _base, _ref;
@@ -636,8 +636,6 @@
 
   _ = window._ || require('underscore');
 
-  Node = Curve.Node;
-
   _ref = ['COMMAND', 'NUMBER'], COMMAND = _ref[0], NUMBER = _ref[1];
 
   parsePath = function(pathString) {
@@ -648,25 +646,23 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var command, currentPoint, curveNode, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, makeMoveNode, moveNode, movePoint, nextCommand, node, params, result, slicePoint, _i, _j, _len, _ref1, _ref2, _ref3;
+    var addNewSubpath, command, currentPoint, currentSubpath, curveNode, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, nextCommand, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4;
 
     result = {
-      closed: false,
-      nodes: []
+      subpaths: []
     };
     currentPoint = null;
     firstHandle = null;
-    movePoint = null;
-    makeMoveNode = function() {
+    currentSubpath = null;
+    addNewSubpath = function(movePoint) {
       var node;
 
-      if (!movePoint) {
-        return;
-      }
       node = new Node(movePoint);
-      node.isMoveNode = true;
-      movePoint = null;
-      result.nodes.push(node);
+      currentSubpath = {
+        closed: false,
+        nodes: [node]
+      };
+      result.subpaths.push(currentSubpath);
       return node;
     };
     slicePoint = function(array, index) {
@@ -681,54 +677,39 @@
       command = groupedCommands[i];
       switch (command.type) {
         case 'M':
-          movePoint = currentPoint = command.parameters;
+          currentPoint = command.parameters;
+          addNewSubpath(currentPoint);
           break;
         case 'L':
         case 'l':
-          moveNode = makeMoveNode();
-          if (moveNode) {
-            firstNode = moveNode;
-          }
           params = command.parameters;
           if (command.type === 'l') {
             params = makeAbsolute(params);
           }
           currentPoint = slicePoint(params, 0);
-          result.nodes.push(new Node(currentPoint));
+          currentSubpath.nodes.push(new Node(currentPoint));
           break;
         case 'H':
         case 'h':
-          moveNode = makeMoveNode();
-          if (moveNode) {
-            firstNode = moveNode;
-          }
           params = command.parameters;
           if (command.type === 'h') {
             params = makeAbsolute(params);
           }
           currentPoint = [params[0], currentPoint[1]];
-          result.nodes.push(new Node(currentPoint));
+          currentSubpath.nodes.push(new Node(currentPoint));
           break;
         case 'V':
         case 'v':
-          moveNode = makeMoveNode();
-          if (moveNode) {
-            firstNode = moveNode;
-          }
           params = command.parameters;
           if (command.type === 'v') {
             params = makeAbsolute([0, params[0]]);
             params = params.slice(1);
           }
           currentPoint = [currentPoint[0], params[0]];
-          result.nodes.push(new Node(currentPoint));
+          currentSubpath.nodes.push(new Node(currentPoint));
           break;
         case 'C':
         case 'c':
-          moveNode = makeMoveNode();
-          if (moveNode) {
-            firstNode = moveNode;
-          }
           params = command.parameters;
           if (command.type === 'c') {
             params = makeAbsolute(params);
@@ -736,7 +717,8 @@
           currentPoint = slicePoint(params, 4);
           handleIn = slicePoint(params, 2);
           handleOut = slicePoint(params, 0);
-          lastNode = result.nodes[result.nodes.length - 1];
+          firstNode = currentSubpath.nodes[0];
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
           lastNode.setAbsoluteHandleOut(handleOut);
           nextCommand = groupedCommands[i + 1];
           if (nextCommand && ((_ref2 = nextCommand.type) === 'z' || _ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint)) {
@@ -744,22 +726,22 @@
           } else {
             curveNode = new Node(currentPoint);
             curveNode.setAbsoluteHandleIn(handleIn);
-            result.nodes.push(curveNode);
+            currentSubpath.nodes.push(curveNode);
           }
           break;
         case 'Z':
         case 'z':
-          lastNode = result.nodes[result.nodes.length - 1];
-          if (lastNode) {
-            lastNode.isCloseNode = true;
-          }
-          result.closed = true;
+          currentSubpath.closed = true;
       }
     }
-    _ref3 = result.nodes;
+    _ref3 = result.subpaths;
     for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
-      node = _ref3[_j];
-      node.computeIsjoined();
+      subpath = _ref3[_j];
+      _ref4 = subpath.nodes;
+      for (_k = 0, _len1 = _ref4.length; _k < _len1; _k++) {
+        node = _ref4[_k];
+        node.computeIsjoined();
+      }
     }
     return result;
   };

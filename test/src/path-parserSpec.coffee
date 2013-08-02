@@ -57,13 +57,15 @@ describe 'Curve.PathParser.groupCommands', ->
     expect(groupsOfCommands[0]).toEqual type: 'M', parameters: [50, 50]
     expect(groupsOfCommands[1]).toEqual type: 'C', parameters: [50, 80, 40, 50, 60, 70]
 
-
 describe 'Curve.PathParser.parsePath', ->
   [path, tokens] = []
 
   it 'parses closed, wrapped shapes', ->
     path = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-    subject = Curve.PathParser.parsePath(path)
+    parsedPath = Curve.PathParser.parsePath(path)
+    subject = parsedPath.subpaths[0]
+
+    expect(parsedPath.subpaths.length).toEqual 1
     expect(subject.closed).toEqual true
     expect(subject.nodes.length).toEqual 3
 
@@ -71,13 +73,11 @@ describe 'Curve.PathParser.parsePath', ->
     expect(_.pick(subject.nodes[0].handleIn, 'x', 'y')).toEqual x: -10, y: 0
     expect(_.pick(subject.nodes[0].handleOut, 'x', 'y')).toEqual x: 10, y: 0
     expect(subject.nodes[0].isJoined).toEqual true
-    expect(subject.nodes[0].isMoveNode).toEqual true
 
     expect(_.pick(subject.nodes[1].point, 'x', 'y')).toEqual x: 80, y: 60
     expect(_.pick(subject.nodes[1].handleIn, 'x', 'y')).toEqual x: -10, y: -5
     expect(_.pick(subject.nodes[1].handleOut, 'x', 'y')).toEqual x: 10, y: 5
     expect(subject.nodes[1].isJoined).toEqual true
-    expect(subject.nodes[1].isMoveNode).toEqual false
 
     expect(_.pick(subject.nodes[2].point, 'x', 'y')).toEqual x: 60, y: 80
     expect(_.pick(subject.nodes[2].handleIn, 'x', 'y')).toEqual x: 8, y: 23
@@ -86,7 +86,10 @@ describe 'Curve.PathParser.parsePath', ->
 
   it 'parses closed, non-wrapped shapes', ->
     path = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-    subject = Curve.PathParser.parsePath(path)
+    parsedPath = Curve.PathParser.parsePath(path)
+    subject = parsedPath.subpaths[0]
+
+    expect(parsedPath.subpaths.length).toEqual 1
     expect(subject.closed).toEqual true
     expect(subject.nodes.length).toEqual 4
 
@@ -106,30 +109,31 @@ describe 'Curve.PathParser.parsePath', ->
     expect(_.pick(subject.nodes[3].handleIn, 'x', 'y')).toEqual x: -10, y: 0
     expect(subject.nodes[3].handleOut).toEqual null
 
-  it 'parses closed, non-wrapped shapes', ->
+  it 'parses closed, non-wrapped shapes; subpaths', ->
     path = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80Z M30,40L15,16Z'
-    subject = Curve.PathParser.parsePath(path)
+    parsedPath = Curve.PathParser.parsePath(path)
+    expect(parsedPath.subpaths.length).toEqual 2
+
+    subject = parsedPath.subpaths[0]
     expect(subject.closed).toEqual true
-    expect(subject.nodes.length).toEqual 5
+    expect(subject.nodes.length).toEqual 3
 
-    expect(subject.nodes[2].isMoveNode).toEqual false
-    expect(subject.nodes[2].isCloseNode).toEqual true
+    subject = parsedPath.subpaths[1]
+    expect(subject.closed).toEqual true
+    expect(_.pick(subject.nodes[0].point, 'x', 'y')).toEqual x: 30, y: 40
+    expect(subject.nodes[0].handleOut).toEqual null
+    expect(subject.nodes[0].handleIn).toEqual null
 
-    expect(_.pick(subject.nodes[3].point, 'x', 'y')).toEqual x: 30, y: 40
-    expect(subject.nodes[3].handleOut).toEqual null
-    expect(subject.nodes[3].handleIn).toEqual null
-    expect(subject.nodes[3].isMoveNode).toEqual true
-    expect(subject.nodes[3].isCloseNode).toEqual false
-
-    expect(_.pick(subject.nodes[4].point, 'x', 'y')).toEqual x: 15, y: 16
-    expect(subject.nodes[4].handleOut).toEqual null
-    expect(subject.nodes[4].handleIn).toEqual null
-    expect(subject.nodes[4].isMoveNode).toEqual false
-    expect(subject.nodes[4].isCloseNode).toEqual true
+    expect(_.pick(subject.nodes[1].point, 'x', 'y')).toEqual x: 15, y: 16
+    expect(subject.nodes[1].handleOut).toEqual null
+    expect(subject.nodes[1].handleIn).toEqual null
 
   it 'parses non closed shapes', ->
     path = 'M10,10C20,10 70,55 80,60C90,65 68,103 60,80'
-    subject = Curve.PathParser.parsePath(path)
+    parsedPath = Curve.PathParser.parsePath(path)
+    subject = parsedPath.subpaths[0]
+
+    expect(parsedPath.subpaths.length).toEqual 1
     expect(subject.closed).toEqual false
     expect(subject.nodes.length).toEqual 3
 

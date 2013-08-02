@@ -1,7 +1,5 @@
 _ = window._ or require 'underscore'
 
-{Node} = Curve
-
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
 parsePath = (pathString) ->
@@ -12,19 +10,18 @@ parsePath = (pathString) ->
 # Parses the result of lexPath
 parseTokens = (groupedCommands) ->
   result =
-    closed: false
-    nodes: []
+    subpaths: []
 
   currentPoint = null # svg is stateful. Each command will set this.
   firstHandle = null
 
-  movePoint = null
-  makeMoveNode = ->
-    return unless movePoint
+  currentSubpath = null
+  addNewSubpath = (movePoint) ->
     node = new Node(movePoint)
-    node.isMoveNode = true
-    movePoint = null
-    result.nodes.push(node)
+    currentSubpath =
+      closed: false
+      nodes: [node]
+    result.subpaths.push(currentSubpath)
     node
 
   slicePoint = (array, index) ->
@@ -38,44 +35,33 @@ parseTokens = (groupedCommands) ->
     command = groupedCommands[i]
     switch command.type
       when 'M'
-        movePoint = currentPoint = command.parameters
+        currentPoint = command.parameters
+        addNewSubpath(currentPoint)
 
       when 'L', 'l'
-        moveNode = makeMoveNode()
-        firstNode = moveNode if moveNode
-
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'l'
 
         currentPoint = slicePoint(params, 0)
-        result.nodes.push(new Node(currentPoint))
+        currentSubpath.nodes.push(new Node(currentPoint))
 
       when 'H', 'h'
-        moveNode = makeMoveNode()
-        firstNode = moveNode if moveNode
-
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'h'
 
         currentPoint = [params[0], currentPoint[1]]
-        result.nodes.push(new Node(currentPoint))
+        currentSubpath.nodes.push(new Node(currentPoint))
 
       when 'V', 'v'
-        moveNode = makeMoveNode()
-        firstNode = moveNode if moveNode
-
         params = command.parameters
         if command.type == 'v'
           params = makeAbsolute([0, params[0]])
           params = params.slice(1)
 
         currentPoint = [currentPoint[0], params[0]]
-        result.nodes.push(new Node(currentPoint))
+        currentSubpath.nodes.push(new Node(currentPoint))
 
       when 'C', 'c'
-        moveNode = makeMoveNode()
-        firstNode = moveNode if moveNode
-
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'c'
 
@@ -83,24 +69,24 @@ parseTokens = (groupedCommands) ->
         handleIn = slicePoint(params, 2)
         handleOut = slicePoint(params, 0)
 
-        lastNode = result.nodes[result.nodes.length - 1]
+        firstNode = currentSubpath.nodes[0]
+        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
         lastNode.setAbsoluteHandleOut(handleOut)
 
         nextCommand = groupedCommands[i + 1]
-
         if nextCommand and nextCommand.type in ['z', 'Z'] and firstNode and firstNode.point.equals(currentPoint)
           firstNode.setAbsoluteHandleIn(handleIn)
         else
           curveNode = new Node(currentPoint)
           curveNode.setAbsoluteHandleIn(handleIn)
-          result.nodes.push(curveNode)
+          currentSubpath.nodes.push(curveNode)
 
       when 'Z', 'z'
-        lastNode = result.nodes[result.nodes.length - 1]
-        lastNode.isCloseNode = true if lastNode
-        result.closed = true
+        currentSubpath.closed = true
 
-  node.computeIsjoined() for node in result.nodes
+  for subpath in result.subpaths
+    node.computeIsjoined() for node in subpath.nodes
+
   result
 
 # Returns a list of svg commands with their parameters.
