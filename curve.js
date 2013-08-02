@@ -880,6 +880,22 @@
       }).call(this)).join(' ');
     };
 
+    Path.prototype.getNodes = function() {
+      var subpath;
+
+      return _.flatten((function() {
+        var _i, _len, _ref1, _results;
+
+        _ref1 = this.subpaths;
+        _results = [];
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          subpath = _ref1[_i];
+          _results.push(subpath.getNodes());
+        }
+        return _results;
+      }).call(this), true);
+    };
+
     Path.prototype.addNode = function(node) {
       this._addCurrentSubpathIfNotPresent();
       return this.currentSubpath.addNode(node);
@@ -1315,10 +1331,10 @@
     };
 
     SelectionView.prototype.onInsertNode = function(object, _arg) {
-      var index, node, _ref1;
+      var index, value, _ref1;
 
-      _ref1 = _arg != null ? _arg : {}, node = _ref1.node, index = _ref1.index;
-      this._insertNodeEditor(object, index);
+      _ref1 = _arg != null ? _arg : {}, value = _ref1.value, index = _ref1.index;
+      this._addNodeEditor(value);
       return null;
     };
 
@@ -1337,33 +1353,35 @@
     };
 
     SelectionView.prototype._createNodeEditors = function(object) {
-      var i, nodeEditor, _i, _j, _len, _ref1, _ref2, _results;
+      var node, nodeEditor, nodes, _i, _j, _len, _len1, _ref1, _results;
 
       this._nodeEditorStash = this.nodeEditors;
       this.nodeEditors = [];
       if (object) {
-        for (i = _i = 0, _ref1 = object.nodes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
-          this._insertNodeEditor(object, i);
+        nodes = object.getNodes();
+        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
+          node = nodes[_i];
+          this._addNodeEditor(node);
         }
       }
-      _ref2 = this._nodeEditorStash;
+      _ref1 = this._nodeEditorStash;
       _results = [];
-      for (_j = 0, _len = _ref2.length; _j < _len; _j++) {
-        nodeEditor = _ref2[_j];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        nodeEditor = _ref1[_j];
         _results.push(nodeEditor.setNode(null));
       }
       return _results;
     };
 
-    SelectionView.prototype._insertNodeEditor = function(object, index) {
+    SelectionView.prototype._addNodeEditor = function(node) {
       var nodeEditor;
 
-      if (!(object && object.nodes[index])) {
+      if (!node) {
         return false;
       }
       nodeEditor = this._nodeEditorStash.length ? this._nodeEditorStash.pop() : new Curve.NodeEditor(this.svgDocument, this.model);
-      nodeEditor.setNode(object.nodes[index]);
-      this.nodeEditors.splice(index, 0, nodeEditor);
+      nodeEditor.setNode(node);
+      this.nodeEditors.push(nodeEditor);
       return true;
     };
 

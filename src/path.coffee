@@ -17,6 +17,9 @@ class Path extends EventEmitter
   toPathString: ->
     (subpath.toPathString() for subpath in @subpaths).join(' ')
 
+  getNodes: ->
+    _.flatten(subpath.getNodes() for subpath in @subpaths, true)
+
   # FIXME: the currentSubpath thing will probably leave. depends on how insert
   # nodes works in interface.
   addNode: (node) ->

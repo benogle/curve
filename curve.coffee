@@ -658,6 +658,9 @@ class Path extends EventEmitter
   toPathString: ->
     (subpath.toPathString() for subpath in @subpaths).join(' ')
 
+  getNodes: ->
+    _.flatten(subpath.getNodes() for subpath in @subpaths, true)
+
   # FIXME: the currentSubpath thing will probably leave. depends on how insert
   # nodes works in interface.
   addNode: (node) ->
@@ -916,9 +919,9 @@ class Curve.SelectionView
     @objectSelection.setObject(object)
     @_createNodeEditors(object)
 
-  onInsertNode: (object, {node, index}={}) =>
-    @_insertNodeEditor(object, index)
-    null # Force null. _insertNodeEditor returns true and tells event emitter 'once'. Ugh
+  onInsertNode: (object, {value, index}={}) =>
+    @_addNodeEditor(value)
+    null # Force null. otherwise _insertNodeEditor returns true and tells event emitter 'once'. Ugh
 
   _bindToObject: (object) ->
     return unless object
@@ -933,22 +936,22 @@ class Curve.SelectionView
     @nodeEditors = []
 
     if object
-      for i in [0...object.nodes.length]
-        @_insertNodeEditor(object, i)
+      nodes = object.getNodes()
+      @_addNodeEditor(node) for node in nodes
 
     for nodeEditor in @_nodeEditorStash
       nodeEditor.setNode(null)
 
-  _insertNodeEditor: (object, index) ->
-    return false unless object and object.nodes[index]
+  _addNodeEditor: (node) ->
+    return false unless node
 
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
       new Curve.NodeEditor(@svgDocument, @model)
 
-    nodeEditor.setNode(object.nodes[index])
-    @nodeEditors.splice(index, 0, nodeEditor)
+    nodeEditor.setNode(node)
+    @nodeEditors.push(nodeEditor)
     true
 
   _findNodeEditorForNode: (node) ->

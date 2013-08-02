@@ -34,7 +34,7 @@ describe 'Curve.SelectionView', ->
 
   it 'renders node editor when selecting a node', ->
     @model.setSelected(@path)
-    @model.setSelectedNode(@path.nodes[0])
+    @model.setSelectedNode(@path.subpaths[0].nodes[0])
 
     expect($('svg circle.node-editor-handle:eq(0)')).toShow()
     expect($('svg circle.node-editor-handle:eq(1)')).toShow()
@@ -48,7 +48,7 @@ describe 'Curve.SelectionView', ->
 
   it 'hides handles when unselecting object', ->
     @model.setSelected(@path)
-    @model.setSelectedNode(@path.nodes[0])
+    @model.setSelectedNode(@path.subpaths[0].nodes[0])
 
     expect($('svg circle.node-editor-handle:eq(0)')).toShow()
     expect($('svg circle.node-editor-handle:eq(1)')).toShow()
