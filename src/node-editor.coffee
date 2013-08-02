@@ -11,7 +11,7 @@ class Curve.NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: (@selectionModel) ->
+  constructor: (@svgDocument, @selectionModel) ->
     @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
@@ -76,7 +76,7 @@ class Curve.NodeEditor
 
   pointForEvent: (event) ->
     {clientX, clientY} = event
-    {top, left} = $(window.svg.node).offset()
+    {top, left} = $(@svgDocument.node).offset()
 
     new Curve.Point(event.clientX - left, event.clientY - top)
 
@@ -88,7 +88,7 @@ class Curve.NodeEditor
     node.removeListener 'change', @render
 
   _setupNodeElement: ->
-    @nodeElement = svg.circle(@nodeSize)
+    @nodeElement = @svgDocument.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
 
     @nodeElement.click (e) =>
@@ -106,16 +106,16 @@ class Curve.NodeEditor
       @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
-    @lineElement = svg.path('')
+    @lineElement = @svgDocument.path('')
     @lineElement.node.setAttribute('class', 'node-editor-lines')
 
   _setupHandleElements: ->
     self = this
 
-    @handleElements = svg.set()
+    @handleElements = @svgDocument.set()
     @handleElements.add(
-      svg.circle(@handleSize),
-      svg.circle(@handleSize)
+      @svgDocument.circle(@handleSize),
+      @svgDocument.circle(@handleSize)
     )
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')

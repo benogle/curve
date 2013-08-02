@@ -1,11 +1,12 @@
 describe 'Curve.SelectionView', ->
+  svg = null
   beforeEach ->
     loadFixtures 'canvas.html'
-    window.svg = SVG("canvas")
+    svg = SVG("canvas")
 
   beforeEach ->
     @model = new Curve.SelectionModel()
-    @s = new Curve.SelectionView(@model)
+    @s = new Curve.SelectionView(svg, @model)
     @path = new Curve.Path(svg)
     @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
     @path.close()

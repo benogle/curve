@@ -37,11 +37,13 @@
 
 
   window.main = function() {
-    this.svg = SVG("canvas");
+    var svg;
+
+    svg = SVG("canvas");
     Curve["import"](this.svg, Curve.Examples.heckert);
     this.selectionModel = new Curve.SelectionModel();
-    this.selectionView = new Curve.SelectionView(this.selectionModel);
-    this.tool = new Curve.PointerTool(this.svg, {
+    this.selectionView = new Curve.SelectionView(svg, this.selectionModel);
+    this.tool = new Curve.PointerTool(svg, {
       selectionModel: this.selectionModel,
       selectionView: this.selectionView
     });
@@ -49,13 +51,15 @@
   };
 
   window._main = function() {
-    this.svg = SVG("canvas");
-    this.path1 = new Path(this.svg);
+    var svg;
+
+    svg = SVG("canvas");
+    this.path1 = new Path(svg);
     this.path1.addNode(new Node([50, 50], [-10, 0], [10, 0]));
     this.path1.addNode(new Node([80, 60], [-10, -5], [10, 5]));
     this.path1.addNode(new Node([60, 80], [10, 0], [-10, 0]));
     this.path1.close();
-    this.path2 = new Path(this.svg);
+    this.path2 = new Path(svg);
     this.path2.addNode(new Node([150, 50], [-10, 0], [10, 0]));
     this.path2.addNode(new Node([220, 100], [-10, -5], [10, 5]));
     this.path2.addNode(new Node([160, 120], [10, 0], [-10, 0]));
@@ -66,15 +70,15 @@
       'stroke-width': 2
     });
     this.selectionModel = new Curve.SelectionModel();
-    this.selectionView = new Curve.SelectionView(selectionModel);
+    this.selectionView = new Curve.SelectionView(svg, selectionModel);
     this.selectionModel.setSelected(this.path1);
     this.selectionModel.setSelectedNode(this.path1.nodes[2]);
-    this.tool = new Curve.PointerTool(this.svg, {
+    this.tool = new Curve.PointerTool(svg, {
       selectionModel: selectionModel,
       selectionView: selectionView
     });
     this.tool.activate();
-    return this.pen = new Curve.PenTool(this.svg, {
+    return this.pen = new Curve.PenTool(svg, {
       selectionModel: selectionModel,
       selectionView: selectionView
     });
@@ -291,7 +295,8 @@
 
     lineElement = null;
 
-    function NodeEditor(selectionModel) {
+    function NodeEditor(svgDocument, selectionModel) {
+      this.svgDocument = svgDocument;
       this.selectionModel = selectionModel;
       this.onDraggingHandleOut = __bind(this.onDraggingHandleOut, this);
       this.onDraggingHandleIn = __bind(this.onDraggingHandleIn, this);
@@ -386,7 +391,7 @@
       var clientX, clientY, left, top, _ref;
 
       clientX = event.clientX, clientY = event.clientY;
-      _ref = $(window.svg.node).offset(), top = _ref.top, left = _ref.left;
+      _ref = $(this.svgDocument.node).offset(), top = _ref.top, left = _ref.left;
       return new Curve.Point(event.clientX - left, event.clientY - top);
     };
 
@@ -407,7 +412,7 @@
     NodeEditor.prototype._setupNodeElement = function() {
       var _this = this;
 
-      this.nodeElement = svg.circle(this.nodeSize);
+      this.nodeElement = this.svgDocument.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
       this.nodeElement.click(function(e) {
         e.stopPropagation();
@@ -433,7 +438,7 @@
     };
 
     NodeEditor.prototype._setupLineElement = function() {
-      this.lineElement = svg.path('');
+      this.lineElement = this.svgDocument.path('');
       return this.lineElement.node.setAttribute('class', 'node-editor-lines');
     };
 
@@ -442,8 +447,8 @@
         _this = this;
 
       self = this;
-      this.handleElements = svg.set();
-      this.handleElements.add(svg.circle(this.handleSize), svg.circle(this.handleSize));
+      this.handleElements = this.svgDocument.set();
+      this.handleElements.add(this.svgDocument.circle(this.handleSize), this.svgDocument.circle(this.handleSize));
       this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.click(function(e) {
@@ -581,9 +586,10 @@
   })(EventEmitter);
 
   Curve.ObjectSelection = (function() {
-    function ObjectSelection(options) {
+    function ObjectSelection(svgDocument, options) {
       var _base, _ref;
 
+      this.svgDocument = svgDocument;
       this.options = options != null ? options : {};
       this.render = __bind(this.render, this);
       if ((_ref = (_base = this.options)["class"]) == null) {
@@ -600,7 +606,7 @@
       }
       this.path = null;
       if (this.object) {
-        this.path = svg.path('').front();
+        this.path = this.svgDocument.path('').front();
         this.path.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
         return this.render();
       }
@@ -1032,7 +1038,7 @@
     Path.prototype._setupSVGObject = function(svgEl) {
       this.svgEl = svgEl;
       if (!this.svgEl) {
-        this.svgEl = svg.path().attr(attrs);
+        this.svgEl = this.svgDocument.path().attr(attrs);
       }
       Curve.Utils.setObjectOnNode(this.svgEl.node, this);
       return this._parseFromPathString(this.svgEl.attr('d'));
@@ -1058,15 +1064,15 @@
     }
 
     PenTool.prototype.activate = function() {
-      svg.on('mousedown', this.onMouseDown);
-      svg.on('mousemove', this.onMouseMove);
-      return svg.on('mouseup', this.onMouseUp);
+      this.svgDocument.on('mousedown', this.onMouseDown);
+      this.svgDocument.on('mousemove', this.onMouseMove);
+      return this.svgDocument.on('mouseup', this.onMouseUp);
     };
 
     PenTool.prototype.deactivate = function() {
-      svg.off('mousedown', this.onMouseDown);
-      svg.off('mousemove', this.onMouseMove);
-      return svg.off('mouseup', this.onMouseUp);
+      this.svgDocument.off('mousedown', this.onMouseDown);
+      this.svgDocument.off('mousemove', this.onMouseMove);
+      return this.svgDocument.off('mouseup', this.onMouseUp);
     };
 
     PenTool.prototype.onMouseDown = function(e) {
@@ -1158,24 +1164,25 @@
   $ = window.jQuery || require('underscore');
 
   Curve.PointerTool = (function() {
-    function PointerTool(svg, _arg) {
+    function PointerTool(svgDocument, _arg) {
       var _ref1;
 
+      this.svgDocument = svgDocument;
       _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseMove = __bind(this.onMouseMove, this);
       this.onClick = __bind(this.onClick, this);
-      this._evrect = svg.node.createSVGRect();
+      this._evrect = svgDocument.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
     }
 
     PointerTool.prototype.activate = function() {
-      svg.on('click', this.onClick);
-      return svg.on('mousemove', this.onMouseMove);
+      this.svgDocument.on('click', this.onClick);
+      return this.svgDocument.on('mousemove', this.onMouseMove);
     };
 
     PointerTool.prototype.deactivate = function() {
-      svg.off('click', this.onClick);
-      return svg.off('mousemove', this.onMouseMove);
+      this.svgDocument.off('click', this.onClick);
+      return this.svgDocument.off('mousemove', this.onMouseMove);
     };
 
     PointerTool.prototype.onClick = function(e) {
@@ -1196,7 +1203,7 @@
       var obj;
 
       obj = null;
-      if (e.target !== svg.node) {
+      if (e.target !== this.svgDocument.node) {
         obj = Curve.Utils.getObjectFromNode(e.target);
       }
       return obj;
@@ -1205,10 +1212,10 @@
     PointerTool.prototype._hitWithIntersectionList = function(e) {
       var clas, i, left, nodes, obj, top, _i, _ref1, _ref2;
 
-      _ref1 = $(svg.node).offset(), left = _ref1.left, top = _ref1.top;
+      _ref1 = $(this.svgDocument.node).offset(), left = _ref1.left, top = _ref1.top;
       this._evrect.x = e.clientX - left;
       this._evrect.y = e.clientY - top;
-      nodes = svg.node.getIntersectionList(this._evrect, null);
+      nodes = this.svgDocument.node.getIntersectionList(this._evrect, null);
       obj = null;
       if (nodes.length) {
         for (i = _i = _ref2 = nodes.length - 1; _ref2 <= 0 ? _i <= 0 : _i >= 0; i = _ref2 <= 0 ? ++_i : --_i) {
@@ -1302,7 +1309,8 @@
   Curve.SelectionView = (function() {
     SelectionView.prototype.nodeSize = 5;
 
-    function SelectionView(model) {
+    function SelectionView(svgDocument, model) {
+      this.svgDocument = svgDocument;
       this.model = model;
       this.onInsertNode = __bind(this.onInsertNode, this);
       this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
@@ -1311,8 +1319,8 @@
       this.path = null;
       this.nodeEditors = [];
       this._nodeEditorStash = [];
-      this.objectSelection = new Curve.ObjectSelection();
-      this.objectPreselection = new Curve.ObjectSelection({
+      this.objectSelection = new Curve.ObjectSelection(this.svgDocument);
+      this.objectPreselection = new Curve.ObjectSelection(this.svgDocument, {
         "class": 'object-preselection'
       });
       this.model.on('change:selected', this.onChangeSelected);
@@ -1402,7 +1410,7 @@
       if (!(object && object.nodes[index])) {
         return false;
       }
-      nodeEditor = this._nodeEditorStash.length ? this._nodeEditorStash.pop() : new Curve.NodeEditor(this.model);
+      nodeEditor = this._nodeEditorStash.length ? this._nodeEditorStash.pop() : new Curve.NodeEditor(this.svgDocument, this.model);
       nodeEditor.setNode(object.nodes[index]);
       this.nodeEditors.splice(index, 0, nodeEditor);
       return true;
@@ -1429,12 +1437,11 @@
 
   SvgDocument = (function() {
     function SvgDocument(svgContent, rootNode) {
-      this.svg = SVG(rootNode);
-      window.svg = this.svg;
-      Curve["import"](this.svg, svgContent);
+      this.svgDocument = SVG(rootNode);
+      Curve["import"](this.svgDocument, svgContent);
       this.selectionModel = new Curve.SelectionModel();
-      this.selectionView = new Curve.SelectionView(this.selectionModel);
-      this.tool = new Curve.PointerTool(this.svg, {
+      this.selectionView = new Curve.SelectionView(this.svgDocument, this.selectionModel);
+      this.tool = new Curve.PointerTool(this.svgDocument, {
         selectionModel: this.selectionModel,
         selectionView: this.selectionView
       });

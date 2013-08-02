@@ -1,17 +1,17 @@
 $ = window.jQuery or require 'underscore'
 
 class Curve.PointerTool
-  constructor: (svg, {@selectionModel, @selectionView}={}) ->
-    @_evrect = svg.node.createSVGRect();
+  constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
+    @_evrect = svgDocument.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
 
   activate: ->
-    svg.on 'click', @onClick
-    svg.on 'mousemove', @onMouseMove
+    @svgDocument.on 'click', @onClick
+    @svgDocument.on 'mousemove', @onMouseMove
 
   deactivate: ->
-    svg.off 'click', @onClick
-    svg.off 'mousemove', @onMouseMove
+    @svgDocument.off 'click', @onClick
+    @svgDocument.off 'mousemove', @onMouseMove
 
   onClick: (e) =>
     # obj = @_hitWithIntersectionList(e)
@@ -25,14 +25,14 @@ class Curve.PointerTool
 
   _hitWithTarget: (e) ->
     obj = null
-    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != svg.node
+    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
     obj
 
   _hitWithIntersectionList: (e) ->
-    {left, top} = $(svg.node).offset()
+    {left, top} = $(@svgDocument.node).offset()
     @_evrect.x = e.clientX - left
     @_evrect.y = e.clientY - top
-    nodes = svg.node.getIntersectionList(@_evrect, null)
+    nodes = @svgDocument.node.getIntersectionList(@_evrect, null)
 
     obj = null
     if nodes.length

@@ -29,25 +29,25 @@ else
 ###
 
 window.main = ->
-  @svg = SVG("canvas")
+  svg = SVG("canvas")
   Curve.import(@svg, Curve.Examples.heckert)
 
   @selectionModel = new Curve.SelectionModel()
-  @selectionView = new Curve.SelectionView(@selectionModel)
+  @selectionView = new Curve.SelectionView(svg, @selectionModel)
 
-  @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
+  @tool = new Curve.PointerTool(svg, {@selectionModel, @selectionView})
   @tool.activate()
 
 window._main = ->
-  @svg = SVG("canvas")
+  svg = SVG("canvas")
 
-  @path1 = new Path(@svg)
+  @path1 = new Path(svg)
   @path1.addNode(new Node([50, 50], [-10, 0], [10, 0]))
   @path1.addNode(new Node([80, 60], [-10, -5], [10, 5]))
   @path1.addNode(new Node([60, 80], [10, 0], [-10, 0]))
   @path1.close()
 
-  @path2 = new Path(@svg)
+  @path2 = new Path(svg)
   @path2.addNode(new Node([150, 50], [-10, 0], [10, 0]))
   @path2.addNode(new Node([220, 100], [-10, -5], [10, 5]))
   @path2.addNode(new Node([160, 120], [10, 0], [-10, 0]))
@@ -59,15 +59,15 @@ window._main = ->
     'stroke-width': 2
 
   @selectionModel = new Curve.SelectionModel()
-  @selectionView = new Curve.SelectionView(selectionModel)
+  @selectionView = new Curve.SelectionView(svg, selectionModel)
 
   @selectionModel.setSelected(@path1)
   @selectionModel.setSelectedNode(@path1.nodes[2])
 
-  @tool = new Curve.PointerTool(@svg, {selectionModel, selectionView})
+  @tool = new Curve.PointerTool(svg, {selectionModel, selectionView})
   @tool.activate()
 
-  @pen = new Curve.PenTool(@svg, {selectionModel, selectionView})
+  @pen = new Curve.PenTool(svg, {selectionModel, selectionView})
   #@pen.activate()
 
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
@@ -260,7 +260,7 @@ class Curve.NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: (@selectionModel) ->
+  constructor: (@svgDocument, @selectionModel) ->
     @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
@@ -325,7 +325,7 @@ class Curve.NodeEditor
 
   pointForEvent: (event) ->
     {clientX, clientY} = event
-    {top, left} = $(window.svg.node).offset()
+    {top, left} = $(@svgDocument.node).offset()
 
     new Curve.Point(event.clientX - left, event.clientY - top)
 
@@ -337,7 +337,7 @@ class Curve.NodeEditor
     node.removeListener 'change', @render
 
   _setupNodeElement: ->
-    @nodeElement = svg.circle(@nodeSize)
+    @nodeElement = @svgDocument.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
 
     @nodeElement.click (e) =>
@@ -355,16 +355,16 @@ class Curve.NodeEditor
       @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
-    @lineElement = svg.path('')
+    @lineElement = @svgDocument.path('')
     @lineElement.node.setAttribute('class', 'node-editor-lines')
 
   _setupHandleElements: ->
     self = this
 
-    @handleElements = svg.set()
+    @handleElements = @svgDocument.set()
     @handleElements.add(
-      svg.circle(@handleSize),
-      svg.circle(@handleSize)
+      @svgDocument.circle(@handleSize),
+      @svgDocument.circle(@handleSize)
     )
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')
@@ -458,7 +458,7 @@ class Curve.Node extends EventEmitter
 
 #
 class Curve.ObjectSelection
-  constructor: (@options={}) ->
+  constructor: (@svgDocument, @options={}) ->
     @options.class ?= 'object-selection'
 
   setObject: (object) ->
@@ -469,7 +469,7 @@ class Curve.ObjectSelection
     @path.remove() if @path
     @path = null
     if @object
-      @path = svg.path('').front()
+      @path = @svgDocument.path('').front()
       @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
 
@@ -777,7 +777,7 @@ class Curve.Path extends EventEmitter
     -1
 
   _setupSVGObject: (@svgEl) ->
-    @svgEl = svg.path().attr(attrs) unless @svgEl
+    @svgEl = @svgDocument.path().attr(attrs) unless @svgEl
     Curve.Utils.setObjectOnNode(@svgEl.node, this)
     @_parseFromPathString(@svgEl.attr('d'))
 
@@ -789,14 +789,14 @@ class Curve.PenTool
   constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
 
   activate: ->
-    svg.on 'mousedown', @onMouseDown
-    svg.on 'mousemove', @onMouseMove
-    svg.on 'mouseup', @onMouseUp
+    @svgDocument.on 'mousedown', @onMouseDown
+    @svgDocument.on 'mousemove', @onMouseMove
+    @svgDocument.on 'mouseup', @onMouseUp
 
   deactivate: ->
-    svg.off 'mousedown', @onMouseDown
-    svg.off 'mousemove', @onMouseMove
-    svg.off 'mouseup', @onMouseUp
+    @svgDocument.off 'mousedown', @onMouseDown
+    @svgDocument.off 'mousemove', @onMouseMove
+    @svgDocument.off 'mouseup', @onMouseUp
 
   onMouseDown: (e) =>
     makeNode = =>
@@ -855,17 +855,17 @@ Curve.Point = Point
 $ = window.jQuery or require 'underscore'
 
 class Curve.PointerTool
-  constructor: (svg, {@selectionModel, @selectionView}={}) ->
-    @_evrect = svg.node.createSVGRect();
+  constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
+    @_evrect = svgDocument.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
 
   activate: ->
-    svg.on 'click', @onClick
-    svg.on 'mousemove', @onMouseMove
+    @svgDocument.on 'click', @onClick
+    @svgDocument.on 'mousemove', @onMouseMove
 
   deactivate: ->
-    svg.off 'click', @onClick
-    svg.off 'mousemove', @onMouseMove
+    @svgDocument.off 'click', @onClick
+    @svgDocument.off 'mousemove', @onMouseMove
 
   onClick: (e) =>
     # obj = @_hitWithIntersectionList(e)
@@ -879,14 +879,14 @@ class Curve.PointerTool
 
   _hitWithTarget: (e) ->
     obj = null
-    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != svg.node
+    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
     obj
 
   _hitWithIntersectionList: (e) ->
-    {left, top} = $(svg.node).offset()
+    {left, top} = $(@svgDocument.node).offset()
     @_evrect.x = e.clientX - left
     @_evrect.y = e.clientY - top
-    nodes = svg.node.getIntersectionList(@_evrect, null)
+    nodes = @svgDocument.node.getIntersectionList(@_evrect, null)
 
     obj = null
     if nodes.length
@@ -938,13 +938,13 @@ class Curve.SelectionModel extends EventEmitter
 class Curve.SelectionView
   nodeSize: 5
 
-  constructor: (@model) ->
+  constructor: (@svgDocument, @model) ->
     @path = null
     @nodeEditors = []
     @_nodeEditorStash = []
 
-    @objectSelection = new Curve.ObjectSelection()
-    @objectPreselection = new Curve.ObjectSelection(class: 'object-preselection')
+    @objectSelection = new Curve.ObjectSelection(@svgDocument)
+    @objectPreselection = new Curve.ObjectSelection(@svgDocument, class: 'object-preselection')
 
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:preselected', @onChangePreselected
@@ -996,7 +996,7 @@ class Curve.SelectionView
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
-      new Curve.NodeEditor(@model)
+      new Curve.NodeEditor(@svgDocument, @model)
 
     nodeEditor.setNode(object.nodes[index])
     @nodeEditors.splice(index, 0, nodeEditor)
@@ -1011,14 +1011,13 @@ SVG = window.SVG or require('./vendor/svg').SVG
 
 class SvgDocument
   constructor: (svgContent, rootNode) ->
-    @svg = SVG(rootNode)
-    window.svg = @svg #FIXME lol
-    Curve.import(@svg, svgContent)
+    @svgDocument = SVG(rootNode)
+    Curve.import(@svgDocument, svgContent)
 
     @selectionModel = new Curve.SelectionModel()
-    @selectionView = new Curve.SelectionView(@selectionModel)
+    @selectionView = new Curve.SelectionView(@svgDocument, @selectionModel)
 
-    @tool = new Curve.PointerTool(@svg, {@selectionModel, @selectionView})
+    @tool = new Curve.PointerTool(@svgDocument, {@selectionModel, @selectionView})
     @tool.activate()
 
 Curve.SvgDocument = SvgDocument

@@ -6,14 +6,14 @@ class Curve.PenTool
   constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
 
   activate: ->
-    svg.on 'mousedown', @onMouseDown
-    svg.on 'mousemove', @onMouseMove
-    svg.on 'mouseup', @onMouseUp
+    @svgDocument.on 'mousedown', @onMouseDown
+    @svgDocument.on 'mousemove', @onMouseMove
+    @svgDocument.on 'mouseup', @onMouseUp
 
   deactivate: ->
-    svg.off 'mousedown', @onMouseDown
-    svg.off 'mousemove', @onMouseMove
-    svg.off 'mouseup', @onMouseUp
+    @svgDocument.off 'mousedown', @onMouseDown
+    @svgDocument.off 'mousemove', @onMouseMove
+    @svgDocument.off 'mouseup', @onMouseUp
 
   onMouseDown: (e) =>
     makeNode = =>

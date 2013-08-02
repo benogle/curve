@@ -1,7 +1,7 @@
 
 #
 class Curve.ObjectSelection
-  constructor: (@options={}) ->
+  constructor: (@svgDocument, @options={}) ->
     @options.class ?= 'object-selection'
 
   setObject: (object) ->
@@ -12,7 +12,7 @@ class Curve.ObjectSelection
     @path.remove() if @path
     @path = null
     if @object
-      @path = svg.path('').front()
+      @path = @svgDocument.path('').front()
       @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
 

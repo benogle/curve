@@ -124,6 +124,6 @@ class Curve.Path extends EventEmitter
     -1
 
   _setupSVGObject: (@svgEl) ->
-    @svgEl = svg.path().attr(attrs) unless @svgEl
+    @svgEl = @svgDocument.path().attr(attrs) unless @svgEl
     Curve.Utils.setObjectOnNode(@svgEl.node, this)
     @_parseFromPathString(@svgEl.attr('d'))

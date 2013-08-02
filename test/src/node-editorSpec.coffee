@@ -1,7 +1,7 @@
 describe 'Curve.NodeEditor', ->
   beforeEach ->
     loadFixtures 'canvas.html'
-    window.svg = SVG("canvas")
+    svg = SVG("canvas")
 
     @path = new Curve.Path(svg)
     @path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
@@ -10,7 +10,7 @@ describe 'Curve.NodeEditor', ->
     @path.close()
 
     @model = new Curve.SelectionModel()
-    @s = new Curve.NodeEditor()
+    @s = new Curve.NodeEditor(svg)
 
   describe 'dragging handles', ->
     beforeEach ->

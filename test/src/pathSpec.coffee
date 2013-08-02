@@ -1,7 +1,9 @@
 describe 'Curve.Path', ->
+  svg = null
+
   beforeEach ->
     loadFixtures 'canvas.html'
-    window.svg = SVG("canvas")
+    svg = SVG("canvas")
 
   it 'can be created', ->
     path = new Curve.Path(svg)

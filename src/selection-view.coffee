@@ -3,13 +3,13 @@
 class Curve.SelectionView
   nodeSize: 5
 
-  constructor: (@model) ->
+  constructor: (@svgDocument, @model) ->
     @path = null
     @nodeEditors = []
     @_nodeEditorStash = []
 
-    @objectSelection = new Curve.ObjectSelection()
-    @objectPreselection = new Curve.ObjectSelection(class: 'object-preselection')
+    @objectSelection = new Curve.ObjectSelection(@svgDocument)
+    @objectPreselection = new Curve.ObjectSelection(@svgDocument, class: 'object-preselection')
 
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:preselected', @onChangePreselected
@@ -61,7 +61,7 @@ class Curve.SelectionView
     nodeEditor = if @_nodeEditorStash.length
       @_nodeEditorStash.pop()
     else
-      new Curve.NodeEditor(@model)
+      new Curve.NodeEditor(@svgDocument, @model)
 
     nodeEditor.setNode(object.nodes[index])
     @nodeEditors.splice(index, 0, nodeEditor)
