@@ -22,6 +22,18 @@ describe 'Curve.Subpath', ->
       expect(pathStr).toMatch(/^M50,50C60,50/)
       expect(pathStr).toMatch(/Z$/)
 
+  describe 'creating', ->
+    it 'can be created with nodes and close', ->
+      nodes = [
+        new Curve.Node([50, 50], [-10, 0], [10, 0])
+        new Curve.Node([80, 60], [-10, -5], [10, 5])
+        new Curve.Node([60, 80], [10, 0], [-10, 0])
+      ]
+      @path = new Curve.Subpath({closed: true, nodes})
+
+      expect(@path.closed).toEqual true
+      expect(@path.nodes.length).toEqual 3
+
   describe 'updating', ->
     beforeEach ->
       @path = new Curve.Subpath()

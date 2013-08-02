@@ -12,6 +12,9 @@ parseTokens = (groupedCommands) ->
   result =
     subpaths: []
 
+  # Just a move command? We dont care.
+  return result if groupedCommands.length == 1 and groupedCommands[0].type in ['M', 'm']
+
   currentPoint = null # svg is stateful. Each command will set this.
   firstHandle = null
 
