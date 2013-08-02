@@ -2,37 +2,21 @@ _ = window._ or require 'underscore'
 
 EventEmitter = window.EventEmitter or require('events').EventEmitter
 
+# Subpath handles a single path from move node -> close node.
 #
+# Svg paths can have many subpaths like this:
+#
+#   M50,50L20,30Z  M4,5L2,3Z
+#
+# Each one of these will be represented by this Subpath class.
 class Subpath extends EventEmitter
-  constructor: ({isClosed}={}) ->
+  constructor: ({@path, @closed, nodes}={}) ->
     @nodes = []
-    @isClosed = !!isClosed
+    @setNodes(nodes)
+    @closed = !!@closed
 
   toString: ->
     "Subpath #{@toPathString()}"
-
-  getNodes: -> @nodes
-
-  addNode: (node) ->
-    @insertNode(node, @nodes.length)
-
-  insertNode: (node, index) ->
-    @_bindNode(node)
-    @nodes.splice(index, 0, node)
-
-    args =
-      event: 'insert:node'
-      index: index
-      value: node
-    @emit('insert:node', this, args)
-    @emit('change', this, args)
-
-  close: ->
-    @isClosed = true
-
-    args = event: 'close'
-    @emit('close', this, args)
-    @emit('change', this, args)
 
   toPathString: ->
     path = ''
@@ -59,8 +43,45 @@ class Subpath extends EventEmitter
 
       lastNode = node
 
-    path += closePath(@nodes[0], @nodes[@nodes.length-1]) if @isClosed
+    path += closePath(@nodes[0], @nodes[@nodes.length-1]) if @closed
     path
+
+  getNodes: -> @nodes
+
+  setNodes: (nodes) ->
+    return unless nodes and _.isArray(nodes)
+
+    @_unbindNode(node) for node in @nodes
+    @_bindNode(node) for node in nodes
+
+    @nodes = nodes
+
+    args =
+      event: 'replace:nodes'
+      value: @nodes
+    @emit(args.event, this, args)
+    @emit('change', this, args)
+
+  addNode: (node) ->
+    @insertNode(node, @nodes.length)
+
+  insertNode: (node, index) ->
+    @_bindNode(node)
+    @nodes.splice(index, 0, node)
+
+    args =
+      event: 'insert:node'
+      index: index
+      value: node
+    @emit('insert:node', this, args)
+    @emit('change', this, args)
+
+  close: ->
+    @closed = true
+
+    args = event: 'close'
+    @emit('close', this, args)
+    @emit('change', this, args)
 
   onNodeChange: (node, eventArgs) =>
     index = @_findNodeIndex(node)
@@ -68,6 +89,8 @@ class Subpath extends EventEmitter
 
   _bindNode: (node) ->
     node.on 'change', @onNodeChange
+  _unbindNode: (node) ->
+    node.off 'change', @onNodeChange
 
   _findNodeIndex: (node) ->
     for i in [0...@nodes.length]

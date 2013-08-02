@@ -81,3 +81,22 @@ describe 'Curve.Subpath', ->
         event: 'insert:node',
         index: 0
         value: node
+
+    it 'nodes can be replaced', ->
+      @path.on 'change', changeSpy = jasmine.createSpy()
+      @path.on 'replace:nodes', replaceSpy = jasmine.createSpy()
+
+      nodes = [
+        new Curve.Node([20, 30], [-10, 0], [10, 0])
+      ]
+      @path.setNodes(nodes)
+
+      expect(changeSpy).toHaveBeenCalled()
+      expect(replaceSpy).toHaveBeenCalled()
+      expect(replaceSpy.mostRecentCall.args[1]).toEqual
+        event: 'replace:nodes'
+        value: nodes
+
+      expect(changeSpy.callCount).toEqual 1
+      nodes[0].setPoint([70, 70])
+      expect(changeSpy.callCount).toEqual 2
