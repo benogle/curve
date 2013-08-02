@@ -497,6 +497,9 @@ parseTokens = (groupedCommands) ->
   result =
     subpaths: []
 
+  # Just a move command? We dont care.
+  return result if groupedCommands.length == 1 and groupedCommands[0].type in ['M', 'm']
+
   currentPoint = null # svg is stateful. Each command will set this.
   firstHandle = null
 
@@ -646,97 +649,79 @@ IDS = 0
 #
 class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
-    @path = null
-    @nodes = []
-    @isClosed = false
-
+    @id = IDS++
+    @subpaths = []
     @_setupSVGObject(svgEl)
 
-    @id = IDS++
-
   toString: ->
-    "Path #{@id}"
+    "Path #{@id} #{@toPathString()}"
+  toPathString: ->
+    (subpath.toPathString() for subpath in @subpaths).join(' ')
 
+  # FIXME: the currentSubpath thing will probably leave. depends on how insert
+  # nodes works in interface.
   addNode: (node) ->
-    @insertNode(node, @nodes.length)
-
+    @_addCurrentSubpathIfNotPresent()
+    @currentSubpath.addNode(node)
   insertNode: (node, index) ->
-    @_bindNode(node)
-    @nodes.splice(index, 0, node)
-    @render()
+    @_addCurrentSubpathIfNotPresent()
+    @currentSubpath.insertNode(node, index)
+  close: ->
+    @_addCurrentSubpathIfNotPresent()
+    @currentSubpath.close()
+  _addCurrentSubpathIfNotPresent: ->
+    @currentSubpath = @_createSubpath() unless @currentSubpath
+  # End currentSubpath stuff
+
+  addSubpath: (subpath) ->
+    @subpaths.push(subpath)
+    @_bindSubpath(subpath)
 
     args =
-      event: 'insert:node'
-      index: index
-      value: node
-    @emit('insert:node', this, args)
+      event: 'add:subpath'
+      value: subpath
+    @emit(args.event, this, args)
     @emit('change', this, args)
 
-  close: ->
-    @isClosed = true
-    @render()
-
-    args = event: 'close'
-    @emit('close', this, args)
-    @emit('change', this, args)
+    subpath
 
   render: (svgEl=@svgEl) ->
     pathStr = @toPathString()
     svgEl.attr(d: pathStr) if pathStr
 
-  toPathString: ->
-    path = ''
-    lastPoint = null
+  onSubpathEvent: (subpath, eventArgs) =>
+    @emit eventArgs.event, this, _.extend({subpath}, eventArgs)
 
-    makeCurve = (fromNode, toNode) ->
-      curve = []
-      curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray())
-      curve = curve.concat(toNode.getAbsoluteHandleIn().toArray())
-      curve = curve.concat(toNode.point.toArray())
-      'C' + curve.join(',')
-
-    closePath = (firstNode, lastNode)->
-      closingPath = ''
-      closingPath += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
-      closingPath += 'Z'
-
-    for node in @nodes
-      if node.isMoveNode or !path
-        firstNode = node
-        path += 'M' + node.point.toArray().join(',')
-      else
-        path += makeCurve(lastNode, node)
-
-      lastNode = node
-      path += closePath(firstNode, lastNode) if node.isCloseNode
-
-    if @isClosed and path[path.length - 1] != 'Z'
-      closePath(firstNode, @nodes[@nodes.length-1])
-
-    path
-
-  onNodeChange: (node, eventArgs) =>
+  onSubpathChange: (subpath, eventArgs) =>
     @render()
+    @emit 'change', this, _.extend({subpath}, eventArgs)
 
-    index = @_findNodeIndex(node)
-    @emit 'change', this, _.extend({index}, eventArgs)
+  _createSubpath: (args) ->
+    @addSubpath(new Subpath(_.extend({path: this}, args)))
+
+  _bindSubpath: (subpath) ->
+    return unless subpath
+    subpath.on 'change', @onSubpathChange
+    subpath.on 'close', @onSubpathEvent
+    subpath.on 'insert:node', @onSubpathEvent
+    subpath.on 'replace:nodes', @onSubpathEvent
+
+  _unbindSubpath: (subpath) ->
+    return unless subpath
+    subpath.off 'change', @onSubpathChange
+    subpath.off 'close', @onSubpathEvent
+    subpath.off 'insert:node', @onSubpathEvent
+    subpath.off 'replace:nodes', @onSubpathEvent
 
   _parseFromPathString: (pathString) ->
     return unless pathString
 
     parsedPath = Curve.PathParser.parsePath(pathString)
-    @nodes = parsedPath.nodes
-    @_bindNode(node) for node in @nodes
+    @_createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
 
-    @close() if parsedPath.closed
+    @currentSubpath = _.last(@subpaths)
 
-  _bindNode: (node) ->
-    node.on 'change', @onNodeChange
-
-  _findNodeIndex: (node) ->
-    for i in [0...@nodes.length]
-      return i if @nodes[i] == node
-    -1
+    null
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = @svgDocument.path().attr(attrs) unless @svgEl
@@ -975,37 +960,21 @@ _ = window._ or require 'underscore'
 
 EventEmitter = window.EventEmitter or require('events').EventEmitter
 
+# Subpath handles a single path from move node -> close node.
 #
+# Svg paths can have many subpaths like this:
+#
+#   M50,50L20,30Z  M4,5L2,3Z
+#
+# Each one of these will be represented by this Subpath class.
 class Subpath extends EventEmitter
-  constructor: ({isClosed}={}) ->
+  constructor: ({@path, @closed, nodes}={}) ->
     @nodes = []
-    @isClosed = !!isClosed
+    @setNodes(nodes)
+    @closed = !!@closed
 
   toString: ->
     "Subpath #{@toPathString()}"
-
-  getNodes: -> @nodes
-
-  addNode: (node) ->
-    @insertNode(node, @nodes.length)
-
-  insertNode: (node, index) ->
-    @_bindNode(node)
-    @nodes.splice(index, 0, node)
-
-    args =
-      event: 'insert:node'
-      index: index
-      value: node
-    @emit('insert:node', this, args)
-    @emit('change', this, args)
-
-  close: ->
-    @isClosed = true
-
-    args = event: 'close'
-    @emit('close', this, args)
-    @emit('change', this, args)
 
   toPathString: ->
     path = ''
@@ -1032,8 +1001,45 @@ class Subpath extends EventEmitter
 
       lastNode = node
 
-    path += closePath(@nodes[0], @nodes[@nodes.length-1]) if @isClosed
+    path += closePath(@nodes[0], @nodes[@nodes.length-1]) if @closed
     path
+
+  getNodes: -> @nodes
+
+  setNodes: (nodes) ->
+    return unless nodes and _.isArray(nodes)
+
+    @_unbindNode(node) for node in @nodes
+    @_bindNode(node) for node in nodes
+
+    @nodes = nodes
+
+    args =
+      event: 'replace:nodes'
+      value: @nodes
+    @emit(args.event, this, args)
+    @emit('change', this, args)
+
+  addNode: (node) ->
+    @insertNode(node, @nodes.length)
+
+  insertNode: (node, index) ->
+    @_bindNode(node)
+    @nodes.splice(index, 0, node)
+
+    args =
+      event: 'insert:node'
+      index: index
+      value: node
+    @emit('insert:node', this, args)
+    @emit('change', this, args)
+
+  close: ->
+    @closed = true
+
+    args = event: 'close'
+    @emit('close', this, args)
+    @emit('change', this, args)
 
   onNodeChange: (node, eventArgs) =>
     index = @_findNodeIndex(node)
@@ -1041,6 +1047,8 @@ class Subpath extends EventEmitter
 
   _bindNode: (node) ->
     node.on 'change', @onNodeChange
+  _unbindNode: (node) ->
+    node.off 'change', @onNodeChange
 
   _findNodeIndex: (node) ->
     for i in [0...@nodes.length]

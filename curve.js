@@ -646,11 +646,14 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var addNewSubpath, command, currentPoint, currentSubpath, curveNode, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, nextCommand, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4;
+    var addNewSubpath, command, currentPoint, currentSubpath, curveNode, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, nextCommand, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4, _ref5;
 
     result = {
       subpaths: []
     };
+    if (groupedCommands.length === 1 && ((_ref1 = groupedCommands[0].type) === 'M' || _ref1 === 'm')) {
+      return result;
+    }
     currentPoint = null;
     firstHandle = null;
     currentSubpath = null;
@@ -673,7 +676,7 @@
         return val + currentPoint[i % 2];
       });
     };
-    for (i = _i = 0, _ref1 = groupedCommands.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+    for (i = _i = 0, _ref2 = groupedCommands.length; 0 <= _ref2 ? _i < _ref2 : _i > _ref2; i = 0 <= _ref2 ? ++_i : --_i) {
       command = groupedCommands[i];
       switch (command.type) {
         case 'M':
@@ -721,7 +724,7 @@
           lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
           lastNode.setAbsoluteHandleOut(handleOut);
           nextCommand = groupedCommands[i + 1];
-          if (nextCommand && ((_ref2 = nextCommand.type) === 'z' || _ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint)) {
+          if (nextCommand && ((_ref3 = nextCommand.type) === 'z' || _ref3 === 'Z') && firstNode && firstNode.point.equals(currentPoint)) {
             firstNode.setAbsoluteHandleIn(handleIn);
           } else {
             curveNode = new Node(currentPoint);
@@ -734,12 +737,12 @@
           currentSubpath.closed = true;
       }
     }
-    _ref3 = result.subpaths;
-    for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
-      subpath = _ref3[_j];
-      _ref4 = subpath.nodes;
-      for (_k = 0, _len1 = _ref4.length; _k < _len1; _k++) {
-        node = _ref4[_k];
+    _ref4 = result.subpaths;
+    for (_j = 0, _len = _ref4.length; _j < _len; _j++) {
+      subpath = _ref4[_j];
+      _ref5 = subpath.nodes;
+      for (_k = 0, _len1 = _ref5.length; _k < _len1; _k++) {
+        node = _ref5[_k];
         node.computeIsjoined();
       }
     }
@@ -850,47 +853,66 @@
 
       this.svgDocument = svgDocument;
       svgEl = (_arg != null ? _arg : {}).svgEl;
-      this.onNodeChange = __bind(this.onNodeChange, this);
-      this.path = null;
-      this.nodes = [];
-      this.isClosed = false;
-      this._setupSVGObject(svgEl);
+      this.onSubpathChange = __bind(this.onSubpathChange, this);
+      this.onSubpathEvent = __bind(this.onSubpathEvent, this);
       this.id = IDS++;
+      this.subpaths = [];
+      this._setupSVGObject(svgEl);
     }
 
     Path.prototype.toString = function() {
-      return "Path " + this.id;
+      return "Path " + this.id + " " + (this.toPathString());
+    };
+
+    Path.prototype.toPathString = function() {
+      var subpath;
+
+      return ((function() {
+        var _i, _len, _ref1, _results;
+
+        _ref1 = this.subpaths;
+        _results = [];
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          subpath = _ref1[_i];
+          _results.push(subpath.toPathString());
+        }
+        return _results;
+      }).call(this)).join(' ');
     };
 
     Path.prototype.addNode = function(node) {
-      return this.insertNode(node, this.nodes.length);
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.addNode(node);
     };
 
     Path.prototype.insertNode = function(node, index) {
-      var args;
-
-      this._bindNode(node);
-      this.nodes.splice(index, 0, node);
-      this.render();
-      args = {
-        event: 'insert:node',
-        index: index,
-        value: node
-      };
-      this.emit('insert:node', this, args);
-      return this.emit('change', this, args);
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.insertNode(node, index);
     };
 
     Path.prototype.close = function() {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.close();
+    };
+
+    Path.prototype._addCurrentSubpathIfNotPresent = function() {
+      if (!this.currentSubpath) {
+        return this.currentSubpath = this._createSubpath();
+      }
+    };
+
+    Path.prototype.addSubpath = function(subpath) {
       var args;
 
-      this.isClosed = true;
-      this.render();
+      this.subpaths.push(subpath);
+      this._bindSubpath(subpath);
       args = {
-        event: 'close'
+        event: 'add:subpath',
+        value: subpath
       };
-      this.emit('close', this, args);
-      return this.emit('change', this, args);
+      this.emit(args.event, this, args);
+      this.emit('change', this, args);
+      return subpath;
     };
 
     Path.prototype.render = function(svgEl) {
@@ -907,90 +929,59 @@
       }
     };
 
-    Path.prototype.toPathString = function() {
-      var closePath, firstNode, lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref1;
-
-      path = '';
-      lastPoint = null;
-      makeCurve = function(fromNode, toNode) {
-        var curve;
-
-        curve = [];
-        curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
-        curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
-        curve = curve.concat(toNode.point.toArray());
-        return 'C' + curve.join(',');
-      };
-      closePath = function(firstNode, lastNode) {
-        var closingPath;
-
-        closingPath = '';
-        if (lastNode.handleOut || firstNode.handleIn) {
-          closingPath += makeCurve(lastNode, firstNode);
-        }
-        return closingPath += 'Z';
-      };
-      _ref1 = this.nodes;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        node = _ref1[_i];
-        if (node.isMoveNode || !path) {
-          firstNode = node;
-          path += 'M' + node.point.toArray().join(',');
-        } else {
-          path += makeCurve(lastNode, node);
-        }
-        lastNode = node;
-        if (node.isCloseNode) {
-          path += closePath(firstNode, lastNode);
-        }
-      }
-      if (this.isClosed && path[path.length - 1] !== 'Z') {
-        closePath(firstNode, this.nodes[this.nodes.length - 1]);
-      }
-      return path;
-    };
-
-    Path.prototype.onNodeChange = function(node, eventArgs) {
-      var index;
-
-      this.render();
-      index = this._findNodeIndex(node);
-      return this.emit('change', this, _.extend({
-        index: index
+    Path.prototype.onSubpathEvent = function(subpath, eventArgs) {
+      return this.emit(eventArgs.event, this, _.extend({
+        subpath: subpath
       }, eventArgs));
     };
 
+    Path.prototype.onSubpathChange = function(subpath, eventArgs) {
+      this.render();
+      return this.emit('change', this, _.extend({
+        subpath: subpath
+      }, eventArgs));
+    };
+
+    Path.prototype._createSubpath = function(args) {
+      return this.addSubpath(new Subpath(_.extend({
+        path: this
+      }, args)));
+    };
+
+    Path.prototype._bindSubpath = function(subpath) {
+      if (!subpath) {
+        return;
+      }
+      subpath.on('change', this.onSubpathChange);
+      subpath.on('close', this.onSubpathEvent);
+      subpath.on('insert:node', this.onSubpathEvent);
+      return subpath.on('replace:nodes', this.onSubpathEvent);
+    };
+
+    Path.prototype._unbindSubpath = function(subpath) {
+      if (!subpath) {
+        return;
+      }
+      subpath.off('change', this.onSubpathChange);
+      subpath.off('close', this.onSubpathEvent);
+      subpath.off('insert:node', this.onSubpathEvent);
+      return subpath.off('replace:nodes', this.onSubpathEvent);
+    };
+
     Path.prototype._parseFromPathString = function(pathString) {
-      var node, parsedPath, _i, _len, _ref1;
+      var parsedPath, parsedSubpath, _i, _len, _ref1;
 
       if (!pathString) {
         return;
       }
       parsedPath = Curve.PathParser.parsePath(pathString);
-      this.nodes = parsedPath.nodes;
-      _ref1 = this.nodes;
+      _ref1 = parsedPath.subpaths;
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        node = _ref1[_i];
-        this._bindNode(node);
+        parsedSubpath = _ref1[_i];
+        this._createSubpath(parsedSubpath);
       }
-      if (parsedPath.closed) {
-        return this.close();
-      }
-    };
-
-    Path.prototype._bindNode = function(node) {
-      return node.on('change', this.onNodeChange);
-    };
-
-    Path.prototype._findNodeIndex = function(node) {
-      var i, _i, _ref1;
-
-      for (i = _i = 0, _ref1 = this.nodes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
-        if (this.nodes[i] === node) {
-          return i;
-        }
-      }
-      return -1;
+      this.currentSubpath = _.last(this.subpaths);
+      return null;
     };
 
     Path.prototype._setupSVGObject = function(svgEl) {
@@ -1401,49 +1392,17 @@
     __extends(Subpath, _super);
 
     function Subpath(_arg) {
-      var isClosed;
+      var nodes, _ref1;
 
-      isClosed = (_arg != null ? _arg : {}).isClosed;
+      _ref1 = _arg != null ? _arg : {}, this.path = _ref1.path, this.closed = _ref1.closed, nodes = _ref1.nodes;
       this.onNodeChange = __bind(this.onNodeChange, this);
       this.nodes = [];
-      this.isClosed = !!isClosed;
+      this.setNodes(nodes);
+      this.closed = !!this.closed;
     }
 
     Subpath.prototype.toString = function() {
       return "Subpath " + (this.toPathString());
-    };
-
-    Subpath.prototype.getNodes = function() {
-      return this.nodes;
-    };
-
-    Subpath.prototype.addNode = function(node) {
-      return this.insertNode(node, this.nodes.length);
-    };
-
-    Subpath.prototype.insertNode = function(node, index) {
-      var args;
-
-      this._bindNode(node);
-      this.nodes.splice(index, 0, node);
-      args = {
-        event: 'insert:node',
-        index: index,
-        value: node
-      };
-      this.emit('insert:node', this, args);
-      return this.emit('change', this, args);
-    };
-
-    Subpath.prototype.close = function() {
-      var args;
-
-      this.isClosed = true;
-      args = {
-        event: 'close'
-      };
-      this.emit('close', this, args);
-      return this.emit('change', this, args);
     };
 
     Subpath.prototype.toPathString = function() {
@@ -1482,10 +1441,67 @@
         }
         lastNode = node;
       }
-      if (this.isClosed) {
+      if (this.closed) {
         path += closePath(this.nodes[0], this.nodes[this.nodes.length - 1]);
       }
       return path;
+    };
+
+    Subpath.prototype.getNodes = function() {
+      return this.nodes;
+    };
+
+    Subpath.prototype.setNodes = function(nodes) {
+      var args, node, _i, _j, _len, _len1, _ref1;
+
+      if (!(nodes && _.isArray(nodes))) {
+        return;
+      }
+      _ref1 = this.nodes;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        node = _ref1[_i];
+        this._unbindNode(node);
+      }
+      for (_j = 0, _len1 = nodes.length; _j < _len1; _j++) {
+        node = nodes[_j];
+        this._bindNode(node);
+      }
+      this.nodes = nodes;
+      args = {
+        event: 'replace:nodes',
+        value: this.nodes
+      };
+      this.emit(args.event, this, args);
+      return this.emit('change', this, args);
+    };
+
+    Subpath.prototype.addNode = function(node) {
+      return this.insertNode(node, this.nodes.length);
+    };
+
+    Subpath.prototype.insertNode = function(node, index) {
+      var args;
+
+      this._bindNode(node);
+      this.nodes.splice(index, 0, node);
+      args = {
+        event: 'insert:node',
+        index: index,
+        value: node
+      };
+      this.emit('insert:node', this, args);
+      return this.emit('change', this, args);
+    };
+
+    Subpath.prototype.close = function() {
+      var args;
+
+      this.closed = true;
+      args = {
+        event: 'close'
+      };
+      this.emit('close', this, args);
+      return this.emit('change', this, args);
     };
 
     Subpath.prototype.onNodeChange = function(node, eventArgs) {
@@ -1499,6 +1515,10 @@
 
     Subpath.prototype._bindNode = function(node) {
       return node.on('change', this.onNodeChange);
+    };
+
+    Subpath.prototype._unbindNode = function(node) {
+      return node.off('change', this.onNodeChange);
     };
 
     Subpath.prototype._findNodeIndex = function(node) {
