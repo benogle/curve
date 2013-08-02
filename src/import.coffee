@@ -152,7 +152,6 @@ objectifyTransformations = (transform) ->
   trans
 
 Curve.import = (svgDocument, svgString) ->
-  window.paths = []
   IMPORT_FNS =
     path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
 
@@ -165,12 +164,11 @@ Curve.import = (svgDocument, svgString) ->
     .replace(/\n/, '')
     .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
 
+  objects = []
   convertNodes well.childNodes, svgDocument, 0, store, ->
     nodeType = this.node.nodeName
-    window.paths = window.paths.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
+    objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
     null
 
-  # mark temporary div for garbage collection
   well = null
-
-  store
+  objects

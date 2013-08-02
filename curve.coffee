@@ -159,7 +159,6 @@ objectifyTransformations = (transform) ->
   trans
 
 Curve.import = (svgDocument, svgString) ->
-  window.paths = []
   IMPORT_FNS =
     path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
 
@@ -172,15 +171,14 @@ Curve.import = (svgDocument, svgString) ->
     .replace(/\n/, '')
     .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
 
+  objects = []
   convertNodes well.childNodes, svgDocument, 0, store, ->
     nodeType = this.node.nodeName
-    window.paths = window.paths.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
+    objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
     null
 
-  # mark temporary div for garbage collection
   well = null
-
-  store
+  objects
 
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
@@ -1004,15 +1002,22 @@ Curve.Subpath = Subpath
 SVG = window.SVG or require('./vendor/svg').SVG
 
 class SvgDocument
-  constructor: (svgContent, rootNode) ->
+  constructor: (rootNode) ->
+    @objects = []
     @svgDocument = SVG(rootNode)
-    Curve.import(@svgDocument, svgContent)
+
+    @toolLayer = @svgDocument.group()
+    @toolLayer.node.setAttribute('class', 'tool-layer')
 
     @selectionModel = new Curve.SelectionModel()
-    @selectionView = new Curve.SelectionView(@svgDocument, @selectionModel)
+    @selectionView = new Curve.SelectionView(@toolLayer, @selectionModel)
 
     @tool = new Curve.PointerTool(@svgDocument, {@selectionModel, @selectionView})
     @tool.activate()
+
+  import: (svgString) ->
+    @objects = Curve.import(@svgDocument, svgString)
+    @toolLayer.front()
 
 Curve.SvgDocument = SvgDocument
 

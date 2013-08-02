@@ -176,9 +176,8 @@
   };
 
   Curve["import"] = function(svgDocument, svgString) {
-    var IMPORT_FNS, store, well;
+    var IMPORT_FNS, objects, store, well;
 
-    window.paths = [];
     IMPORT_FNS = {
       path: function(el) {
         return [
@@ -191,17 +190,18 @@
     well = document.createElement('div');
     store = {};
     well.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
+    objects = [];
     convertNodes(well.childNodes, svgDocument, 0, store, function() {
       var nodeType;
 
       nodeType = this.node.nodeName;
       if (IMPORT_FNS[nodeType]) {
-        window.paths = window.paths.concat(IMPORT_FNS[nodeType](this));
+        objects = objects.concat(IMPORT_FNS[nodeType](this));
       }
       return null;
     });
     well = null;
-    return store;
+    return objects;
   };
 
   _ = window._ || require('underscore');
@@ -1493,17 +1493,24 @@
   SVG = window.SVG || require('./vendor/svg').SVG;
 
   SvgDocument = (function() {
-    function SvgDocument(svgContent, rootNode) {
+    function SvgDocument(rootNode) {
+      this.objects = [];
       this.svgDocument = SVG(rootNode);
-      Curve["import"](this.svgDocument, svgContent);
+      this.toolLayer = this.svgDocument.group();
+      this.toolLayer.node.setAttribute('class', 'tool-layer');
       this.selectionModel = new Curve.SelectionModel();
-      this.selectionView = new Curve.SelectionView(this.svgDocument, this.selectionModel);
+      this.selectionView = new Curve.SelectionView(this.toolLayer, this.selectionModel);
       this.tool = new Curve.PointerTool(this.svgDocument, {
         selectionModel: this.selectionModel,
         selectionView: this.selectionView
       });
       this.tool.activate();
     }
+
+    SvgDocument.prototype["import"] = function(svgString) {
+      this.objects = Curve["import"](this.svgDocument, svgString);
+      return this.toolLayer.front();
+    };
 
     return SvgDocument;
 
