@@ -46,6 +46,7 @@ class Subpath extends EventEmitter
       'C' + curve.join(',')
 
     closePath = (firstNode, lastNode)->
+      return '' unless firstNode and lastNode
       closingPath = ''
       closingPath += makeCurve(lastNode, firstNode) if lastNode.handleOut or firstNode.handleIn
       closingPath += 'Z'

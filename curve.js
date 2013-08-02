@@ -1485,6 +1485,9 @@
       closePath = function(firstNode, lastNode) {
         var closingPath;
 
+        if (!(firstNode && lastNode)) {
+          return '';
+        }
         closingPath = '';
         if (lastNode.handleOut || firstNode.handleIn) {
           closingPath += makeCurve(lastNode, firstNode);

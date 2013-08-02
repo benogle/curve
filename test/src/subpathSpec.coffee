@@ -1,16 +1,26 @@
 describe 'Curve.Subpath', ->
   beforeEach ->
 
-  it 'can be created', ->
-    subpath = new Curve.Subpath()
-    subpath.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
-    subpath.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
-    subpath.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
-    subpath.close()
+  describe 'toPathString', ->
+    it 'outputs empty path string with NO nodes', ->
+      subpath = new Curve.Subpath()
+      expect(subpath.toPathString()).toEqual ''
 
-    pathStr = subpath.toPathString()
-    expect(pathStr).toMatch(/^M50,50C60,50/)
-    expect(pathStr).toMatch(/Z$/)
+    it 'outputs empty path string closed with NO nodes', ->
+      subpath = new Curve.Subpath()
+      subpath.close()
+      expect(subpath.toPathString()).toEqual ''
+
+    it 'outputs correct path string with nodes', ->
+      subpath = new Curve.Subpath()
+      subpath.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
+      subpath.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
+      subpath.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
+      subpath.close()
+
+      pathStr = subpath.toPathString()
+      expect(pathStr).toMatch(/^M50,50C60,50/)
+      expect(pathStr).toMatch(/Z$/)
 
   describe 'updating', ->
     beforeEach ->
