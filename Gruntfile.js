@@ -65,7 +65,6 @@ module.exports = function(grunt) {
           'vendor/svg.js',
           'vendor/svg.circle.js',
           'vendor/svg.draggable.js',
-          'vendor/svg.import.js',
           'vendor/jquery-2.0.3.js',
           'vendor/underscore.js',
           'vendor/jasmine-jquery.js'

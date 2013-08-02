@@ -12,6 +12,113 @@
     window.Curve = Curve;
   }
 
+  SVG = window.SVG || require('./vendor/svg').SVG;
+
+  SVG.extend(SVG.Element, {
+    "export": function(options, level) {
+      var height, i, isRootSvgElement, name, node, width, _i, _j, _k, _ref, _ref1, _ref2;
+
+      name = this.node.nodeName;
+      node = '';
+      isRootSvgElement = name === 'svg' && !level;
+      options = options || {};
+      if (!options.exclude || !options.exclude.call(this)) {
+        options = options || {};
+        level = level || 0;
+        if (isRootSvgElement) {
+          node += this._whitespaced('<?xml version="1.0" encoding="UTF-8"?>', options.whitespace, level);
+          width = this.attr('width');
+          height = this.attr('height');
+          if (options.width) {
+            this.attr('width', options.width);
+          }
+          if (options.height) {
+            this.attr('height', options.height);
+          }
+        }
+        node += this._whitespaced('<' + name + this.attrToString() + '>', options.whitespace, level);
+        if (isRootSvgElement) {
+          this.attr({
+            width: width,
+            height: height
+          });
+          node += this._whitespaced('<desc>Created with Curve</desc>', options.whitespace, level + 1);
+          if (this._defs) {
+            node += this._whitespaced('<defs>', options.whitespace, level + 1);
+            for (i = _i = 0, _ref = this._defs.children().length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+              node += this._defs.children()[i]["export"](options, level + 2);
+            }
+            node += this._whitespaced('</defs>', options.whitespace, level + 1);
+          }
+        }
+        if (this instanceof SVG.Container) {
+          for (i = _j = 0, _ref1 = this.children().length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+            node += this.children()[i]["export"](options, level + 1);
+          }
+        } else if (this instanceof SVG.Text) {
+          for (i = _k = 0, _ref2 = this.lines.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+            node += this.lines[i]["export"](options, level + 1);
+          }
+        }
+        if (this instanceof SVG.TSpan) {
+          node += this._whitespaced(this.node.firstChild.nodeValue, options.whitespace, level + 1);
+        }
+        node += this._whitespaced('</' + name + '>', options.whitespace, level);
+      }
+      return node;
+    },
+    exportAttr: function(attr) {
+      if (arguments.length === 0) {
+        return this.data('svg-export-attr');
+      }
+      return this.data('svg-export-attr', attr);
+    },
+    attrToString: function() {
+      var attr, data, exportAttrs, isGeneratedId, key, value;
+
+      attr = [];
+      data = this.exportAttr();
+      exportAttrs = this.attr();
+      if (typeof data === 'object') {
+        for (key in data) {
+          if (key !== 'data-svg-export-attr') {
+            exportAttrs[key] = data[key];
+          }
+        }
+      }
+      for (key in exportAttrs) {
+        value = exportAttrs[key];
+        if (key === 'xlink') {
+          key = 'xmlns:xlink';
+        }
+        isGeneratedId = key === 'id' && value.indexOf('Svgjs') > -1;
+        if (!isGeneratedId && key !== 'data-svg-export-attr' && (key !== 'stroke' || parseFloat(exportAttrs['stroke-width']) > 0)) {
+          attr.push(key + '="' + value + '"');
+        }
+      }
+      if (attr.length) {
+        return ' ' + attr.join(' ');
+      } else {
+        return '';
+      }
+    },
+    _whitespaced: function(value, add, level) {
+      var i, space, whitespace, _i, _ref;
+
+      if (add) {
+        whitespace = '';
+        space = add === true ? '  ' : add || '';
+        if (level) {
+          for (i = _i = _ref = level - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+            whitespace += space;
+          }
+        }
+        value = whitespace + value + '\n';
+      }
+      return value;
+    }
+  });
+
   convertNodes = function(nodes, context, level, store, block) {
     var attr, child, clips, element, grandchild, i, j, transform, type, _i, _j, _ref, _ref1, _ref2;
 
@@ -1507,9 +1614,27 @@
       this.tool.activate();
     }
 
-    SvgDocument.prototype["import"] = function(svgString) {
+    SvgDocument.prototype.deserialize = function(svgString) {
       this.objects = Curve["import"](this.svgDocument, svgString);
       return this.toolLayer.front();
+    };
+
+    SvgDocument.prototype.serialize = function() {
+      var svgRoot;
+
+      svgRoot = null;
+      this.svgDocument.each(function() {
+        if (this.node.nodeName === 'svg') {
+          return svgRoot = this;
+        }
+      });
+      if (svgRoot) {
+        return svgRoot["export"]({
+          whitespace: true
+        });
+      } else {
+        return '';
+      }
     };
 
     return SvgDocument;

@@ -13,20 +13,8 @@
 */
 
 window.main = function() {
-  svg = SVG("canvas")
-  Curve.import(svg, Curve.Examples.heckert)
-
-  toolLayer = svg.group()
-  toolLayer.node.setAttribute('class', 'tool-layer')
-
-  this.selectionModel = new Curve.SelectionModel()
-  this.selectionView = new Curve.SelectionView(toolLayer, this.selectionModel)
-
-  this.tool = new Curve.PointerTool(svg, {
-    selectionModel: this.selectionModel,
-    selectionView: this.selectionView
-  })
-  this.tool.activate()
+  this.DOC = new Curve.SvgDocument("canvas")
+  this.DOC.deserialize(Curve.Examples.heckert)
 }
 
 window._main = function() {
