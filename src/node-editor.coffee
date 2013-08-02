@@ -23,11 +23,14 @@ class NodeEditor
     @nodeElement.hide()
     @handleElements.hide()
 
-  show: ->
+  show: (toFront) ->
     @visible = true
-    @lineElement.front()
-    @nodeElement.front().show()
-    @handleElements.front()
+    @nodeElement.show()
+
+    if toFront
+      @lineElement.front()
+      @nodeElement.front()
+      @handleElements.front()
 
     if @enableHandles
       @lineElement.show()
@@ -101,6 +104,7 @@ class NodeEditor
     @nodeElement.dragstart = => @selectionModel.setSelectedNode(@node)
     @nodeElement.dragmove = @onDraggingNode
     @nodeElement.on 'mouseover', =>
+      @nodeElement.front()
       @nodeElement.attr('r': @nodeSize+2)
     @nodeElement.on 'mouseout', =>
       @nodeElement.attr('r': @nodeSize)

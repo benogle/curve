@@ -40,7 +40,7 @@
     var svg;
 
     svg = SVG("canvas");
-    Curve["import"](this.svg, Curve.Examples.heckert);
+    Curve["import"](svg, Curve.Examples.heckert);
     this.selectionModel = new Curve.SelectionModel();
     this.selectionView = new Curve.SelectionView(svg, this.selectionModel);
     this.tool = new Curve.PointerTool(svg, {
@@ -315,11 +315,14 @@
       return this.handleElements.hide();
     };
 
-    NodeEditor.prototype.show = function() {
+    NodeEditor.prototype.show = function(toFront) {
       this.visible = true;
-      this.lineElement.front();
-      this.nodeElement.front().show();
-      this.handleElements.front();
+      this.nodeElement.show();
+      if (toFront) {
+        this.lineElement.front();
+        this.nodeElement.front();
+        this.handleElements.front();
+      }
       if (this.enableHandles) {
         this.lineElement.show();
         return this.handleElements.show();
@@ -426,6 +429,7 @@
       };
       this.nodeElement.dragmove = this.onDraggingNode;
       this.nodeElement.on('mouseover', function() {
+        _this.nodeElement.front();
         return _this.nodeElement.attr({
           'r': _this.nodeSize + 2
         });
@@ -1357,7 +1361,7 @@
     SelectionView.prototype._createNodeEditors = function(object) {
       var node, nodeEditor, nodes, _i, _j, _len, _len1, _ref1, _results;
 
-      this._nodeEditorStash = this.nodeEditors;
+      this._nodeEditorStash = this._nodeEditorStash.concat(this.nodeEditors);
       this.nodeEditors = [];
       if (object) {
         nodes = object.getNodes();

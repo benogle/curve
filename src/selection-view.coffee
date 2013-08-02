@@ -45,7 +45,7 @@ class Curve.SelectionView
     object.removeListener 'insert:node', @onInsertNode
 
   _createNodeEditors: (object) ->
-    @_nodeEditorStash = @nodeEditors
+    @_nodeEditorStash = @_nodeEditorStash.concat(@nodeEditors)
     @nodeEditors = []
 
     if object

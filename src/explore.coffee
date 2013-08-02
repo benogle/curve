@@ -23,7 +23,7 @@
 
 window.main = ->
   svg = SVG("canvas")
-  Curve.import(@svg, Curve.Examples.heckert)
+  Curve.import(svg, Curve.Examples.heckert)
 
   @selectionModel = new Curve.SelectionModel()
   @selectionView = new Curve.SelectionView(svg, @selectionModel)
