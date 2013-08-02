@@ -2,7 +2,7 @@ $ = window.jQuery or require 'underscore'
 
 class Curve.PointerTool
   constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
-    @_evrect = svgDocument.node.createSVGRect();
+    @_evrect = @svgDocument.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
 
   activate: ->

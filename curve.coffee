@@ -32,8 +32,11 @@ window.main = ->
   svg = SVG("canvas")
   Curve.import(svg, Curve.Examples.heckert)
 
+  toolLayer = svg.group()
+  toolLayer.node.setAttribute('class', 'tool-layer')
+
   @selectionModel = new Curve.SelectionModel()
-  @selectionView = new Curve.SelectionView(svg, @selectionModel)
+  @selectionView = new Curve.SelectionView(toolLayer, @selectionModel)
 
   @tool = new Curve.PointerTool(svg, {@selectionModel, @selectionView})
   @tool.activate()
@@ -814,7 +817,7 @@ $ = window.jQuery or require 'underscore'
 
 class Curve.PointerTool
   constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
-    @_evrect = svgDocument.node.createSVGRect();
+    @_evrect = @svgDocument.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
 
   activate: ->

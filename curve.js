@@ -37,12 +37,14 @@
 
 
   window.main = function() {
-    var svg;
+    var svg, toolLayer;
 
     svg = SVG("canvas");
     Curve["import"](svg, Curve.Examples.heckert);
+    toolLayer = svg.group();
+    toolLayer.node.setAttribute('class', 'tool-layer');
     this.selectionModel = new Curve.SelectionModel();
-    this.selectionView = new Curve.SelectionView(svg, this.selectionModel);
+    this.selectionView = new Curve.SelectionView(toolLayer, this.selectionModel);
     this.tool = new Curve.PointerTool(svg, {
       selectionModel: this.selectionModel,
       selectionView: this.selectionView
@@ -1144,7 +1146,7 @@
       _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseMove = __bind(this.onMouseMove, this);
       this.onClick = __bind(this.onClick, this);
-      this._evrect = svgDocument.node.createSVGRect();
+      this._evrect = this.svgDocument.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
     }
 
