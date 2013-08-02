@@ -7,6 +7,27 @@ else
 
 SVG = window.SVG or require('./vendor/svg').SVG
 
+#
+class SVG.Circle extends SVG.Shape
+  constructor: ->
+    super(SVG.create('circle'))
+
+  cx: (x) ->
+    if x == null then this.attr('cx') else @attr('cx', new SVG.Number(x).divide(this.trans.scaleX))
+
+  cy: (y) ->
+    if y == null then this.attr('cy') else @attr('cy', new SVG.Number(y).divide(this.trans.scaleY))
+
+  radius: (rad) ->
+    @attr(r: new SVG.Number(rad))
+
+
+SVG.extend SVG.Container,
+  circle: (radius) ->
+    return this.put(new SVG.Circle).radius(radius).move(0, 0)
+
+SVG = window.SVG or require('./vendor/svg').SVG
+
 # svg.export.js 0.8 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
 # Coffeescript'd and modified by benogle
@@ -1139,13 +1160,16 @@ class SvgDocument
     @toolLayer.front()
 
   serialize: ->
-    svgRoot = null
-    @svgDocument.each -> svgRoot = this if this.node.nodeName == 'svg'
-
+    svgRoot = @getSvgRoot()
     if svgRoot
       svgRoot.export(whitespace: true)
     else
       ''
+
+  getSvgRoot: ->
+    svgRoot = null
+    @svgDocument.each -> svgRoot = this if this.node.nodeName == 'svg'
+    svgRoot
 
 Curve.SvgDocument = SvgDocument
 

@@ -19,12 +19,15 @@ class SvgDocument
     @toolLayer.front()
 
   serialize: ->
-    svgRoot = null
-    @svgDocument.each -> svgRoot = this if this.node.nodeName == 'svg'
-
+    svgRoot = @getSvgRoot()
     if svgRoot
       svgRoot.export(whitespace: true)
     else
       ''
+
+  getSvgRoot: ->
+    svgRoot = null
+    @svgDocument.each -> svgRoot = this if this.node.nodeName == 'svg'
+    svgRoot
 
 Curve.SvgDocument = SvgDocument

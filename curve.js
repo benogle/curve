@@ -1,8 +1,8 @@
 (function() {
   var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, Point, SVG, Subpath, SvgDocument, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, _, _ref,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   Curve = {};
 
@@ -11,6 +11,47 @@
   } else {
     window.Curve = Curve;
   }
+
+  SVG = window.SVG || require('./vendor/svg').SVG;
+
+  SVG.Circle = (function(_super) {
+    __extends(Circle, _super);
+
+    function Circle() {
+      Circle.__super__.constructor.call(this, SVG.create('circle'));
+    }
+
+    Circle.prototype.cx = function(x) {
+      if (x === null) {
+        return this.attr('cx');
+      } else {
+        return this.attr('cx', new SVG.Number(x).divide(this.trans.scaleX));
+      }
+    };
+
+    Circle.prototype.cy = function(y) {
+      if (y === null) {
+        return this.attr('cy');
+      } else {
+        return this.attr('cy', new SVG.Number(y).divide(this.trans.scaleY));
+      }
+    };
+
+    Circle.prototype.radius = function(rad) {
+      return this.attr({
+        r: new SVG.Number(rad)
+      });
+    };
+
+    return Circle;
+
+  })(SVG.Shape);
+
+  SVG.extend(SVG.Container, {
+    circle: function(radius) {
+      return this.put(new SVG.Circle).radius(radius).move(0, 0);
+    }
+  });
 
   SVG = window.SVG || require('./vendor/svg').SVG;
 
@@ -1622,12 +1663,7 @@
     SvgDocument.prototype.serialize = function() {
       var svgRoot;
 
-      svgRoot = null;
-      this.svgDocument.each(function() {
-        if (this.node.nodeName === 'svg') {
-          return svgRoot = this;
-        }
-      });
+      svgRoot = this.getSvgRoot();
       if (svgRoot) {
         return svgRoot["export"]({
           whitespace: true
@@ -1635,6 +1671,18 @@
       } else {
         return '';
       }
+    };
+
+    SvgDocument.prototype.getSvgRoot = function() {
+      var svgRoot;
+
+      svgRoot = null;
+      this.svgDocument.each(function() {
+        if (this.node.nodeName === 'svg') {
+          return svgRoot = this;
+        }
+      });
+      return svgRoot;
     };
 
     return SvgDocument;
