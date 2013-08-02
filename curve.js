@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, Path, Point, SVG, Subpath, SvgDocument, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, Point, SVG, Subpath, SvgDocument, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, _, _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -280,7 +280,7 @@
 
   $ = window.jQuery || require('jquery');
 
-  Curve.NodeEditor = (function() {
+  NodeEditor = (function() {
     var handleElements, lineElement, node, nodeElement;
 
     NodeEditor.prototype.nodeSize = 5;
@@ -399,7 +399,7 @@
       if (!node) {
         return;
       }
-      return node.on('change', this.render);
+      return node.addListener('change', this.render);
     };
 
     NodeEditor.prototype._unbindNode = function(node) {
@@ -497,6 +497,8 @@
     return NodeEditor;
 
   })();
+
+  Curve.NodeEditor = NodeEditor;
 
   _ = window._ || require('underscore');
 

@@ -251,7 +251,7 @@ _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
 #
-class Curve.NodeEditor
+class NodeEditor
   nodeSize: 5
   handleSize: 3
 
@@ -331,7 +331,7 @@ class Curve.NodeEditor
 
   _bindNode: (node) ->
     return unless node
-    node.on 'change', @render
+    node.addListener 'change', @render
   _unbindNode: (node) ->
     return unless node
     node.removeListener 'change', @render
@@ -400,6 +400,8 @@ class Curve.NodeEditor
     @handleElements.on 'mouseout', ->
       el = find(this)
       el.attr('r': self.handleSize)
+
+Curve.NodeEditor = NodeEditor
 
 _ = window._ or require 'underscore'
 
