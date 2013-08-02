@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, Point, SVG, SvgDocument, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, Point, SVG, Subpath, SvgDocument, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, _, _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -1432,6 +1432,124 @@
     return SelectionView;
 
   })();
+
+  _ = window._ || require('underscore');
+
+  EventEmitter = window.EventEmitter || require('events').EventEmitter;
+
+  Subpath = (function(_super) {
+    __extends(Subpath, _super);
+
+    function Subpath(_arg) {
+      var isClosed;
+
+      isClosed = (_arg != null ? _arg : {}).isClosed;
+      this.onNodeChange = __bind(this.onNodeChange, this);
+      this.nodes = [];
+      this.isClosed = !!isClosed;
+    }
+
+    Subpath.prototype.toString = function() {
+      return "Subpath " + (this.toPathString());
+    };
+
+    Subpath.prototype.addNode = function(node) {
+      return this.insertNode(node, this.nodes.length);
+    };
+
+    Subpath.prototype.insertNode = function(node, index) {
+      var args;
+
+      this._bindNode(node);
+      this.nodes.splice(index, 0, node);
+      args = {
+        event: 'insert:node',
+        index: index,
+        value: node
+      };
+      this.emit('insert:node', this, args);
+      return this.emit('change', this, args);
+    };
+
+    Subpath.prototype.close = function() {
+      var args;
+
+      this.isClosed = true;
+      args = {
+        event: 'close'
+      };
+      this.emit('close', this, args);
+      return this.emit('change', this, args);
+    };
+
+    Subpath.prototype.toPathString = function() {
+      var closePath, lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref1;
+
+      path = '';
+      lastPoint = null;
+      makeCurve = function(fromNode, toNode) {
+        var curve;
+
+        curve = [];
+        curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
+        curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
+        curve = curve.concat(toNode.point.toArray());
+        return 'C' + curve.join(',');
+      };
+      closePath = function(firstNode, lastNode) {
+        var closingPath;
+
+        closingPath = '';
+        if (lastNode.handleOut || firstNode.handleIn) {
+          closingPath += makeCurve(lastNode, firstNode);
+        }
+        return closingPath += 'Z';
+      };
+      _ref1 = this.nodes;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        node = _ref1[_i];
+        if (path) {
+          path += makeCurve(lastNode, node);
+        } else {
+          path += 'M' + node.point.toArray().join(',');
+        }
+        lastNode = node;
+      }
+      if (this.isClosed) {
+        path += closePath(this.nodes[0], this.nodes[this.nodes.length - 1]);
+      }
+      return path;
+    };
+
+    Subpath.prototype.onNodeChange = function(node, eventArgs) {
+      var index;
+
+      index = this._findNodeIndex(node);
+      return this.emit('change', this, _.extend({
+        index: index
+      }, eventArgs));
+    };
+
+    Subpath.prototype._bindNode = function(node) {
+      return node.on('change', this.onNodeChange);
+    };
+
+    Subpath.prototype._findNodeIndex = function(node) {
+      var i, _i, _ref1;
+
+      for (i = _i = 0, _ref1 = this.nodes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+        if (this.nodes[i] === node) {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    return Subpath;
+
+  })(EventEmitter);
+
+  Curve.Subpath = Subpath;
 
   SVG = window.SVG || require('./vendor/svg').SVG;
 
