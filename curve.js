@@ -1220,7 +1220,7 @@
       if (preselected === this.preselected) {
         return;
       }
-      if (preselected === this.selected) {
+      if (preselected && preselected === this.selected) {
         return;
       }
       old = this.preselected;

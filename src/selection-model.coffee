@@ -9,7 +9,7 @@ class Curve.SelectionModel extends EventEmitter
 
   setPreselected: (preselected) ->
     return if preselected == @preselected
-    return if preselected == @selected
+    return if preselected and preselected == @selected
     old = @preselected
     @preselected = preselected
     @emit 'change:preselected', object: @preselected, old: old

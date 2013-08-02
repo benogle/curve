@@ -23,6 +23,8 @@ describe 'Curve.SelectionView', ->
     expect($('svg path.object-selection').length).toEqual 0
 
   it 'creates nodes when PREselecting and cleans up when selecting nothing', ->
+    expect($('svg path.object-preselection').length).toEqual 0
+
     @model.setPreselected(@path)
 
     expect($('svg circle.node-editor-node').length).toEqual 0
