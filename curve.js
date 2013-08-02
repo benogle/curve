@@ -1453,6 +1453,10 @@
       return "Subpath " + (this.toPathString());
     };
 
+    Subpath.prototype.getNodes = function() {
+      return this.nodes;
+    };
+
     Subpath.prototype.addNode = function(node) {
       return this.insertNode(node, this.nodes.length);
     };

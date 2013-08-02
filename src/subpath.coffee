@@ -11,6 +11,8 @@ class Subpath extends EventEmitter
   toString: ->
     "Subpath #{@toPathString()}"
 
+  getNodes: -> @nodes
+
   addNode: (node) ->
     @insertNode(node, @nodes.length)
 
