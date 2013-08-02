@@ -614,7 +614,7 @@
       }
       this.path = null;
       if (this.object) {
-        this.path = this.svgDocument.path('').front();
+        this.path = this.svgDocument.path('').back();
         this.path.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
         return this.render();
       }

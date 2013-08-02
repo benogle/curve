@@ -477,7 +477,7 @@ class Curve.ObjectSelection
     @path.remove() if @path
     @path = null
     if @object
-      @path = @svgDocument.path('').front()
+      @path = @svgDocument.path('').back()
       @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
 
