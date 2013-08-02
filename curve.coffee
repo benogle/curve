@@ -642,32 +642,9 @@ EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 attrs = {fill: '#eee', stroke: 'none'}
 
-###
-  TODO
-  * experiment with loading a file then editing it
-  * change path -> svgEl in cases where it makes sense
-  * removing nodes with keyboard
-  * move entire object
-  * select/deselect objects
-  * make new objects
-  * replacing path array updates the interface
-
-  Large
-  * how to deal with events and tools and things?
-    * like NodeEditor is dragging something, the pointer tool should be deactivated.
-    * a tool manager? can push/pop tools?
-  * probably need a doc object
-    * Can pass it to everything that needs to use svg
-    * would have access to the tools n junk
-  * proper z-index of elements
-    * group for doc at the bottom
-    * group for selection
-    * group for tool nodes
-###
-
 IDS = 0
 #
-class Curve.Path extends EventEmitter
+class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
     @path = null
     @nodes = []
@@ -765,6 +742,8 @@ class Curve.Path extends EventEmitter
     @svgEl = @svgDocument.path().attr(attrs) unless @svgEl
     Curve.Utils.setObjectOnNode(@svgEl.node, this)
     @_parseFromPathString(@svgEl.attr('d'))
+
+Curve.Path = Path
 
 #
 class Curve.PenTool
