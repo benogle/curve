@@ -9,3 +9,14 @@ describe 'Curve.Node', ->
 
       @s.setHandleOut([15, -5])
       expect(@s.handleIn).toEqual new Curve.Point(-15, 5)
+
+    it 'join() will set the other non-joined handle', ->
+      @s.isJoined = false
+      @s.setHandleIn([0, 0])
+
+      @s.join('handleOut')
+      expect(@s.handleIn).toEqual new Curve.Point(-10, 0)
+
+    it 'setting handle to null, mirrors', ->
+      @s.setHandleIn(null)
+      expect(@s.handleOut).toEqual null

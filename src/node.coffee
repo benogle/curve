@@ -9,6 +9,10 @@ class Node extends EventEmitter
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
 
+  join: (referenceHandle='handleIn') ->
+    @isJoined = true
+    @["set#{referenceHandle.replace('h', 'H')}"](@[referenceHandle])
+
   getAbsoluteHandleIn: ->
     if @handleIn
       @point.add(@handleIn)
@@ -28,13 +32,13 @@ class Node extends EventEmitter
   setPoint: (point) ->
     @set('point', Point.create(point))
   setHandleIn: (point) ->
-    point = Point.create(point)
+    point = Point.create(point) if point
     @set('handleIn', point)
-    @set('handleOut', new Curve.Point(0,0).subtract(point)) if @isJoined
+    @set('handleOut', if point then new Curve.Point(0,0).subtract(point) else point) if @isJoined
   setHandleOut: (point) ->
-    point = Point.create(point)
+    point = Point.create(point) if point
     @set('handleOut', point)
-    @set('handleIn', new Curve.Point(0,0).subtract(point)) if @isJoined
+    @set('handleIn', if point then new Curve.Point(0,0).subtract(point) else point) if @isJoined
 
   computeIsjoined: ->
     @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and Math.round(@handleIn.x) == Math.round(-@handleOut.x) and Math.round(@handleIn.y) == Math.round(-@handleOut.y))
