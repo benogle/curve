@@ -491,6 +491,10 @@ class Node extends EventEmitter
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
 
+  join: (referenceHandle='handleIn') ->
+    @isJoined = true
+    @["set#{referenceHandle.replace('h', 'H')}"](@[referenceHandle])
+
   getAbsoluteHandleIn: ->
     if @handleIn
       @point.add(@handleIn)
@@ -510,13 +514,13 @@ class Node extends EventEmitter
   setPoint: (point) ->
     @set('point', Point.create(point))
   setHandleIn: (point) ->
-    point = Point.create(point)
+    point = Point.create(point) if point
     @set('handleIn', point)
-    @set('handleOut', new Curve.Point(0,0).subtract(point)) if @isJoined
+    @set('handleOut', if point then new Curve.Point(0,0).subtract(point) else point) if @isJoined
   setHandleOut: (point) ->
-    point = Point.create(point)
+    point = Point.create(point) if point
     @set('handleOut', point)
-    @set('handleIn', new Curve.Point(0,0).subtract(point)) if @isJoined
+    @set('handleIn', if point then new Curve.Point(0,0).subtract(point) else point) if @isJoined
 
   computeIsjoined: ->
     @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and Math.round(@handleIn.x) == Math.round(-@handleOut.x) and Math.round(@handleIn.y) == Math.round(-@handleOut.y))
@@ -598,6 +602,19 @@ parseTokens = (groupedCommands) ->
     _.map array, (val, i) ->
       val + currentPoint[i % 2]
 
+  createNode = (point, commandIndex) ->
+    currentPoint = point
+
+    node = null
+    firstNode = currentSubpath.nodes[0]
+
+    nextCommand = groupedCommands[commandIndex + 1]
+    unless nextCommand and nextCommand.type in ['z', 'Z'] and firstNode and firstNode.point.equals(currentPoint)
+      node = new Node(currentPoint)
+      currentSubpath.nodes.push(node)
+
+    node
+
   for i in [0...groupedCommands.length]
     command = groupedCommands[i]
     switch command.type
@@ -608,25 +625,19 @@ parseTokens = (groupedCommands) ->
       when 'L', 'l'
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'l'
-
-        currentPoint = slicePoint(params, 0)
-        currentSubpath.nodes.push(new Node(currentPoint))
+        createNode(slicePoint(params, 0), i)
 
       when 'H', 'h'
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'h'
-
-        currentPoint = [params[0], currentPoint[1]]
-        currentSubpath.nodes.push(new Node(currentPoint))
+        createNode([params[0], currentPoint[1]], i)
 
       when 'V', 'v'
         params = command.parameters
         if command.type == 'v'
           params = makeAbsolute([0, params[0]])
           params = params.slice(1)
-
-        currentPoint = [currentPoint[0], params[0]]
-        currentSubpath.nodes.push(new Node(currentPoint))
+        createNode([currentPoint[0], params[0]], i)
 
       when 'C', 'c'
         params = command.parameters
@@ -636,17 +647,31 @@ parseTokens = (groupedCommands) ->
         handleIn = slicePoint(params, 2)
         handleOut = slicePoint(params, 0)
 
-        firstNode = currentSubpath.nodes[0]
         lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
         lastNode.setAbsoluteHandleOut(handleOut)
 
-        nextCommand = groupedCommands[i + 1]
-        if nextCommand and nextCommand.type in ['z', 'Z'] and firstNode and firstNode.point.equals(currentPoint)
-          firstNode.setAbsoluteHandleIn(handleIn)
+        if node = createNode(currentPoint, i)
+          node.setAbsoluteHandleIn(handleIn)
         else
-          curveNode = new Node(currentPoint)
-          curveNode.setAbsoluteHandleIn(handleIn)
-          currentSubpath.nodes.push(curveNode)
+          firstNode = currentSubpath.nodes[0]
+          firstNode.setAbsoluteHandleIn(handleIn)
+
+      when 'S', 's'
+        # Shorthand path. Force the last node's handleOut to be a mirror of its handleIn.
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 's'
+
+        currentPoint = slicePoint(params, 2)
+        handleIn = slicePoint(params, 0)
+
+        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
+        lastNode.join('handleIn')
+
+        if node = createNode(currentPoint, i)
+          node.setAbsoluteHandleIn(handleIn)
+        else
+          firstNode = currentSubpath.nodes[0]
+          firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'Z', 'z'
         currentSubpath.closed = true
@@ -658,7 +683,7 @@ parseTokens = (groupedCommands) ->
 
 # Returns a list of svg commands with their parameters.
 groupCommands = (pathTokens) ->
-  console.log 'grouping tokens', pathTokens
+  #console.log 'grouping tokens', pathTokens
   commands = []
   for i in [0...pathTokens.length]
     token = pathTokens[i]
@@ -676,7 +701,7 @@ groupCommands = (pathTokens) ->
       else
         break
 
-    console.log command.type, command
+    #console.log command.type, command
     commands.push(command)
 
   commands

@@ -598,6 +598,14 @@
       }
     }
 
+    Node.prototype.join = function(referenceHandle) {
+      if (referenceHandle == null) {
+        referenceHandle = 'handleIn';
+      }
+      this.isJoined = true;
+      return this["set" + (referenceHandle.replace('h', 'H'))](this[referenceHandle]);
+    };
+
     Node.prototype.getAbsoluteHandleIn = function() {
       if (this.handleIn) {
         return this.point.add(this.handleIn);
@@ -627,18 +635,22 @@
     };
 
     Node.prototype.setHandleIn = function(point) {
-      point = Point.create(point);
+      if (point) {
+        point = Point.create(point);
+      }
       this.set('handleIn', point);
       if (this.isJoined) {
-        return this.set('handleOut', new Curve.Point(0, 0).subtract(point));
+        return this.set('handleOut', point ? new Curve.Point(0, 0).subtract(point) : point);
       }
     };
 
     Node.prototype.setHandleOut = function(point) {
-      point = Point.create(point);
+      if (point) {
+        point = Point.create(point);
+      }
       this.set('handleOut', point);
       if (this.isJoined) {
-        return this.set('handleIn', new Curve.Point(0, 0).subtract(point));
+        return this.set('handleIn', point ? new Curve.Point(0, 0).subtract(point) : point);
       }
     };
 
@@ -728,7 +740,7 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var addNewSubpath, command, currentPoint, currentSubpath, curveNode, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, nextCommand, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4, _ref5;
+    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4;
 
     result = {
       subpaths: []
@@ -758,6 +770,19 @@
         return val + currentPoint[i % 2];
       });
     };
+    createNode = function(point, commandIndex) {
+      var firstNode, nextCommand, node, _ref2;
+
+      currentPoint = point;
+      node = null;
+      firstNode = currentSubpath.nodes[0];
+      nextCommand = groupedCommands[commandIndex + 1];
+      if (!(nextCommand && ((_ref2 = nextCommand.type) === 'z' || _ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint))) {
+        node = new Node(currentPoint);
+        currentSubpath.nodes.push(node);
+      }
+      return node;
+    };
     for (i = _i = 0, _ref2 = groupedCommands.length; 0 <= _ref2 ? _i < _ref2 : _i > _ref2; i = 0 <= _ref2 ? ++_i : --_i) {
       command = groupedCommands[i];
       switch (command.type) {
@@ -771,8 +796,7 @@
           if (command.type === 'l') {
             params = makeAbsolute(params);
           }
-          currentPoint = slicePoint(params, 0);
-          currentSubpath.nodes.push(new Node(currentPoint));
+          createNode(slicePoint(params, 0), i);
           break;
         case 'H':
         case 'h':
@@ -780,8 +804,7 @@
           if (command.type === 'h') {
             params = makeAbsolute(params);
           }
-          currentPoint = [params[0], currentPoint[1]];
-          currentSubpath.nodes.push(new Node(currentPoint));
+          createNode([params[0], currentPoint[1]], i);
           break;
         case 'V':
         case 'v':
@@ -790,8 +813,7 @@
             params = makeAbsolute([0, params[0]]);
             params = params.slice(1);
           }
-          currentPoint = [currentPoint[0], params[0]];
-          currentSubpath.nodes.push(new Node(currentPoint));
+          createNode([currentPoint[0], params[0]], i);
           break;
         case 'C':
         case 'c':
@@ -802,16 +824,30 @@
           currentPoint = slicePoint(params, 4);
           handleIn = slicePoint(params, 2);
           handleOut = slicePoint(params, 0);
-          firstNode = currentSubpath.nodes[0];
           lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
           lastNode.setAbsoluteHandleOut(handleOut);
-          nextCommand = groupedCommands[i + 1];
-          if (nextCommand && ((_ref3 = nextCommand.type) === 'z' || _ref3 === 'Z') && firstNode && firstNode.point.equals(currentPoint)) {
-            firstNode.setAbsoluteHandleIn(handleIn);
+          if (node = createNode(currentPoint, i)) {
+            node.setAbsoluteHandleIn(handleIn);
           } else {
-            curveNode = new Node(currentPoint);
-            curveNode.setAbsoluteHandleIn(handleIn);
-            currentSubpath.nodes.push(curveNode);
+            firstNode = currentSubpath.nodes[0];
+            firstNode.setAbsoluteHandleIn(handleIn);
+          }
+          break;
+        case 'S':
+        case 's':
+          params = command.parameters;
+          if (command.type === 's') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = slicePoint(params, 2);
+          handleIn = slicePoint(params, 0);
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+          lastNode.join('handleIn');
+          if (node = createNode(currentPoint, i)) {
+            node.setAbsoluteHandleIn(handleIn);
+          } else {
+            firstNode = currentSubpath.nodes[0];
+            firstNode.setAbsoluteHandleIn(handleIn);
           }
           break;
         case 'Z':
@@ -819,12 +855,12 @@
           currentSubpath.closed = true;
       }
     }
-    _ref4 = result.subpaths;
-    for (_j = 0, _len = _ref4.length; _j < _len; _j++) {
-      subpath = _ref4[_j];
-      _ref5 = subpath.nodes;
-      for (_k = 0, _len1 = _ref5.length; _k < _len1; _k++) {
-        node = _ref5[_k];
+    _ref3 = result.subpaths;
+    for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
+      subpath = _ref3[_j];
+      _ref4 = subpath.nodes;
+      for (_k = 0, _len1 = _ref4.length; _k < _len1; _k++) {
+        node = _ref4[_k];
         node.computeIsjoined();
       }
     }
@@ -834,7 +870,6 @@
   groupCommands = function(pathTokens) {
     var command, commands, i, nextToken, token, _i, _ref1;
 
-    console.log('grouping tokens', pathTokens);
     commands = [];
     for (i = _i = 0, _ref1 = pathTokens.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
       token = pathTokens[i];
@@ -853,7 +888,6 @@
           break;
         }
       }
-      console.log(command.type, command);
       commands.push(command);
     }
     return commands;
