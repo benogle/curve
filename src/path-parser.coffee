@@ -9,15 +9,13 @@ parsePath = (pathString) ->
 
 # Parses the result of lexPath
 parseTokens = (groupedCommands) ->
-  result =
-    subpaths: []
+  result = subpaths: []
 
   # Just a move command? We dont care.
   return result if groupedCommands.length == 1 and groupedCommands[0].type in ['M', 'm']
 
-  currentPoint = null # svg is stateful. Each command will set this.
-  firstHandle = null
-
+  # svg is stateful. Each command will set currentPoint.
+  currentPoint = null
   currentSubpath = null
   addNewSubpath = (movePoint) ->
     node = new Node(movePoint)
@@ -30,10 +28,13 @@ parseTokens = (groupedCommands) ->
   slicePoint = (array, index) ->
     [array[index], array[index + 1]]
 
+  # make relative points absolute based on currentPoint
   makeAbsolute = (array) ->
     _.map array, (val, i) ->
       val + currentPoint[i % 2]
 
+  # Create a node and add it to the list. When the last node is the same as the
+  # first, and the path is closed, we do not create the node.
   createNode = (point, commandIndex) ->
     currentPoint = point
 
@@ -51,33 +52,42 @@ parseTokens = (groupedCommands) ->
     command = groupedCommands[i]
     switch command.type
       when 'M'
+        # Move to
         currentPoint = command.parameters
         addNewSubpath(currentPoint)
 
       when 'L', 'l'
+        # Line to
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'l'
         createNode(slicePoint(params, 0), i)
 
       when 'H', 'h'
+        # Horizontal line
         params = command.parameters
         params = makeAbsolute(params) if command.type == 'h'
         createNode([params[0], currentPoint[1]], i)
 
       when 'V', 'v'
+        # Vertical line
         params = command.parameters
         if command.type == 'v'
           params = makeAbsolute([0, params[0]])
           params = params.slice(1)
         createNode([currentPoint[0], params[0]], i)
 
-      when 'C', 'c'
+      when 'C', 'c', 'Q', 'q'
+        # Bezier
         params = command.parameters
-        params = makeAbsolute(params) if command.type == 'c'
+        params = makeAbsolute(params) if command.type in ['c', 'q']
 
-        currentPoint = slicePoint(params, 4)
-        handleIn = slicePoint(params, 2)
-        handleOut = slicePoint(params, 0)
+        if command.type in ['C', 'c']
+          currentPoint = slicePoint(params, 4)
+          handleIn = slicePoint(params, 2)
+          handleOut = slicePoint(params, 0)
+        else
+          currentPoint = slicePoint(params, 2)
+          handleIn = handleOut = slicePoint(params, 0)
 
         lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
         lastNode.setAbsoluteHandleOut(handleOut)
@@ -89,7 +99,8 @@ parseTokens = (groupedCommands) ->
           firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'S', 's'
-        # Shorthand path. Force the last node's handleOut to be a mirror of its handleIn.
+        # Shorthand path.
+        # Infer last node's handleOut to be a mirror of its handleIn.
         params = command.parameters
         params = makeAbsolute(params) if command.type == 's'
 
@@ -98,6 +109,28 @@ parseTokens = (groupedCommands) ->
 
         lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
         lastNode.join('handleIn')
+
+        if node = createNode(currentPoint, i)
+          node.setAbsoluteHandleIn(handleIn)
+        else
+          firstNode = currentSubpath.nodes[0]
+          firstNode.setAbsoluteHandleIn(handleIn)
+
+      when 'T', 't'
+        # Shorthand quadradic bezier.
+        # Infer node's handles based on previous node's handles
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 't'
+
+        currentPoint = slicePoint(params, 0)
+
+        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
+        lastNode.join('handleIn')
+
+        # Use the handle out from the previous node.
+        # TODO: Should check if the last node was a Q command...
+        # https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths#Bezier_Curves
+        handleIn = lastNode.getAbsoluteHandleOut()
 
         if node = createNode(currentPoint, i)
           node.setAbsoluteHandleIn(handleIn)

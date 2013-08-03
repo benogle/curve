@@ -740,7 +740,7 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstHandle, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4;
+    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
 
     result = {
       subpaths: []
@@ -749,7 +749,6 @@
       return result;
     }
     currentPoint = null;
-    firstHandle = null;
     currentSubpath = null;
     addNewSubpath = function(movePoint) {
       var node;
@@ -817,13 +816,20 @@
           break;
         case 'C':
         case 'c':
+        case 'Q':
+        case 'q':
           params = command.parameters;
-          if (command.type === 'c') {
+          if ((_ref3 = command.type) === 'c' || _ref3 === 'q') {
             params = makeAbsolute(params);
           }
-          currentPoint = slicePoint(params, 4);
-          handleIn = slicePoint(params, 2);
-          handleOut = slicePoint(params, 0);
+          if ((_ref4 = command.type) === 'C' || _ref4 === 'c') {
+            currentPoint = slicePoint(params, 4);
+            handleIn = slicePoint(params, 2);
+            handleOut = slicePoint(params, 0);
+          } else {
+            currentPoint = slicePoint(params, 2);
+            handleIn = handleOut = slicePoint(params, 0);
+          }
           lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
           lastNode.setAbsoluteHandleOut(handleOut);
           if (node = createNode(currentPoint, i)) {
@@ -850,17 +856,34 @@
             firstNode.setAbsoluteHandleIn(handleIn);
           }
           break;
+        case 'T':
+        case 't':
+          params = command.parameters;
+          if (command.type === 't') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = slicePoint(params, 0);
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+          lastNode.join('handleIn');
+          handleIn = lastNode.getAbsoluteHandleOut();
+          if (node = createNode(currentPoint, i)) {
+            node.setAbsoluteHandleIn(handleIn);
+          } else {
+            firstNode = currentSubpath.nodes[0];
+            firstNode.setAbsoluteHandleIn(handleIn);
+          }
+          break;
         case 'Z':
         case 'z':
           currentSubpath.closed = true;
       }
     }
-    _ref3 = result.subpaths;
-    for (_j = 0, _len = _ref3.length; _j < _len; _j++) {
-      subpath = _ref3[_j];
-      _ref4 = subpath.nodes;
-      for (_k = 0, _len1 = _ref4.length; _k < _len1; _k++) {
-        node = _ref4[_k];
+    _ref5 = result.subpaths;
+    for (_j = 0, _len = _ref5.length; _j < _len; _j++) {
+      subpath = _ref5[_j];
+      _ref6 = subpath.nodes;
+      for (_k = 0, _len1 = _ref6.length; _k < _len1; _k++) {
+        node = _ref6[_k];
         node.computeIsjoined();
       }
     }

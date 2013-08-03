@@ -229,3 +229,24 @@ describe 'Curve.PathParser.parsePath', ->
     expect(_.pick(subject.nodes[3].point, 'x', 'y')).toEqual x: 265, y: 80
     expect(_.pick(subject.nodes[3].handleIn, 'x', 'y')).toEqual x: -30, y: -70
     expect(subject.nodes[3].handleOut).toEqual null
+
+  it 'parses Q and T commands', ->
+    path = 'M10 80 Q 52.5 10, 95 80 T 180 80'
+    parsedPath = Curve.PathParser.parsePath(path)
+    expect(parsedPath.subpaths.length).toEqual 1
+
+    subject = parsedPath.subpaths[0]
+    expect(subject.closed).toEqual false
+    expect(subject.nodes.length).toEqual 3
+
+    expect(_.pick(subject.nodes[0].point, 'x', 'y')).toEqual x: 10, y: 80
+    expect(subject.nodes[0].handleIn).toEqual null
+    expect(_.pick(subject.nodes[0].handleOut, 'x', 'y')).toEqual x: 42.5, y: -70
+
+    expect(_.pick(subject.nodes[1].point, 'x', 'y')).toEqual x: 95, y: 80
+    expect(_.pick(subject.nodes[1].handleIn, 'x', 'y')).toEqual x: -42.5, y: -70
+    expect(_.pick(subject.nodes[1].handleOut, 'x', 'y')).toEqual x: 42.5, y: 70
+
+    expect(_.pick(subject.nodes[2].point, 'x', 'y')).toEqual x: 180, y: 80
+    expect(_.pick(subject.nodes[2].handleIn, 'x', 'y')).toEqual x: -42.5, y: 70
+    expect(subject.nodes[2].handleOut).toEqual null
