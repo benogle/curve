@@ -333,7 +333,8 @@ class NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: (@svgDocument, @selectionModel) ->
+  constructor: (@svgToolParent, @selectionModel) ->
+    @svgDocument = @svgToolParent.parent
     @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
@@ -413,7 +414,7 @@ class NodeEditor
     node.removeListener 'change', @render
 
   _setupNodeElement: ->
-    @nodeElement = @svgDocument.circle(@nodeSize)
+    @nodeElement = @svgToolParent.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
 
     @nodeElement.click (e) =>
@@ -432,16 +433,16 @@ class NodeEditor
       @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
-    @lineElement = @svgDocument.path('')
+    @lineElement = @svgToolParent.path('')
     @lineElement.node.setAttribute('class', 'node-editor-lines')
 
   _setupHandleElements: ->
     self = this
 
-    @handleElements = @svgDocument.set()
+    @handleElements = @svgToolParent.set()
     @handleElements.add(
-      @svgDocument.circle(@handleSize),
-      @svgDocument.circle(@handleSize)
+      @svgToolParent.circle(@handleSize),
+      @svgToolParent.circle(@handleSize)
     )
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')

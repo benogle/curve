@@ -371,13 +371,14 @@
 
     lineElement = null;
 
-    function NodeEditor(svgDocument, selectionModel) {
-      this.svgDocument = svgDocument;
+    function NodeEditor(svgToolParent, selectionModel) {
+      this.svgToolParent = svgToolParent;
       this.selectionModel = selectionModel;
       this.onDraggingHandleOut = __bind(this.onDraggingHandleOut, this);
       this.onDraggingHandleIn = __bind(this.onDraggingHandleIn, this);
       this.onDraggingNode = __bind(this.onDraggingNode, this);
       this.render = __bind(this.render, this);
+      this.svgDocument = this.svgToolParent.parent;
       this._setupNodeElement();
       this._setupLineElement();
       this._setupHandleElements();
@@ -491,7 +492,7 @@
     NodeEditor.prototype._setupNodeElement = function() {
       var _this = this;
 
-      this.nodeElement = this.svgDocument.circle(this.nodeSize);
+      this.nodeElement = this.svgToolParent.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
       this.nodeElement.click(function(e) {
         e.stopPropagation();
@@ -518,7 +519,7 @@
     };
 
     NodeEditor.prototype._setupLineElement = function() {
-      this.lineElement = this.svgDocument.path('');
+      this.lineElement = this.svgToolParent.path('');
       return this.lineElement.node.setAttribute('class', 'node-editor-lines');
     };
 
@@ -527,8 +528,8 @@
         _this = this;
 
       self = this;
-      this.handleElements = this.svgDocument.set();
-      this.handleElements.add(this.svgDocument.circle(this.handleSize), this.svgDocument.circle(this.handleSize));
+      this.handleElements = this.svgToolParent.set();
+      this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
       this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.click(function(e) {

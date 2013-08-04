@@ -14,7 +14,7 @@
 
 window.main = function() {
   this.DOC = new Curve.SvgDocument("canvas")
-  this.DOC.deserialize(Curve.Examples.heckert)
+  this.DOC.deserialize(Curve.Examples.cloud)
 }
 
 window._main = function() {
