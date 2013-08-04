@@ -22,6 +22,15 @@ describe 'Curve.Subpath', ->
       expect(pathStr).toMatch(/^M50,50C60,50/)
       expect(pathStr).toMatch(/Z$/)
 
+    describe 'from parsed path', ->
+      it 'uses shorthand commands rather than all beziers', ->
+        path = 'M512,384L320,576h128v320h128V576H704L512,384z'
+        parsedPath = Curve.PathParser.parsePath(path)
+        @path = new Curve.Subpath(parsedPath.subpaths[0])
+
+        pathString = @path.toPathString()
+        expect(pathString).toEqual 'M512,384L320,576H448V896H576V576H704Z'
+
   describe 'creating', ->
     it 'can be created with nodes and close', ->
       nodes = [

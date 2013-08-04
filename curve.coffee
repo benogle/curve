@@ -667,7 +667,7 @@ parseTokens = (groupedCommands) ->
           firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'S', 's'
-        # Shorthand path.
+        # Shorthand cubic bezier.
         # Infer last node's handleOut to be a mirror of its handleIn.
         params = command.parameters
         params = makeAbsolute(params) if command.type == 's'
@@ -715,6 +715,10 @@ parseTokens = (groupedCommands) ->
   result
 
 # Returns a list of svg commands with their parameters.
+#   [
+#     {type: 'M', parameters: [10, 30]},
+#     {type: 'L', parameters: [340, 300]},
+#   ]
 groupCommands = (pathTokens) ->
   #console.log 'grouping tokens', pathTokens
   commands = []
@@ -1121,11 +1125,25 @@ class Subpath extends EventEmitter
     lastPoint = null
 
     makeCurve = (fromNode, toNode) ->
-      curve = []
-      curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray())
-      curve = curve.concat(toNode.getAbsoluteHandleIn().toArray())
-      curve = curve.concat(toNode.point.toArray())
-      'C' + curve.join(',')
+      curve = ''
+      if fromNode.handleOut or toNode.handleIn
+        # use a bezier
+        curve = []
+        curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray())
+        curve = curve.concat(toNode.getAbsoluteHandleIn().toArray())
+        curve = curve.concat(toNode.point.toArray())
+        curve = "C#{curve.join(',')}"
+
+      else if fromNode.point.x == toNode.point.x
+        curve = "V#{toNode.point.y}"
+
+      else if fromNode.point.y == toNode.point.y
+        curve = "H#{toNode.point.x}"
+
+      else
+        curve = "L#{toNode.point.toArray().join(',')}"
+
+      curve
 
     closePath = (firstNode, lastNode)->
       return '' unless firstNode and lastNode

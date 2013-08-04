@@ -40,7 +40,7 @@ describe 'Curve.Path', ->
     path.render()
 
     el = $('svg path')
-    expect(el.attr('d')).toEqual('M60,80C60,80,70,90,70,90')
+    expect(el.attr('d')).toEqual('M60,80L70,90')
 
   describe 'creating from path string', ->
     it 'can be created', ->

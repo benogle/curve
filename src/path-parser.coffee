@@ -99,7 +99,7 @@ parseTokens = (groupedCommands) ->
           firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'S', 's'
-        # Shorthand path.
+        # Shorthand cubic bezier.
         # Infer last node's handleOut to be a mirror of its handleIn.
         params = command.parameters
         params = makeAbsolute(params) if command.type == 's'
@@ -147,6 +147,10 @@ parseTokens = (groupedCommands) ->
   result
 
 # Returns a list of svg commands with their parameters.
+#   [
+#     {type: 'M', parameters: [10, 30]},
+#     {type: 'L', parameters: [340, 300]},
+#   ]
 groupCommands = (pathTokens) ->
   #console.log 'grouping tokens', pathTokens
   commands = []

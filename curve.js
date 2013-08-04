@@ -1570,11 +1570,21 @@
       makeCurve = function(fromNode, toNode) {
         var curve;
 
-        curve = [];
-        curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
-        curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
-        curve = curve.concat(toNode.point.toArray());
-        return 'C' + curve.join(',');
+        curve = '';
+        if (fromNode.handleOut || toNode.handleIn) {
+          curve = [];
+          curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
+          curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
+          curve = curve.concat(toNode.point.toArray());
+          curve = "C" + (curve.join(','));
+        } else if (fromNode.point.x === toNode.point.x) {
+          curve = "V" + toNode.point.y;
+        } else if (fromNode.point.y === toNode.point.y) {
+          curve = "H" + toNode.point.x;
+        } else {
+          curve = "L" + (toNode.point.toArray().join(','));
+        }
+        return curve;
       };
       closePath = function(firstNode, lastNode) {
         var closingPath;
