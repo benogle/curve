@@ -3,6 +3,8 @@ SVG = window.SVG or require('./vendor/svg').SVG
 # svg.export.js 0.8 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
 # Coffeescript'd and modified by benogle
+#
+# This walks the SVG nodes, and stringifies them.
 SVG.extend SVG.Element,
   # Build node string
   export: (options, level) ->

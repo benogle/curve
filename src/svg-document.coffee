@@ -15,6 +15,7 @@ class SvgDocument
     @tool.activate()
 
   deserialize: (svgString) ->
+    # See `ext/svg.import.coffee` for import implementation
     @objects = Curve.import(@svgDocument, svgString)
     @toolLayer.front()
 

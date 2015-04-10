@@ -2,6 +2,35 @@
 #
 # Converted to coffeescript and modified by benogle
 
+# Place the `svgString` in the svgDocument, and parse into objects Curve can
+# understand
+#
+# * `svgDocument` An empty {SVG} document
+# * `svgString` {String} with the svg markup
+#
+# Returns an array of objects selectable and editable by Curve tools.
+Curve.import = (svgDocument, svgString) ->
+  IMPORT_FNS =
+    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
+
+  # create temporary div to receive svg content
+  parentNode = document.createElement('div')
+  store = {}
+
+  # properly close svg tags and add them to the DOM
+  parentNode.innerHTML = svgString
+    .replace(/\n/, '')
+    .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
+
+  objects = []
+  convertNodes parentNode.childNodes, svgDocument, 0, store, ->
+    nodeType = this.node.nodeName
+    objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
+    null
+
+  parentNode = null
+  objects
+
 # Convert nodes to svg.js elements
 convertNodes = (nodes, context, level, store, block) ->
   for i in [0...nodes.length]
@@ -150,25 +179,3 @@ objectifyTransformations = (transform) ->
           trans.y         = parseFloat(v[1]) || def.y
 
   trans
-
-Curve.import = (svgDocument, svgString) ->
-  IMPORT_FNS =
-    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
-
-  # create temporary div to receive svg content
-  parentNode = document.createElement('div')
-  store = {}
-
-  # properly close svg tags and add them to the DOM
-  parentNode.innerHTML = svgString
-    .replace(/\n/, '')
-    .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
-
-  objects = []
-  convertNodes parentNode.childNodes, svgDocument, 0, store, ->
-    nodeType = this.node.nodeName
-    objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
-    null
-
-  parentNode = null
-  objects
