@@ -524,6 +524,7 @@ class NodeEditor
   _bindNode: (node) ->
     return unless node
     node.addListener 'change', @render
+
   _unbindNode: (node) ->
     return unless node
     node.removeListener 'change', @render
