@@ -1,7 +1,8 @@
 describe 'Curve.SvgDocument', ->
+  svg = null
   beforeEach ->
     loadFixtures 'canvas.html'
-    @s = new Curve.SvgDocument($('#canvas')[0])
+    svg = new Curve.SvgDocument($('#canvas')[0])
 
   it 'has a tool layer', ->
     expect($('#canvas svg>.tool-layer')).toExist()
@@ -10,17 +11,17 @@ describe 'Curve.SvgDocument', ->
     beforeEach ->
 
     it 'will deserialize an svg document', ->
-      @s.deserialize(DOCUMENT)
+      svg.deserialize(DOCUMENT)
 
       expect($('#canvas svg>svg')).toExist()
       expect($('#canvas svg>svg #arrow')).toExist()
 
     it 'places tool things in the tool layer', ->
-      @s.deserialize(DOCUMENT)
+      svg.deserialize(DOCUMENT)
 
-      @s.objects[0]
-      @s.selectionModel.setSelected(@s.objects[0])
-      @s.selectionModel.setSelectedNode(@s.objects[0].subpaths[0].nodes[0])
+      svg.objects[0]
+      svg.selectionModel.setSelected(svg.objects[0])
+      svg.selectionModel.setSelectedNode(svg.objects[0].subpaths[0].nodes[0])
 
       expect($('#canvas .tool-layer .node-editor-node')).toExist()
       expect($('#canvas .tool-layer .object-selection')).toExist()
@@ -29,12 +30,12 @@ describe 'Curve.SvgDocument', ->
     beforeEach ->
 
     it 'will export an svg document', ->
-      @s.deserialize(DOCUMENT)
-      expect(@s.serialize().trim()).toEqual DOCUMENT_WITH_XML_DOCTYPE
+      svg.deserialize(DOCUMENT)
+      expect(svg.serialize().trim()).toEqual DOCUMENT_WITH_XML_DOCTYPE
 
     it 'serializing and deserializing is symmetrical', ->
-      @s.deserialize(DOCUMENT_WITH_XML_DOCTYPE)
-      expect(@s.serialize().trim()).toEqual DOCUMENT_WITH_XML_DOCTYPE
+      svg.deserialize(DOCUMENT_WITH_XML_DOCTYPE)
+      expect(svg.serialize().trim()).toEqual DOCUMENT_WITH_XML_DOCTYPE
 
 DOCUMENT = '''
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">
