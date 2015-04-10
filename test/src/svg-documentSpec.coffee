@@ -45,7 +45,7 @@ DOCUMENT = '''
 
 DOCUMENT_WITH_XML_DOCTYPE = '''
   <?xml version="1.0" encoding="UTF-8"?>
-  <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+  <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg" style="overflow-x: visible; overflow-y: visible; ">
     <desc>Created with Curve</desc>
     <path d="M512,384L320,576h128v320h128V576h128L512,384z" id="arrow">
     </path>
