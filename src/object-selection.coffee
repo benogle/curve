@@ -1,5 +1,8 @@
 
+# The display for a selected object. i.e. the red or blue outline around the
+# selected object.
 #
+# It basically cops the underlying object's attributes (path definition, etc.)
 class Curve.ObjectSelection
   constructor: (@svgDocument, @options={}) ->
     @options.class ?= 'object-selection'

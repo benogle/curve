@@ -31,6 +31,8 @@ SVG = window.SVG or require('./vendor/svg').SVG
 # svg.export.js 0.8 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
 # Coffeescript'd and modified by benogle
+#
+# This walks the SVG nodes, and stringifies them.
 SVG.extend SVG.Element,
   # Build node string
   export: (options, level) ->
@@ -148,6 +150,35 @@ SVG.extend SVG.Element,
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
 # Converted to coffeescript and modified by benogle
+
+# Place the `svgString` in the svgDocument, and parse into objects Curve can
+# understand
+#
+# * `svgDocument` An empty {SVG} document
+# * `svgString` {String} with the svg markup
+#
+# Returns an array of objects selectable and editable by Curve tools.
+Curve.import = (svgDocument, svgString) ->
+  IMPORT_FNS =
+    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
+
+  # create temporary div to receive svg content
+  parentNode = document.createElement('div')
+  store = {}
+
+  # properly close svg tags and add them to the DOM
+  parentNode.innerHTML = svgString
+    .replace(/\n/, '')
+    .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
+
+  objects = []
+  convertNodes parentNode.childNodes, svgDocument, 0, store, ->
+    nodeType = this.node.nodeName
+    objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
+    null
+
+  parentNode = null
+  objects
 
 # Convert nodes to svg.js elements
 convertNodes = (nodes, context, level, store, block) ->
@@ -298,32 +329,11 @@ objectifyTransformations = (transform) ->
 
   trans
 
-Curve.import = (svgDocument, svgString) ->
-  IMPORT_FNS =
-    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
-
-  # create temporary div to receive svg content
-  well = document.createElement('div')
-  store = {}
-
-  # properly close svg tags and add them to the DOM
-  well.innerHTML = svgString
-    .replace(/\n/, '')
-    .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
-
-  objects = []
-  convertNodes well.childNodes, svgDocument, 0, store, ->
-    nodeType = this.node.nodeName
-    objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
-    null
-
-  well = null
-  objects
-
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
-#
+# A node display in the interface allowing for user interaction (moving the
+# node, moving the handles). Draws the node, and draws the handles.
 class NodeEditor
   nodeSize: 5
   handleSize: 3
@@ -539,7 +549,10 @@ class Node extends EventEmitter
 Curve.Node = Node
 
 
+# The display for a selected object. i.e. the red or blue outline around the
+# selected object.
 #
+# It basically cops the underlying object's attributes (path definition, etc.)
 class Curve.ObjectSelection
   constructor: (@svgDocument, @options={}) ->
     @options.class ?= 'object-selection'
@@ -788,7 +801,8 @@ EventEmitter = window.EventEmitter or require('events').EventEmitter
 attrs = {fill: '#eee', stroke: 'none'}
 
 IDS = 0
-#
+
+# Represents a <path> svg element. Contains one or more `Curve.Subpath` objects
 class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
     @id = IDS++
@@ -976,6 +990,7 @@ class Curve.PointerTool
     obj = Curve.Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
     obj
 
+  # This seems slower and more complicated than _hitWithTarget
   _hitWithIntersectionList: (e) ->
     {left, top} = $(@svgDocument.node).offset()
     @_evrect.x = e.clientX - left
@@ -994,7 +1009,8 @@ class Curve.PointerTool
 
 EventEmitter = window.EventEmitter or require('events').EventEmitter
 
-#
+# Models what is selected and preselected. Preselection is shown as a red
+# outline when the user hovers over the object.
 class Curve.SelectionModel extends EventEmitter
   constructor: ->
     @preselected = null
@@ -1012,6 +1028,7 @@ class Curve.SelectionModel extends EventEmitter
     return if selected == @selected
     old = @selected
     @selected = selected
+    @setPreselected(null) if @preselected is selected
     @emit 'change:selected', object: @selected, old: old
 
   setSelectedNode: (selectedNode) ->
@@ -1233,6 +1250,7 @@ class SvgDocument
     @tool.activate()
 
   deserialize: (svgString) ->
+    # See `ext/svg.import.coffee` for import implementation
     @objects = Curve.import(@svgDocument, svgString)
     @toolLayer.front()
 

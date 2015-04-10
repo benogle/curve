@@ -8,6 +8,14 @@
 
 * Allow moving an entire object
 * Allow making new objects
+* Undo support
+* Support other non-path object types. At least selecting / moving!
+  * rect
+  * circle
+  * ellipse
+  * text
+  * image
+  * line
 
 ### Things to think about
 

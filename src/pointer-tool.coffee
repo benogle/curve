@@ -28,6 +28,7 @@ class Curve.PointerTool
     obj = Curve.Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
     obj
 
+  # This seems slower and more complicated than _hitWithTarget
   _hitWithIntersectionList: (e) ->
     {left, top} = $(@svgDocument.node).offset()
     @_evrect.x = e.clientX - left

@@ -5,7 +5,8 @@ EventEmitter = window.EventEmitter or require('events').EventEmitter
 attrs = {fill: '#eee', stroke: 'none'}
 
 IDS = 0
-#
+
+# Represents a <path> svg element. Contains one or more `Curve.Subpath` objects
 class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
     @id = IDS++

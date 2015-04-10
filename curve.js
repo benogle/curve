@@ -58,7 +58,6 @@
   SVG.extend(SVG.Element, {
     "export": function(options, level) {
       var height, i, isRootSvgElement, name, node, width, _i, _j, _k, _ref, _ref1, _ref2;
-
       name = this.node.nodeName;
       node = '';
       isRootSvgElement = name === 'svg' && !level;
@@ -116,7 +115,6 @@
     },
     attrToString: function() {
       var attr, data, exportAttrs, isGeneratedId, key, value;
-
       attr = [];
       data = this.exportAttr();
       exportAttrs = this.attr();
@@ -145,7 +143,6 @@
     },
     _whitespaced: function(value, add, level) {
       var i, space, whitespace, _i, _ref;
-
       if (add) {
         whitespace = '';
         space = add === true ? '  ' : add || '';
@@ -160,9 +157,35 @@
     }
   });
 
+  Curve["import"] = function(svgDocument, svgString) {
+    var IMPORT_FNS, objects, parentNode, store;
+    IMPORT_FNS = {
+      path: function(el) {
+        return [
+          new Curve.Path(svgDocument, {
+            svgEl: el
+          })
+        ];
+      }
+    };
+    parentNode = document.createElement('div');
+    store = {};
+    parentNode.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
+    objects = [];
+    convertNodes(parentNode.childNodes, svgDocument, 0, store, function() {
+      var nodeType;
+      nodeType = this.node.nodeName;
+      if (IMPORT_FNS[nodeType]) {
+        objects = objects.concat(IMPORT_FNS[nodeType](this));
+      }
+      return null;
+    });
+    parentNode = null;
+    return objects;
+  };
+
   convertNodes = function(nodes, context, level, store, block) {
     var attr, child, clips, element, grandchild, i, j, transform, type, _i, _j, _ref, _ref1, _ref2;
-
     for (i = _i = 0, _ref = nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
       child = nodes[i];
       attr = {};
@@ -233,7 +256,6 @@
         case 'radialgradient':
           element = context.defs().gradient(type.split('gradient')[0], function(stop) {
             var _k, _ref3, _results;
-
             _results = [];
             for (j = _k = 0, _ref3 = child.childNodes.length; 0 <= _ref3 ? _k < _ref3 : _k > _ref3; j = 0 <= _ref3 ? ++_k : --_k) {
               _results.push(stop.at(objectifyAttributes(child.childNodes[j])).style(child.childNodes[j].getAttribute('style')));
@@ -269,7 +291,6 @@
 
   objectifyAttributes = function(child) {
     var attr, attrs, i, _i, _ref;
-
     attrs = child.attributes || [];
     attr = {};
     if (attrs.length) {
@@ -282,7 +303,6 @@
 
   objectifyTransformations = function(transform) {
     var def, i, list, t, trans, v, _i, _ref;
-
     trans = {};
     list = (transform || '').match(/[A-Za-z]+\([^\)]+\)/g) || [];
     def = SVG.defaults.trans();
@@ -321,35 +341,6 @@
       }
     }
     return trans;
-  };
-
-  Curve["import"] = function(svgDocument, svgString) {
-    var IMPORT_FNS, objects, store, well;
-
-    IMPORT_FNS = {
-      path: function(el) {
-        return [
-          new Curve.Path(svgDocument, {
-            svgEl: el
-          })
-        ];
-      }
-    };
-    well = document.createElement('div');
-    store = {};
-    well.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
-    objects = [];
-    convertNodes(well.childNodes, svgDocument, 0, store, function() {
-      var nodeType;
-
-      nodeType = this.node.nodeName;
-      if (IMPORT_FNS[nodeType]) {
-        objects = objects.concat(IMPORT_FNS[nodeType](this));
-      }
-      return null;
-    });
-    well = null;
-    return objects;
   };
 
   _ = window._ || require('underscore');
@@ -426,7 +417,6 @@
 
     NodeEditor.prototype.render = function() {
       var handleIn, handleOut, linePath, point;
-
       if (!this.node) {
         return this.hide();
       }
@@ -469,7 +459,6 @@
 
     NodeEditor.prototype.pointForEvent = function(event) {
       var clientX, clientY, left, top, _ref;
-
       clientX = event.clientX, clientY = event.clientY;
       _ref = $(this.svgDocument.node).offset(), top = _ref.top, left = _ref.left;
       return new Curve.Point(event.clientX - left, event.clientY - top);
@@ -491,7 +480,6 @@
 
     NodeEditor.prototype._setupNodeElement = function() {
       var _this = this;
-
       this.nodeElement = this.svgToolParent.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
       this.nodeElement.click(function(e) {
@@ -526,7 +514,6 @@
     NodeEditor.prototype._setupHandleElements = function() {
       var find, onStartDraggingHandle, onStopDraggingHandle, self,
         _this = this;
-
       self = this;
       this.handleElements = this.svgToolParent.set();
       this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
@@ -558,7 +545,6 @@
       };
       this.handleElements.on('mouseover', function() {
         var el;
-
         el = find(this);
         el.front();
         return el.attr({
@@ -567,7 +553,6 @@
       });
       return this.handleElements.on('mouseout', function() {
         var el;
-
         el = find(this);
         return el.attr({
           'r': self.handleSize
@@ -661,7 +646,6 @@
 
     Node.prototype.set = function(attribute, value) {
       var event, eventArgs, old;
-
       old = this[attribute];
       this[attribute] = value;
       event = "change:" + attribute;
@@ -682,12 +666,11 @@
 
   Curve.ObjectSelection = (function() {
     function ObjectSelection(svgDocument, options) {
-      var _base, _ref;
-
+      var _base;
       this.svgDocument = svgDocument;
       this.options = options != null ? options : {};
       this.render = __bind(this.render, this);
-      if ((_ref = (_base = this.options)["class"]) == null) {
+      if ((_base = this.options)["class"] == null) {
         _base["class"] = 'object-selection';
       }
     }
@@ -735,14 +718,12 @@
 
   parsePath = function(pathString) {
     var tokens;
-
     tokens = lexPath(pathString);
     return parseTokens(groupCommands(tokens));
   };
 
   parseTokens = function(groupedCommands) {
     var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
-
     result = {
       subpaths: []
     };
@@ -753,7 +734,6 @@
     currentSubpath = null;
     addNewSubpath = function(movePoint) {
       var node;
-
       node = new Node(movePoint);
       currentSubpath = {
         closed: false,
@@ -772,7 +752,6 @@
     };
     createNode = function(point, commandIndex) {
       var firstNode, nextCommand, node, _ref2;
-
       currentPoint = point;
       node = null;
       firstNode = currentSubpath.nodes[0];
@@ -893,7 +872,6 @@
 
   groupCommands = function(pathTokens) {
     var command, commands, i, nextToken, token, _i, _ref1;
-
     commands = [];
     for (i = _i = 0, _ref1 = pathTokens.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
       token = pathTokens[i];
@@ -919,7 +897,6 @@
 
   lexPath = function(pathString) {
     var ch, currentToken, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens, _i, _len;
-
     numberMatch = '-0123456789.';
     separatorMatch = ' ,\n\t';
     tokens = [];
@@ -990,7 +967,6 @@
 
     function Path(svgDocument, _arg) {
       var svgEl;
-
       this.svgDocument = svgDocument;
       svgEl = (_arg != null ? _arg : {}).svgEl;
       this.onSubpathChange = __bind(this.onSubpathChange, this);
@@ -1006,10 +982,8 @@
 
     Path.prototype.toPathString = function() {
       var subpath;
-
       return ((function() {
         var _i, _len, _ref1, _results;
-
         _ref1 = this.subpaths;
         _results = [];
         for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -1022,10 +996,8 @@
 
     Path.prototype.getNodes = function() {
       var subpath;
-
       return _.flatten((function() {
         var _i, _len, _ref1, _results;
-
         _ref1 = this.subpaths;
         _results = [];
         for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -1059,7 +1031,6 @@
 
     Path.prototype.addSubpath = function(subpath) {
       var args;
-
       this.subpaths.push(subpath);
       this._bindSubpath(subpath);
       args = {
@@ -1073,7 +1044,6 @@
 
     Path.prototype.render = function(svgEl) {
       var pathStr;
-
       if (svgEl == null) {
         svgEl = this.svgEl;
       }
@@ -1126,7 +1096,6 @@
 
     Path.prototype._parseFromPathString = function(pathString) {
       var parsedPath, parsedSubpath, _i, _len, _ref1;
-
       if (!pathString) {
         return;
       }
@@ -1162,7 +1131,6 @@
 
     function PenTool(svgDocument, _arg) {
       var _ref1;
-
       this.svgDocument = svgDocument;
       _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseUp = __bind(this.onMouseUp, this);
@@ -1185,7 +1153,6 @@
     PenTool.prototype.onMouseDown = function(e) {
       var makeNode,
         _this = this;
-
       makeNode = function() {
         _this.currentNode = new Curve.Node([e.clientX, e.clientY], [0, 0], [0, 0]);
         _this.currentObject.addNode(_this.currentNode);
@@ -1235,7 +1202,6 @@
 
     Point.prototype.set = function(x, y) {
       var _ref1;
-
       this.x = x;
       this.y = y;
       if (_.isArray(this.x)) {
@@ -1273,7 +1239,6 @@
   Curve.PointerTool = (function() {
     function PointerTool(svgDocument, _arg) {
       var _ref1;
-
       this.svgDocument = svgDocument;
       _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseMove = __bind(this.onMouseMove, this);
@@ -1294,7 +1259,6 @@
 
     PointerTool.prototype.onClick = function(e) {
       var obj;
-
       obj = this._hitWithTarget(e);
       this.selectionModel.setSelected(obj);
       if (obj) {
@@ -1308,7 +1272,6 @@
 
     PointerTool.prototype._hitWithTarget = function(e) {
       var obj;
-
       obj = null;
       if (e.target !== this.svgDocument.node) {
         obj = Curve.Utils.getObjectFromNode(e.target);
@@ -1318,7 +1281,6 @@
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
       var clas, i, left, nodes, obj, top, _i, _ref1, _ref2;
-
       _ref1 = $(this.svgDocument.node).offset(), left = _ref1.left, top = _ref1.top;
       this._evrect.x = e.clientX - left;
       this._evrect.y = e.clientY - top;
@@ -1354,7 +1316,6 @@
 
     SelectionModel.prototype.setPreselected = function(preselected) {
       var old;
-
       if (preselected === this.preselected) {
         return;
       }
@@ -1371,12 +1332,14 @@
 
     SelectionModel.prototype.setSelected = function(selected) {
       var old;
-
       if (selected === this.selected) {
         return;
       }
       old = this.selected;
       this.selected = selected;
+      if (this.preselected === selected) {
+        this.setPreselected(null);
+      }
       return this.emit('change:selected', {
         object: this.selected,
         old: old
@@ -1385,7 +1348,6 @@
 
     SelectionModel.prototype.setSelectedNode = function(selectedNode) {
       var old;
-
       if (selectedNode === this.selectedNode) {
         return;
       }
@@ -1437,7 +1399,6 @@
 
     SelectionView.prototype.onChangeSelected = function(_arg) {
       var object, old;
-
       object = _arg.object, old = _arg.old;
       this._unbindFromObject(old);
       this._bindToObject(object);
@@ -1446,14 +1407,12 @@
 
     SelectionView.prototype.onChangePreselected = function(_arg) {
       var object;
-
       object = _arg.object;
       return this.objectPreselection.setObject(object);
     };
 
     SelectionView.prototype.onChangeSelectedNode = function(_arg) {
       var node, nodeEditor, old;
-
       node = _arg.node, old = _arg.old;
       nodeEditor = this._findNodeEditorForNode(old);
       if (nodeEditor) {
@@ -1472,7 +1431,6 @@
 
     SelectionView.prototype.onInsertNode = function(object, _arg) {
       var index, value, _ref1;
-
       _ref1 = _arg != null ? _arg : {}, value = _ref1.value, index = _ref1.index;
       this._addNodeEditor(value);
       return null;
@@ -1494,7 +1452,6 @@
 
     SelectionView.prototype._createNodeEditors = function(object) {
       var node, nodeEditor, nodes, _i, _j, _len, _len1, _ref1, _results;
-
       this._nodeEditorStash = this._nodeEditorStash.concat(this.nodeEditors);
       this.nodeEditors = [];
       if (object) {
@@ -1515,7 +1472,6 @@
 
     SelectionView.prototype._addNodeEditor = function(node) {
       var nodeEditor;
-
       if (!node) {
         return false;
       }
@@ -1527,7 +1483,6 @@
 
     SelectionView.prototype._findNodeEditorForNode = function(node) {
       var nodeEditor, _i, _len, _ref1;
-
       _ref1 = this.nodeEditors;
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         nodeEditor = _ref1[_i];
@@ -1551,7 +1506,6 @@
 
     function Subpath(_arg) {
       var nodes, _ref1;
-
       _ref1 = _arg != null ? _arg : {}, this.path = _ref1.path, this.closed = _ref1.closed, nodes = _ref1.nodes;
       this.onNodeChange = __bind(this.onNodeChange, this);
       this.nodes = [];
@@ -1565,12 +1519,10 @@
 
     Subpath.prototype.toPathString = function() {
       var closePath, lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref1;
-
       path = '';
       lastPoint = null;
       makeCurve = function(fromNode, toNode) {
         var curve;
-
         curve = '';
         if (fromNode.handleOut || toNode.handleIn) {
           curve = [];
@@ -1589,7 +1541,6 @@
       };
       closePath = function(firstNode, lastNode) {
         var closingPath;
-
         if (!(firstNode && lastNode)) {
           return '';
         }
@@ -1621,7 +1572,6 @@
 
     Subpath.prototype.setNodes = function(nodes) {
       var args, node, _i, _j, _len, _len1, _ref1;
-
       if (!(nodes && _.isArray(nodes))) {
         return;
       }
@@ -1649,7 +1599,6 @@
 
     Subpath.prototype.insertNode = function(node, index) {
       var args;
-
       this._bindNode(node);
       this.nodes.splice(index, 0, node);
       args = {
@@ -1663,7 +1612,6 @@
 
     Subpath.prototype.close = function() {
       var args;
-
       this.closed = true;
       args = {
         event: 'close'
@@ -1674,7 +1622,6 @@
 
     Subpath.prototype.onNodeChange = function(node, eventArgs) {
       var index;
-
       index = this._findNodeIndex(node);
       return this.emit('change', this, _.extend({
         index: index
@@ -1691,7 +1638,6 @@
 
     Subpath.prototype._findNodeIndex = function(node) {
       var i, _i, _ref1;
-
       for (i = _i = 0, _ref1 = this.nodes.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
         if (this.nodes[i] === node) {
           return i;
@@ -1730,7 +1676,6 @@
 
     SvgDocument.prototype.serialize = function() {
       var svgRoot;
-
       svgRoot = this.getSvgRoot();
       if (svgRoot) {
         return svgRoot["export"]({
@@ -1743,7 +1688,6 @@
 
     SvgDocument.prototype.getSvgRoot = function() {
       var svgRoot;
-
       svgRoot = null;
       this.svgDocument.each(function() {
         if (this.node.nodeName === 'svg') {

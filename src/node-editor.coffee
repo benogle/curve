@@ -1,7 +1,8 @@
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
-#
+# A node display in the interface allowing for user interaction (moving the
+# node, moving the handles). Draws the node, and draws the handles.
 class NodeEditor
   nodeSize: 5
   handleSize: 3
