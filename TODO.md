@@ -6,10 +6,8 @@
 
 ## TODO
 
-* use browserify
+* Use browserify
 * Allow moving an entire object
-* Allow making new objects
-* Undo support
 * Support other non-path object types. At least selecting / moving!
   * rect
   * circle
@@ -17,6 +15,8 @@
   * text
   * image
   * line
+* Allow making new objects
+* Undo support
 
 ### Things to think about
 
