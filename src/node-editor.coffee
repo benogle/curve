@@ -82,7 +82,6 @@ class NodeEditor
   pointForEvent: (event) ->
     {clientX, clientY} = event
     {top, left} = $(@svgDocument.node).offset()
-
     new Curve.Point(event.clientX - left, event.clientY - top)
 
   _bindNode: (node) ->
