@@ -21,6 +21,25 @@ class Path extends EventEmitter
   getNodes: ->
     _.flatten(subpath.getNodes() for subpath in @subpaths, true)
 
+  enableDragging: (callbacks) ->
+    element = @svgEl
+    return unless element?
+    @disableDragging()
+    element.draggable()
+    element.dragstart = (event) -> callbacks.dragstart?(event)
+    element.dragmove = (event) =>
+      @didChange({translate: {x: event.x, y: event.y}})
+      callbacks.dragmove?(event)
+    element.dragend = (event) -> callbacks.dragend?(event)
+
+  disableDragging: ->
+    element = @svgEl
+    return unless element?
+    element.fixed?()
+    element.dragstart = null
+    element.dragmove = null
+    element.dragend = null
+
   # FIXME: the currentSubpath thing will probably leave. depends on how insert
   # nodes works in interface.
   addNode: (node) ->
@@ -51,6 +70,7 @@ class Path extends EventEmitter
   render: (svgEl=@svgEl) ->
     pathStr = @toPathString()
     svgEl.attr(d: pathStr) if pathStr
+    svgEl.attr(transform: @svgEl.attr('transform')) if svgEl isnt @svgEl
 
   onSubpathEvent: (subpath, eventArgs) =>
     @emit eventArgs.event, this, _.extend({subpath}, eventArgs)
@@ -58,6 +78,9 @@ class Path extends EventEmitter
   onSubpathChange: (subpath, eventArgs) =>
     @render()
     @emit 'change', this, _.extend({subpath}, eventArgs)
+
+  didChange: (event) ->
+    @emit 'change', this, event
 
   _createSubpath: (args) ->
     @addSubpath(new Subpath(_.extend({path: this}, args)))

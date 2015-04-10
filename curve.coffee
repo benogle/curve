@@ -26,6 +26,89 @@ SVG.extend SVG.Container,
   circle: (radius) ->
     return this.put(new SVG.Circle).radius(radius).move(0, 0)
 
+# svg.draggable.js 0.1.0 - Copyright (c) 2014 Wout Fierens - Licensed under the MIT license
+# extended by Florian Loch
+#
+# Modified by benogle
+# * It's now using translations for moves, rather than the move() method
+# * I removed a bunch of features I didnt need
+
+TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/
+
+SVG.extend SVG.Element, draggable: ->
+  element = this
+  @fixed?() # remove draggable if already present
+
+  startHandler = (event) ->
+    onStart(element, event)
+    attachDragEvents(dragHandler, endHandler)
+  dragHandler = (event) ->
+    onDrag(element, event)
+  endHandler = (event) ->
+    onEnd(element, event)
+    detachDragEvents(dragHandler, endHandler)
+
+  element.on 'mousedown', startHandler
+
+  # Disable dragging on this event.
+  element.fixed = ->
+    element.off 'mousedown', startHandler
+    detachDragEvents()
+    startHandler = dragHandler = endHandler = null
+    element
+  this
+
+attachDragEvents = (dragHandler, endHandler) ->
+  SVG.on window, 'mousemove', dragHandler
+  SVG.on window, 'mouseup', endHandler
+
+detachDragEvents = (dragHandler, endHandler) ->
+  SVG.off window, 'mousemove', dragHandler
+  SVG.off window, 'mouseup', endHandler
+
+onStart = (element, event=window.event) ->
+  parent = element.parent._parent(SVG.Nested) or element._parent(SVG.Doc)
+  element.startEvent = event
+
+  x = y = 0
+  translation = TranslateRegex.exec(element.attr('transform'))
+  if translation?
+    x = parseInt(translation[1])
+    y = parseInt(translation[2])
+
+  zoom = parent.viewbox().zoom
+  rotation = element.transform('rotation') * Math.PI / 180
+  element.startPosition = {x, y, zoom, rotation}
+  element.dragstart?({x: 0, y: 0, zoom}, event)
+
+  ### prevent selection dragging ###
+  if event.preventDefault then event.preventDefault() else (event.returnValue = false)
+
+onDrag = (element, event=window.event) ->
+  if element.startEvent
+    rotation = element.startPosition.rotation
+    delta =
+      x: event.pageX - element.startEvent.pageX
+      y: event.pageY - element.startEvent.pageY
+      zoom: element.startPosition.zoom
+
+    ### caculate new position [with rotation correction] ###
+    x = element.startPosition.x + (delta.x * Math.cos(rotation) + delta.y * Math.sin(rotation)) / element.startPosition.zoom
+    y = element.startPosition.y + (delta.y * Math.cos(rotation) + delta.x * Math.sin(-rotation)) / element.startPosition.zoom
+
+    element.transform({x, y})
+    element.dragmove?(delta, event)
+
+onEnd = (element, event=window.event) ->
+  delta =
+    x: event.pageX - element.startEvent.pageX
+    y: event.pageY - element.startEvent.pageY
+    zoom: element.startPosition.zoom
+
+  element.startEvent = null
+  element.startPosition = null
+  element.dragend?(delta, event)
+
 SVG = window.SVG or require('./vendor/svg').SVG
 
 # svg.export.js 0.8 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
@@ -329,6 +412,29 @@ objectifyTransformations = (transform) ->
 
   trans
 
+# TODO: use browserify, and require this from:
+# https://github.com/atom/mixto/blob/master/src/mixin.coffee
+class Mixin
+  @includeInto: (constructor) ->
+    @extend(constructor.prototype)
+    for name, value of this
+      if ExcludedClassProperties.indexOf(name) is -1
+        constructor[name] = value unless constructor.hasOwnProperty(name)
+    @included?.call(constructor)
+
+  @extend: (object) ->
+    for name in Object.getOwnPropertyNames(@prototype)
+      if ExcludedPrototypeProperties.indexOf(name) is -1
+        object[name] = @prototype[name] unless object.hasOwnProperty(name)
+    @prototype.extended?.call(object)
+
+  constructor: ->
+    @extended?()
+
+ExcludedClassProperties = ['__super__']
+ExcludedClassProperties.push(name) for name of Mixin
+ExcludedPrototypeProperties = ['constructor', 'extended']
+
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
@@ -413,7 +519,6 @@ class NodeEditor
   pointForEvent: (event) ->
     {clientX, clientY} = event
     {top, left} = $(@svgDocument.node).offset()
-
     new Curve.Point(event.clientX - left, event.clientY - top)
 
   _bindNode: (node) ->
@@ -548,17 +653,19 @@ class Node extends EventEmitter
 
 Curve.Node = Node
 
+EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 # The display for a selected object. i.e. the red or blue outline around the
 # selected object.
 #
 # It basically cops the underlying object's attributes (path definition, etc.)
-class Curve.ObjectSelection
+class Curve.ObjectSelection extends EventEmitter
   constructor: (@svgDocument, @options={}) ->
     @options.class ?= 'object-selection'
 
   setObject: (object) ->
     @_unbindObject(@object)
+    old = object
     @object = object
     @_bindObject(@object)
 
@@ -568,6 +675,7 @@ class Curve.ObjectSelection
       @path = @svgDocument.path('').back()
       @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
+    @emit 'change:object', {objectSelection: this, @object, old}
 
   render: =>
     @object.render(@path)
@@ -817,6 +925,25 @@ class Path extends EventEmitter
   getNodes: ->
     _.flatten(subpath.getNodes() for subpath in @subpaths, true)
 
+  enableDragging: (callbacks) ->
+    element = @svgEl
+    return unless element?
+    @disableDragging()
+    element.draggable()
+    element.dragstart = (event) -> callbacks.dragstart?(event)
+    element.dragmove = (event) =>
+      @didChange({translate: {x: event.x, y: event.y}})
+      callbacks.dragmove?(event)
+    element.dragend = (event) -> callbacks.dragend?(event)
+
+  disableDragging: ->
+    element = @svgEl
+    return unless element?
+    element.fixed?()
+    element.dragstart = null
+    element.dragmove = null
+    element.dragend = null
+
   # FIXME: the currentSubpath thing will probably leave. depends on how insert
   # nodes works in interface.
   addNode: (node) ->
@@ -847,6 +974,7 @@ class Path extends EventEmitter
   render: (svgEl=@svgEl) ->
     pathStr = @toPathString()
     svgEl.attr(d: pathStr) if pathStr
+    svgEl.attr(transform: @svgEl.attr('transform')) if svgEl isnt @svgEl
 
   onSubpathEvent: (subpath, eventArgs) =>
     @emit eventArgs.event, this, _.extend({subpath}, eventArgs)
@@ -854,6 +982,9 @@ class Path extends EventEmitter
   onSubpathChange: (subpath, eventArgs) =>
     @render()
     @emit 'change', this, _.extend({subpath}, eventArgs)
+
+  didChange: (event) ->
+    @emit 'change', this, event
 
   _createSubpath: (args) ->
     @addSubpath(new Subpath(_.extend({path: this}, args)))
@@ -971,9 +1102,27 @@ class Curve.PointerTool
     @svgDocument.on 'click', @onClick
     @svgDocument.on 'mousemove', @onMouseMove
 
+    objectSelection = @selectionView.getObjectSelection()
+    objectSelection.on 'change:object', @onChangedSelectedObject
+
   deactivate: ->
     @svgDocument.off 'click', @onClick
     @svgDocument.off 'mousemove', @onMouseMove
+
+    objectSelection = @selectionView.getObjectSelection()
+    objectSelection.off 'change:object', @onChangedSelectedObject
+
+  onChangedSelectedObject: ({object, old}) =>
+    if object?
+      object.enableDragging
+        dragstart: (event) ->
+          console.log 'start', event
+        dragmove: (event) ->
+          console.log 'move', event
+        dragend: (event) ->
+          console.log 'end', event
+    else if old?
+      old.disableDragging()
 
   onClick: (e) =>
     # obj = @_hitWithIntersectionList(e)
@@ -1060,6 +1209,8 @@ class Curve.SelectionView
     @model.on 'change:selected', @onChangeSelected
     @model.on 'change:preselected', @onChangePreselected
     @model.on 'change:selectedNode', @onChangeSelectedNode
+
+  getObjectSelection: -> @objectSelection
 
   onChangeSelected: ({object, old}) =>
     @_unbindFromObject(old)
@@ -1268,6 +1419,26 @@ class SvgDocument
 
 Curve.SvgDocument = SvgDocument
 
+class SVGObject extends Mixin
+  enableDraggingOnObject: (object, callbacks) ->
+    element = object.svgEl
+    return unless element?
+    @disableDragging()
+    element.draggable()
+    element.dragstart = (event) -> callbacks.dragstart?(event)
+    element.dragmove = (event) ->
+      object.didChange({translate: {x: event.x, y: event.y}})
+      callbacks.dragmove?(event)
+    element.dragend = (event) -> callbacks.dragend?(event)
+
+  disableDraggingOnObject: (object) ->
+    element = object.svgEl
+    return unless element?
+    element.fixed?()
+    element.dragstart = null
+    element.dragmove = null
+    element.dragend = null
+
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
@@ -1276,3 +1447,7 @@ Curve.Utils =
     $.data(domNode, 'curve.object')
   setObjectOnNode: (domNode, object) ->
     $.data(domNode, 'curve.object', object)
+  pointForEvent: (svgDocument, event) ->
+    {clientX, clientY} = event
+    {top, left} = $(svgDocument.node).offset()
+    new Curve.Point(event.clientX - left, event.clientY - top)

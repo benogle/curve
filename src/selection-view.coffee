@@ -15,6 +15,8 @@ class Curve.SelectionView
     @model.on 'change:preselected', @onChangePreselected
     @model.on 'change:selectedNode', @onChangeSelectedNode
 
+  getObjectSelection: -> @objectSelection
+
   onChangeSelected: ({object, old}) =>
     @_unbindFromObject(old)
     @_bindToObject(object)

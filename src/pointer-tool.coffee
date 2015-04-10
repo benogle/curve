@@ -9,9 +9,27 @@ class Curve.PointerTool
     @svgDocument.on 'click', @onClick
     @svgDocument.on 'mousemove', @onMouseMove
 
+    objectSelection = @selectionView.getObjectSelection()
+    objectSelection.on 'change:object', @onChangedSelectedObject
+
   deactivate: ->
     @svgDocument.off 'click', @onClick
     @svgDocument.off 'mousemove', @onMouseMove
+
+    objectSelection = @selectionView.getObjectSelection()
+    objectSelection.off 'change:object', @onChangedSelectedObject
+
+  onChangedSelectedObject: ({object, old}) =>
+    if object?
+      object.enableDragging
+        dragstart: (event) ->
+          console.log 'start', event
+        dragmove: (event) ->
+          console.log 'move', event
+        dragend: (event) ->
+          console.log 'end', event
+    else if old?
+      old.disableDragging()
 
   onClick: (e) =>
     # obj = @_hitWithIntersectionList(e)

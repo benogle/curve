@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, Point, SVG, Subpath, SvgDocument, attrs, convertNodes, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, EventEmitter, ExcludedClassProperties, ExcludedPrototypeProperties, IDS, Mixin, NUMBER, Node, NodeEditor, Path, Point, SVG, SVGObject, Subpath, SvgDocument, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, name, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref, _ref1,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -52,6 +52,123 @@
       return this.put(new SVG.Circle).radius(radius).move(0, 0);
     }
   });
+
+  TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/;
+
+  SVG.extend(SVG.Element, {
+    draggable: function() {
+      var dragHandler, element, endHandler, startHandler;
+      element = this;
+      if (typeof this.fixed === "function") {
+        this.fixed();
+      }
+      startHandler = function(event) {
+        onStart(element, event);
+        return attachDragEvents(dragHandler, endHandler);
+      };
+      dragHandler = function(event) {
+        return onDrag(element, event);
+      };
+      endHandler = function(event) {
+        onEnd(element, event);
+        return detachDragEvents(dragHandler, endHandler);
+      };
+      element.on('mousedown', startHandler);
+      element.fixed = function() {
+        element.off('mousedown', startHandler);
+        detachDragEvents();
+        startHandler = dragHandler = endHandler = null;
+        return element;
+      };
+      return this;
+    }
+  });
+
+  attachDragEvents = function(dragHandler, endHandler) {
+    SVG.on(window, 'mousemove', dragHandler);
+    return SVG.on(window, 'mouseup', endHandler);
+  };
+
+  detachDragEvents = function(dragHandler, endHandler) {
+    SVG.off(window, 'mousemove', dragHandler);
+    return SVG.off(window, 'mouseup', endHandler);
+  };
+
+  onStart = function(element, event) {
+    var parent, rotation, translation, x, y, zoom;
+    if (event == null) {
+      event = window.event;
+    }
+    parent = element.parent._parent(SVG.Nested) || element._parent(SVG.Doc);
+    element.startEvent = event;
+    x = y = 0;
+    translation = TranslateRegex.exec(element.attr('transform'));
+    if (translation != null) {
+      x = parseInt(translation[1]);
+      y = parseInt(translation[2]);
+    }
+    zoom = parent.viewbox().zoom;
+    rotation = element.transform('rotation') * Math.PI / 180;
+    element.startPosition = {
+      x: x,
+      y: y,
+      zoom: zoom,
+      rotation: rotation
+    };
+    if (typeof element.dragstart === "function") {
+      element.dragstart({
+        x: 0,
+        y: 0,
+        zoom: zoom
+      }, event);
+    }
+    /* prevent selection dragging*/
+
+    if (event.preventDefault) {
+      return event.preventDefault();
+    } else {
+      return event.returnValue = false;
+    }
+  };
+
+  onDrag = function(element, event) {
+    var delta, rotation, x, y;
+    if (event == null) {
+      event = window.event;
+    }
+    if (element.startEvent) {
+      rotation = element.startPosition.rotation;
+      delta = {
+        x: event.pageX - element.startEvent.pageX,
+        y: event.pageY - element.startEvent.pageY,
+        zoom: element.startPosition.zoom
+      };
+      /* caculate new position [with rotation correction]*/
+
+      x = element.startPosition.x + (delta.x * Math.cos(rotation) + delta.y * Math.sin(rotation)) / element.startPosition.zoom;
+      y = element.startPosition.y + (delta.y * Math.cos(rotation) + delta.x * Math.sin(-rotation)) / element.startPosition.zoom;
+      element.transform({
+        x: x,
+        y: y
+      });
+      return typeof element.dragmove === "function" ? element.dragmove(delta, event) : void 0;
+    }
+  };
+
+  onEnd = function(element, event) {
+    var delta;
+    if (event == null) {
+      event = window.event;
+    }
+    delta = {
+      x: event.pageX - element.startEvent.pageX,
+      y: event.pageY - element.startEvent.pageY,
+      zoom: element.startPosition.zoom
+    };
+    element.startEvent = null;
+    element.startPosition = null;
+    return typeof element.dragend === "function" ? element.dragend(delta, event) : void 0;
+  };
 
   SVG = window.SVG || require('./vendor/svg').SVG;
 
@@ -342,6 +459,53 @@
     }
     return trans;
   };
+
+  Mixin = (function() {
+    Mixin.includeInto = function(constructor) {
+      var name, value, _ref;
+      this.extend(constructor.prototype);
+      for (name in this) {
+        value = this[name];
+        if (ExcludedClassProperties.indexOf(name) === -1) {
+          if (!constructor.hasOwnProperty(name)) {
+            constructor[name] = value;
+          }
+        }
+      }
+      return (_ref = this.included) != null ? _ref.call(constructor) : void 0;
+    };
+
+    Mixin.extend = function(object) {
+      var name, _i, _len, _ref, _ref1;
+      _ref = Object.getOwnPropertyNames(this.prototype);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        name = _ref[_i];
+        if (ExcludedPrototypeProperties.indexOf(name) === -1) {
+          if (!object.hasOwnProperty(name)) {
+            object[name] = this.prototype[name];
+          }
+        }
+      }
+      return (_ref1 = this.prototype.extended) != null ? _ref1.call(object) : void 0;
+    };
+
+    function Mixin() {
+      if (typeof this.extended === "function") {
+        this.extended();
+      }
+    }
+
+    return Mixin;
+
+  })();
+
+  ExcludedClassProperties = ['__super__'];
+
+  for (name in Mixin) {
+    ExcludedClassProperties.push(name);
+  }
+
+  ExcludedPrototypeProperties = ['constructor', 'extended'];
 
   _ = window._ || require('underscore');
 
@@ -664,7 +828,11 @@
 
   Curve.Node = Node;
 
-  Curve.ObjectSelection = (function() {
+  EventEmitter = window.EventEmitter || require('events').EventEmitter;
+
+  Curve.ObjectSelection = (function(_super) {
+    __extends(ObjectSelection, _super);
+
     function ObjectSelection(svgDocument, options) {
       var _base;
       this.svgDocument = svgDocument;
@@ -676,7 +844,9 @@
     }
 
     ObjectSelection.prototype.setObject = function(object) {
+      var old;
       this._unbindObject(this.object);
+      old = object;
       this.object = object;
       this._bindObject(this.object);
       if (this.path) {
@@ -686,8 +856,13 @@
       if (this.object) {
         this.path = this.svgDocument.path('').back();
         this.path.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
-        return this.render();
+        this.render();
       }
+      return this.emit('change:object', {
+        objectSelection: this,
+        object: this.object,
+        old: old
+      });
     };
 
     ObjectSelection.prototype.render = function() {
@@ -710,7 +885,7 @@
 
     return ObjectSelection;
 
-  })();
+  })(EventEmitter);
 
   _ = window._ || require('underscore');
 
@@ -1008,6 +1183,46 @@
       }).call(this), true);
     };
 
+    Path.prototype.enableDragging = function(callbacks) {
+      var element,
+        _this = this;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      this.disableDragging();
+      element.draggable();
+      element.dragstart = function(event) {
+        return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
+      };
+      element.dragmove = function(event) {
+        _this.didChange({
+          translate: {
+            x: event.x,
+            y: event.y
+          }
+        });
+        return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
+      };
+      return element.dragend = function(event) {
+        return typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0;
+      };
+    };
+
+    Path.prototype.disableDragging = function() {
+      var element;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      if (typeof element.fixed === "function") {
+        element.fixed();
+      }
+      element.dragstart = null;
+      element.dragmove = null;
+      return element.dragend = null;
+    };
+
     Path.prototype.addNode = function(node) {
       this._addCurrentSubpathIfNotPresent();
       return this.currentSubpath.addNode(node);
@@ -1049,8 +1264,13 @@
       }
       pathStr = this.toPathString();
       if (pathStr) {
-        return svgEl.attr({
+        svgEl.attr({
           d: pathStr
+        });
+      }
+      if (svgEl !== this.svgEl) {
+        return svgEl.attr({
+          transform: this.svgEl.attr('transform')
         });
       }
     };
@@ -1066,6 +1286,10 @@
       return this.emit('change', this, _.extend({
         subpath: subpath
       }, eventArgs));
+    };
+
+    Path.prototype.didChange = function(event) {
+      return this.emit('change', this, event);
     };
 
     Path.prototype._createSubpath = function(args) {
@@ -1243,18 +1467,45 @@
       _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
       this.onMouseMove = __bind(this.onMouseMove, this);
       this.onClick = __bind(this.onClick, this);
+      this.onChangedSelectedObject = __bind(this.onChangedSelectedObject, this);
       this._evrect = this.svgDocument.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
     }
 
     PointerTool.prototype.activate = function() {
+      var objectSelection;
       this.svgDocument.on('click', this.onClick);
-      return this.svgDocument.on('mousemove', this.onMouseMove);
+      this.svgDocument.on('mousemove', this.onMouseMove);
+      objectSelection = this.selectionView.getObjectSelection();
+      return objectSelection.on('change:object', this.onChangedSelectedObject);
     };
 
     PointerTool.prototype.deactivate = function() {
+      var objectSelection;
       this.svgDocument.off('click', this.onClick);
-      return this.svgDocument.off('mousemove', this.onMouseMove);
+      this.svgDocument.off('mousemove', this.onMouseMove);
+      objectSelection = this.selectionView.getObjectSelection();
+      return objectSelection.off('change:object', this.onChangedSelectedObject);
+    };
+
+    PointerTool.prototype.onChangedSelectedObject = function(_arg) {
+      var object, old;
+      object = _arg.object, old = _arg.old;
+      if (object != null) {
+        return object.enableDragging({
+          dragstart: function(event) {
+            return console.log('start', event);
+          },
+          dragmove: function(event) {
+            return console.log('move', event);
+          },
+          dragend: function(event) {
+            return console.log('end', event);
+          }
+        });
+      } else if (old != null) {
+        return old.disableDragging();
+      }
     };
 
     PointerTool.prototype.onClick = function(e) {
@@ -1396,6 +1647,10 @@
       this.model.on('change:preselected', this.onChangePreselected);
       this.model.on('change:selectedNode', this.onChangeSelectedNode);
     }
+
+    SelectionView.prototype.getObjectSelection = function() {
+      return this.objectSelection;
+    };
 
     SelectionView.prototype.onChangeSelected = function(_arg) {
       var object, old;
@@ -1703,6 +1958,57 @@
 
   Curve.SvgDocument = SvgDocument;
 
+  SVGObject = (function(_super) {
+    __extends(SVGObject, _super);
+
+    function SVGObject() {
+      _ref1 = SVGObject.__super__.constructor.apply(this, arguments);
+      return _ref1;
+    }
+
+    SVGObject.prototype.enableDraggingOnObject = function(object, callbacks) {
+      var element;
+      element = object.svgEl;
+      if (element == null) {
+        return;
+      }
+      this.disableDragging();
+      element.draggable();
+      element.dragstart = function(event) {
+        return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
+      };
+      element.dragmove = function(event) {
+        object.didChange({
+          translate: {
+            x: event.x,
+            y: event.y
+          }
+        });
+        return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
+      };
+      return element.dragend = function(event) {
+        return typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0;
+      };
+    };
+
+    SVGObject.prototype.disableDraggingOnObject = function(object) {
+      var element;
+      element = object.svgEl;
+      if (element == null) {
+        return;
+      }
+      if (typeof element.fixed === "function") {
+        element.fixed();
+      }
+      element.dragstart = null;
+      element.dragmove = null;
+      return element.dragend = null;
+    };
+
+    return SVGObject;
+
+  })(Mixin);
+
   _ = window._ || require('underscore');
 
   $ = window.jQuery || require('jquery');
@@ -1713,6 +2019,12 @@
     },
     setObjectOnNode: function(domNode, object) {
       return $.data(domNode, 'curve.object', object);
+    },
+    pointForEvent: function(svgDocument, event) {
+      var clientX, clientY, left, top, _ref2;
+      clientX = event.clientX, clientY = event.clientY;
+      _ref2 = $(svgDocument.node).offset(), top = _ref2.top, left = _ref2.left;
+      return new Curve.Point(event.clientX - left, event.clientY - top);
     }
   };
 
