@@ -6,6 +6,7 @@
 
 ## TODO
 
+* use browserify
 * Allow moving an entire object
 * Allow making new objects
 * Undo support
