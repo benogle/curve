@@ -16,7 +16,12 @@ Officially tested on latest Firefox and Chrome
 * /test/src - coffeescript jasmine tests
 * /test/suite - runs the tests
 * /src - coffeescript
-* cssbelt.js - generated js
+* curve.js - generated js
+
+## Running the example
+
+* `python -m SimpleHTTPServer 8080`
+* Load up http://localhost:8080/examples/example.html
 
 ## Contributing
 
