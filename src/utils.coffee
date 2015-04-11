@@ -6,3 +6,7 @@ Curve.Utils =
     $.data(domNode, 'curve.object')
   setObjectOnNode: (domNode, object) ->
     $.data(domNode, 'curve.object', object)
+  pointForEvent: (svgDocument, event) ->
+    {clientX, clientY} = event
+    {top, left} = $(svgDocument.node).offset()
+    new Curve.Point(event.clientX - left, event.clientY - top)

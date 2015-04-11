@@ -4,7 +4,10 @@ _ = window._ or require 'underscore'
 class Point
   @create: (x, y) ->
     return x if x instanceof Point
-    new Point(x, y)
+    if Array.isArray(x)
+      new Point(x[0], x[1])
+    else
+      new Point(x, y)
 
   constructor: (x, y) ->
     @set(x, y)

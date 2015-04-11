@@ -97,6 +97,12 @@ class Subpath extends EventEmitter
     @emit('close', this, args)
     @emit('change', this, args)
 
+  translate: (point) ->
+    point = Point.create(point)
+    for node in @nodes
+      node.translate(point)
+    return
+
   onNodeChange: (node, eventArgs) =>
     index = @_findNodeIndex(node)
     @emit 'change', this, _.extend({index}, eventArgs)

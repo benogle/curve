@@ -28,9 +28,12 @@ class Path extends EventEmitter
     element.draggable()
     element.dragstart = (event) -> callbacks.dragstart?(event)
     element.dragmove = (event) =>
-      @didChange({translate: {x: event.x, y: event.y}})
+      @update({translate: {x: event.x, y: event.y}})
       callbacks.dragmove?(event)
-    element.dragend = (event) -> callbacks.dragend?(event)
+    element.dragend = (event) =>
+      @transform = null
+      @translate([event.x, event.y])
+      callbacks.dragend?(event)
 
   disableDragging: ->
     element = @svgEl
@@ -64,13 +67,24 @@ class Path extends EventEmitter
       value: subpath
     @emit(args.event, this, args)
     @emit('change', this, args)
-
     subpath
 
+  translate: (point) ->
+    point = Point.create(point)
+    for subpath in @subpaths
+      subpath.translate(point)
+    return
+
+  # Call to update the model based on potentially changed node attributes
+  update: (event) ->
+    @transform = @svgEl.attr('transform')
+    @emit 'change', this, event
+
+  # Will render the nodes and the transform
   render: (svgEl=@svgEl) ->
     pathStr = @toPathString()
     svgEl.attr(d: pathStr) if pathStr
-    svgEl.attr(transform: @svgEl.attr('transform')) if svgEl isnt @svgEl
+    svgEl.attr(transform: @transform)
 
   onSubpathEvent: (subpath, eventArgs) =>
     @emit eventArgs.event, this, _.extend({subpath}, eventArgs)
@@ -78,9 +92,6 @@ class Path extends EventEmitter
   onSubpathChange: (subpath, eventArgs) =>
     @render()
     @emit 'change', this, _.extend({subpath}, eventArgs)
-
-  didChange: (event) ->
-    @emit 'change', this, event
 
   _createSubpath: (args) ->
     @addSubpath(new Subpath(_.extend({path: this}, args)))

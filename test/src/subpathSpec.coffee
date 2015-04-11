@@ -1,4 +1,5 @@
 describe 'Curve.Subpath', ->
+  path = null
   beforeEach ->
 
   describe 'toPathString', ->
@@ -42,6 +43,20 @@ describe 'Curve.Subpath', ->
 
       expect(@path.closed).toEqual true
       expect(@path.nodes.length).toEqual 3
+
+  describe "::translate()", ->
+    beforeEach ->
+      path = new Curve.Subpath()
+      path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
+      path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
+      path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
+      path.close()
+
+    it "translates all the nodes", ->
+      path.translate(new Curve.Point(-10, 10))
+      expect(path.getNodes()[0].getPoint()).toEqual new Curve.Point(40, 60)
+      expect(path.getNodes()[1].getPoint()).toEqual new Curve.Point(70, 70)
+      expect(path.getNodes()[2].getPoint()).toEqual new Curve.Point(50, 90)
 
   describe 'updating', ->
     beforeEach ->

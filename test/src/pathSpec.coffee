@@ -64,6 +64,20 @@ describe 'Curve.Path', ->
 
       expect(path.toPathString()).toEqual pathString
 
+  describe "::translate()", ->
+    beforeEach ->
+      path = new Curve.Path(svg)
+      path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))
+      path.addNode(new Curve.Node([80, 60], [-10, -5], [10, 5]))
+      path.addNode(new Curve.Node([60, 80], [10, 0], [-10, 0]))
+      path.close()
+
+    it "translates all the nodes", ->
+      path.translate(new Curve.Point(-10, 10))
+      expect(path.getNodes()[0].getPoint()).toEqual new Curve.Point(40, 60)
+      expect(path.getNodes()[1].getPoint()).toEqual new Curve.Point(70, 70)
+      expect(path.getNodes()[2].getPoint()).toEqual new Curve.Point(50, 90)
+
   describe 'updating', ->
     beforeEach ->
       path = new Curve.Path(svg)

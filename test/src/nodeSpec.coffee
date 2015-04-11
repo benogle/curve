@@ -20,3 +20,10 @@ describe 'Curve.Node', ->
     it 'setting handle to null, mirrors', ->
       @s.setHandleIn(null)
       expect(@s.handleOut).toEqual null
+
+  describe "::translate()", ->
+    it "translates the node and the handles", ->
+      @s.translate(new Curve.Point(-25, 10))
+      expect(@s.getPoint()).toEqual new Curve.Point(25, 60)
+      expect(@s.getHandleIn()).toEqual new Curve.Point(-10, 0)
+      expect(@s.getHandleOut()).toEqual new Curve.Point(10, 0)

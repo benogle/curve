@@ -524,7 +524,6 @@ class NodeEditor
   _bindNode: (node) ->
     return unless node
     node.addListener 'change', @render
-
   _unbindNode: (node) ->
     return unless node
     node.removeListener 'change', @render
@@ -612,6 +611,10 @@ class Node extends EventEmitter
     @isJoined = true
     @["set#{referenceHandle.replace('h', 'H')}"](@[referenceHandle])
 
+  getPoint: -> @point
+  getHandleIn: -> @handleIn
+  getHandleOut: -> @handleOut
+
   getAbsoluteHandleIn: ->
     if @handleIn
       @point.add(@handleIn)
@@ -651,6 +654,10 @@ class Node extends EventEmitter
 
     @emit event, this, eventArgs
     @emit 'change', this, eventArgs
+
+  translate: (point) ->
+    point = Point.create(point)
+    @set('point', @point.add(point))
 
 Curve.Node = Node
 
@@ -933,9 +940,12 @@ class Path extends EventEmitter
     element.draggable()
     element.dragstart = (event) -> callbacks.dragstart?(event)
     element.dragmove = (event) =>
-      @didChange({translate: {x: event.x, y: event.y}})
+      @update({translate: {x: event.x, y: event.y}})
       callbacks.dragmove?(event)
-    element.dragend = (event) -> callbacks.dragend?(event)
+    element.dragend = (event) =>
+      @transform = null
+      @translate([event.x, event.y])
+      callbacks.dragend?(event)
 
   disableDragging: ->
     element = @svgEl
@@ -969,13 +979,24 @@ class Path extends EventEmitter
       value: subpath
     @emit(args.event, this, args)
     @emit('change', this, args)
-
     subpath
 
+  translate: (point) ->
+    point = Point.create(point)
+    for subpath in @subpaths
+      subpath.translate(point)
+    return
+
+  # Call to update the model based on potentially changed node attributes
+  update: (event) ->
+    @transform = @svgEl.attr('transform')
+    @emit 'change', this, event
+
+  # Will render the nodes and the transform
   render: (svgEl=@svgEl) ->
     pathStr = @toPathString()
     svgEl.attr(d: pathStr) if pathStr
-    svgEl.attr(transform: @svgEl.attr('transform')) if svgEl isnt @svgEl
+    svgEl.attr(transform: @transform)
 
   onSubpathEvent: (subpath, eventArgs) =>
     @emit eventArgs.event, this, _.extend({subpath}, eventArgs)
@@ -983,9 +1004,6 @@ class Path extends EventEmitter
   onSubpathChange: (subpath, eventArgs) =>
     @render()
     @emit 'change', this, _.extend({subpath}, eventArgs)
-
-  didChange: (event) ->
-    @emit 'change', this, event
 
   _createSubpath: (args) ->
     @addSubpath(new Subpath(_.extend({path: this}, args)))
@@ -1067,7 +1085,10 @@ _ = window._ or require 'underscore'
 class Point
   @create: (x, y) ->
     return x if x instanceof Point
-    new Point(x, y)
+    if Array.isArray(x)
+      new Point(x[0], x[1])
+    else
+      new Point(x, y)
 
   constructor: (x, y) ->
     @set(x, y)
@@ -1368,6 +1389,12 @@ class Subpath extends EventEmitter
     args = event: 'close'
     @emit('close', this, args)
     @emit('change', this, args)
+
+  translate: (point) ->
+    point = Point.create(point)
+    for node in @nodes
+      node.translate(point)
+    return
 
   onNodeChange: (node, eventArgs) =>
     index = @_findNodeIndex(node)

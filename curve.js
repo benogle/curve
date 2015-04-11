@@ -756,6 +756,18 @@
       return this["set" + (referenceHandle.replace('h', 'H'))](this[referenceHandle]);
     };
 
+    Node.prototype.getPoint = function() {
+      return this.point;
+    };
+
+    Node.prototype.getHandleIn = function() {
+      return this.handleIn;
+    };
+
+    Node.prototype.getHandleOut = function() {
+      return this.handleOut;
+    };
+
     Node.prototype.getAbsoluteHandleIn = function() {
       if (this.handleIn) {
         return this.point.add(this.handleIn);
@@ -820,6 +832,11 @@
       };
       this.emit(event, this, eventArgs);
       return this.emit('change', this, eventArgs);
+    };
+
+    Node.prototype.translate = function(point) {
+      point = Point.create(point);
+      return this.set('point', this.point.add(point));
     };
 
     return Node;
@@ -1196,7 +1213,7 @@
         return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
       };
       element.dragmove = function(event) {
-        _this.didChange({
+        _this.update({
           translate: {
             x: event.x,
             y: event.y
@@ -1205,6 +1222,8 @@
         return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
       };
       return element.dragend = function(event) {
+        _this.transform = null;
+        _this.translate([event.x, event.y]);
         return typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0;
       };
     };
@@ -1257,6 +1276,21 @@
       return subpath;
     };
 
+    Path.prototype.translate = function(point) {
+      var subpath, _i, _len, _ref1;
+      point = Point.create(point);
+      _ref1 = this.subpaths;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        subpath = _ref1[_i];
+        subpath.translate(point);
+      }
+    };
+
+    Path.prototype.update = function(event) {
+      this.transform = this.svgEl.attr('transform');
+      return this.emit('change', this, event);
+    };
+
     Path.prototype.render = function(svgEl) {
       var pathStr;
       if (svgEl == null) {
@@ -1268,11 +1302,9 @@
           d: pathStr
         });
       }
-      if (svgEl !== this.svgEl) {
-        return svgEl.attr({
-          transform: this.svgEl.attr('transform')
-        });
-      }
+      return svgEl.attr({
+        transform: this.transform
+      });
     };
 
     Path.prototype.onSubpathEvent = function(subpath, eventArgs) {
@@ -1286,10 +1318,6 @@
       return this.emit('change', this, _.extend({
         subpath: subpath
       }, eventArgs));
-    };
-
-    Path.prototype.didChange = function(event) {
-      return this.emit('change', this, event);
     };
 
     Path.prototype._createSubpath = function(args) {
@@ -1417,7 +1445,11 @@
       if (x instanceof Point) {
         return x;
       }
-      return new Point(x, y);
+      if (Array.isArray(x)) {
+        return new Point(x[0], x[1]);
+      } else {
+        return new Point(x, y);
+      }
     };
 
     function Point(x, y) {
@@ -1873,6 +1905,16 @@
       };
       this.emit('close', this, args);
       return this.emit('change', this, args);
+    };
+
+    Subpath.prototype.translate = function(point) {
+      var node, _i, _len, _ref1;
+      point = Point.create(point);
+      _ref1 = this.nodes;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        node = _ref1[_i];
+        node.translate(point);
+      }
     };
 
     Subpath.prototype.onNodeChange = function(node, eventArgs) {
