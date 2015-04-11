@@ -412,29 +412,6 @@ objectifyTransformations = (transform) ->
 
   trans
 
-# TODO: use browserify, and require this from:
-# https://github.com/atom/mixto/blob/master/src/mixin.coffee
-class Mixin
-  @includeInto: (constructor) ->
-    @extend(constructor.prototype)
-    for name, value of this
-      if ExcludedClassProperties.indexOf(name) is -1
-        constructor[name] = value unless constructor.hasOwnProperty(name)
-    @included?.call(constructor)
-
-  @extend: (object) ->
-    for name in Object.getOwnPropertyNames(@prototype)
-      if ExcludedPrototypeProperties.indexOf(name) is -1
-        object[name] = @prototype[name] unless object.hasOwnProperty(name)
-    @prototype.extended?.call(object)
-
-  constructor: ->
-    @extended?()
-
-ExcludedClassProperties = ['__super__']
-ExcludedClassProperties.push(name) for name of Mixin
-ExcludedPrototypeProperties = ['constructor', 'extended']
-
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
@@ -1445,26 +1422,6 @@ class SvgDocument
     svgRoot
 
 Curve.SvgDocument = SvgDocument
-
-class SVGObject extends Mixin
-  enableDraggingOnObject: (object, callbacks) ->
-    element = object.svgEl
-    return unless element?
-    @disableDragging()
-    element.draggable()
-    element.dragstart = (event) -> callbacks.dragstart?(event)
-    element.dragmove = (event) ->
-      object.didChange({translate: {x: event.x, y: event.y}})
-      callbacks.dragmove?(event)
-    element.dragend = (event) -> callbacks.dragend?(event)
-
-  disableDraggingOnObject: (object) ->
-    element = object.svgEl
-    return unless element?
-    element.fixed?()
-    element.dragstart = null
-    element.dragmove = null
-    element.dragend = null
 
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'

@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, ExcludedClassProperties, ExcludedPrototypeProperties, IDS, Mixin, NUMBER, Node, NodeEditor, Path, Point, SVG, SVGObject, Subpath, SvgDocument, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, name, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref, _ref1,
+  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, Point, SVG, Subpath, SvgDocument, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -459,53 +459,6 @@
     }
     return trans;
   };
-
-  Mixin = (function() {
-    Mixin.includeInto = function(constructor) {
-      var name, value, _ref;
-      this.extend(constructor.prototype);
-      for (name in this) {
-        value = this[name];
-        if (ExcludedClassProperties.indexOf(name) === -1) {
-          if (!constructor.hasOwnProperty(name)) {
-            constructor[name] = value;
-          }
-        }
-      }
-      return (_ref = this.included) != null ? _ref.call(constructor) : void 0;
-    };
-
-    Mixin.extend = function(object) {
-      var name, _i, _len, _ref, _ref1;
-      _ref = Object.getOwnPropertyNames(this.prototype);
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        name = _ref[_i];
-        if (ExcludedPrototypeProperties.indexOf(name) === -1) {
-          if (!object.hasOwnProperty(name)) {
-            object[name] = this.prototype[name];
-          }
-        }
-      }
-      return (_ref1 = this.prototype.extended) != null ? _ref1.call(object) : void 0;
-    };
-
-    function Mixin() {
-      if (typeof this.extended === "function") {
-        this.extended();
-      }
-    }
-
-    return Mixin;
-
-  })();
-
-  ExcludedClassProperties = ['__super__'];
-
-  for (name in Mixin) {
-    ExcludedClassProperties.push(name);
-  }
-
-  ExcludedPrototypeProperties = ['constructor', 'extended'];
 
   _ = window._ || require('underscore');
 
@@ -1998,57 +1951,6 @@
 
   Curve.SvgDocument = SvgDocument;
 
-  SVGObject = (function(_super) {
-    __extends(SVGObject, _super);
-
-    function SVGObject() {
-      _ref1 = SVGObject.__super__.constructor.apply(this, arguments);
-      return _ref1;
-    }
-
-    SVGObject.prototype.enableDraggingOnObject = function(object, callbacks) {
-      var element;
-      element = object.svgEl;
-      if (element == null) {
-        return;
-      }
-      this.disableDragging();
-      element.draggable();
-      element.dragstart = function(event) {
-        return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
-      };
-      element.dragmove = function(event) {
-        object.didChange({
-          translate: {
-            x: event.x,
-            y: event.y
-          }
-        });
-        return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
-      };
-      return element.dragend = function(event) {
-        return typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0;
-      };
-    };
-
-    SVGObject.prototype.disableDraggingOnObject = function(object) {
-      var element;
-      element = object.svgEl;
-      if (element == null) {
-        return;
-      }
-      if (typeof element.fixed === "function") {
-        element.fixed();
-      }
-      element.dragstart = null;
-      element.dragmove = null;
-      return element.dragend = null;
-    };
-
-    return SVGObject;
-
-  })(Mixin);
-
   _ = window._ || require('underscore');
 
   $ = window.jQuery || require('jquery');
@@ -2061,9 +1963,9 @@
       return $.data(domNode, 'curve.object', object);
     },
     pointForEvent: function(svgDocument, event) {
-      var clientX, clientY, left, top, _ref2;
+      var clientX, clientY, left, top, _ref1;
       clientX = event.clientX, clientY = event.clientY;
-      _ref2 = $(svgDocument.node).offset(), top = _ref2.top, left = _ref2.left;
+      _ref1 = $(svgDocument.node).offset(), top = _ref1.top, left = _ref1.left;
       return new Curve.Point(event.clientX - left, event.clientY - top);
     }
   };
