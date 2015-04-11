@@ -940,7 +940,7 @@ class Path extends EventEmitter
     element.draggable()
     element.dragstart = (event) -> callbacks.dragstart?(event)
     element.dragmove = (event) =>
-      @update({translate: {x: event.x, y: event.y}})
+      @update()
       callbacks.dragmove?(event)
     element.dragend = (event) =>
       @transform = null
@@ -989,8 +989,10 @@ class Path extends EventEmitter
 
   # Call to update the model based on potentially changed node attributes
   update: (event) ->
-    @transform = @svgEl.attr('transform')
-    @emit 'change', this, event
+    newTransform = @svgEl.attr('transform')
+    if newTransform isnt @transform
+      @transform = newTransform
+      @emit 'change', this, {@transform}
 
   # Will render the nodes and the transform
   render: (svgEl=@svgEl) ->

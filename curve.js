@@ -1213,12 +1213,7 @@
         return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
       };
       element.dragmove = function(event) {
-        _this.update({
-          translate: {
-            x: event.x,
-            y: event.y
-          }
-        });
+        _this.update();
         return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
       };
       return element.dragend = function(event) {
@@ -1287,8 +1282,14 @@
     };
 
     Path.prototype.update = function(event) {
-      this.transform = this.svgEl.attr('transform');
-      return this.emit('change', this, event);
+      var newTransform;
+      newTransform = this.svgEl.attr('transform');
+      if (newTransform !== this.transform) {
+        this.transform = newTransform;
+        return this.emit('change', this, {
+          transform: this.transform
+        });
+      }
     };
 
     Path.prototype.render = function(svgEl) {
