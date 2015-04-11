@@ -30,4 +30,7 @@ class Point
     other = Point.create(other)
     other.x == @x and other.y == @y
 
+  toString: ->
+    "(#{@x}, #{@y})"
+
 Curve.Point = Point

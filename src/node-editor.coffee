@@ -56,19 +56,20 @@ class NodeEditor
 
     handleIn = @node.getAbsoluteHandleIn()
     handleOut = @node.getAbsoluteHandleOut()
-    point = @node.point
+    point = @node.getPoint()
 
     linePath = "M#{handleIn.x},#{handleIn.y}L#{point.x},#{point.y}L#{handleOut.x},#{handleOut.y}"
     @lineElement.attr(d: linePath)
 
-    @handleElements.members[0].attr(cx: handleIn.x, cy: handleIn.y)
-    @handleElements.members[1].attr(cx: handleOut.x, cy: handleOut.y)
-
-    @nodeElement.attr(cx: point.x, cy: point.y)
+    # Note nulling out the transform; the svg lib is a dick and adds them in
+    # when setting the center attributes. Not sure why.
+    @handleElements.members[0].attr(cx: handleIn.x, cy: handleIn.y, transform: '')
+    @handleElements.members[1].attr(cx: handleOut.x, cy: handleOut.y, transform: '')
+    @nodeElement.attr(cx: point.x, cy: point.y, transform: '')
 
     @show()
 
-    # make sure the handlethe user is dragging is on top. could get in the
+    # make sure the handle the user is dragging is on top. could get in the
     # situation where the handle passed under the other, and it feels weird.
     @_draggingHandle.front() if @_draggingHandle
 
@@ -144,17 +145,10 @@ class NodeEditor
     @handleElements.members[1].dragstart = onStartDraggingHandle
     @handleElements.members[1].dragend = onStopDraggingHandle
 
-    # I hate this.
-    find = (el) =>
-      return @handleElements.members[0] if @handleElements.members[0].node == el
-      @handleElements.members[1]
-
     @handleElements.on 'mouseover', ->
-      el = find(this)
-      el.front()
-      el.attr('r': self.handleSize+2)
+      this.front()
+      this.attr('r': self.handleSize+2)
     @handleElements.on 'mouseout', ->
-      el = find(this)
-      el.attr('r': self.handleSize)
+      this.attr('r': self.handleSize)
 
 Curve.NodeEditor = NodeEditor

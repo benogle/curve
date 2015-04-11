@@ -586,22 +586,25 @@
       }
       handleIn = this.node.getAbsoluteHandleIn();
       handleOut = this.node.getAbsoluteHandleOut();
-      point = this.node.point;
+      point = this.node.getPoint();
       linePath = "M" + handleIn.x + "," + handleIn.y + "L" + point.x + "," + point.y + "L" + handleOut.x + "," + handleOut.y;
       this.lineElement.attr({
         d: linePath
       });
       this.handleElements.members[0].attr({
         cx: handleIn.x,
-        cy: handleIn.y
+        cy: handleIn.y,
+        transform: ''
       });
       this.handleElements.members[1].attr({
         cx: handleOut.x,
-        cy: handleOut.y
+        cy: handleOut.y,
+        transform: ''
       });
       this.nodeElement.attr({
         cx: point.x,
-        cy: point.y
+        cy: point.y,
+        transform: ''
       });
       this.show();
       if (this._draggingHandle) {
@@ -676,7 +679,7 @@
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
-      var find, onStartDraggingHandle, onStopDraggingHandle, self,
+      var onStartDraggingHandle, onStopDraggingHandle, self,
         _this = this;
       self = this;
       this.handleElements = this.svgToolParent.set();
@@ -701,24 +704,14 @@
       this.handleElements.members[1].dragmove = this.onDraggingHandleOut;
       this.handleElements.members[1].dragstart = onStartDraggingHandle;
       this.handleElements.members[1].dragend = onStopDraggingHandle;
-      find = function(el) {
-        if (_this.handleElements.members[0].node === el) {
-          return _this.handleElements.members[0];
-        }
-        return _this.handleElements.members[1];
-      };
       this.handleElements.on('mouseover', function() {
-        var el;
-        el = find(this);
-        el.front();
-        return el.attr({
+        this.front();
+        return this.attr({
           'r': self.handleSize + 2
         });
       });
       return this.handleElements.on('mouseout', function() {
-        var el;
-        el = find(this);
-        return el.attr({
+        return this.attr({
           'r': self.handleSize
         });
       });
@@ -1483,6 +1476,10 @@
     Point.prototype.equals = function(other) {
       other = Point.create(other);
       return other.x === this.x && other.y === this.y;
+    };
+
+    Point.prototype.toString = function() {
+      return "(" + this.x + ", " + this.y + ")";
     };
 
     return Point;
