@@ -6,8 +6,10 @@
 
 ## TODO
 
-* Use browserify
+* Handles + nodes are not quite right 
 * Allow moving an entire object
+  * When an object moves, needs to notify the nodes
+* Use browserify
 * Support other non-path object types. At least selecting / moving!
   * rect
   * circle
@@ -26,3 +28,19 @@
 * probably need a doc object?
   * Can pass it to everything that needs to use svg
   * would have access to the tools n junk
+
+## Path / node eventing
+
+### Events originating at nodes
+
+* Node gets moved
+  * emits change event
+  * subpath emits change event
+  * path emits change event
+
+### Events originating at path
+
+* How to update the children?
+  * Call `path.update()`. it reads the attrs, if different, calls down into subpaths, who call into nodes.
+  * nodes know about the subpath, and subpaths know about the path
+  * On request for absolute points, take the transform into account
