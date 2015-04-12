@@ -99,11 +99,22 @@ describe 'Curve.Path', ->
 
     it 'updates the model when the transform changes', ->
       el = path.svgEl
-      el.attr(transform: 'translate(10, 20)')
+      el.attr(transform: 'translate(10 20)')
       path.updateFromAttributes()
 
-      transform = path.model.getTransform()
-      expect(transform).toBeDefined()
+      transformString = path.model.getTransformString()
+      expect(transformString).toBe 'translate(10 20)'
+
+    it "updates the node points when the transform changes", ->
+      el = path.svgEl
+      el.attr(transform: 'translate(10 20)')
+      path.updateFromAttributes()
+
+      nodes = path.getNodes()
+      expect(nodes[0].getPoint()).toEqual new Curve.Point(70, 80)
+      expect(nodes[0].getAbsoluteHandleIn()).toEqual new Curve.Point(60, 80)
+      expect(nodes[0].getAbsoluteHandleOut()).toEqual new Curve.Point(80, 80)
+
 
   describe 'updating via the model', ->
     beforeEach ->

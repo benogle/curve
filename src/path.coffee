@@ -23,7 +23,7 @@ class PathModel extends EventEmitter
 
   getTransformString: -> @transform.toString()
 
-  setTransform: (transformString) ->
+  setTransformString: (transformString) ->
     if @transform.setTransformString(transformString)
       @_emitChangeEvent()
 
@@ -74,8 +74,9 @@ class PathModel extends EventEmitter
   Section: Private Methods
   ###
 
-  _createSubpath: (args) ->
-    @_addSubpath(new Subpath(_.extend({path: this}, args)))
+  _createSubpath: (args={}) ->
+    args.path = this
+    @_addSubpath(new Subpath(args))
 
   _forwardEvent: (eventName, eventObject, args) ->
     @emit(eventName, this, args)
@@ -146,14 +147,14 @@ class Path extends EventEmitter
     return unless element?
     @disableDragging()
     element.draggable()
-    element.dragstart = (event) -> callbacks.dragstart?(event)
+    element.dragstart = (event) -> callbacks?.dragstart?(event)
     element.dragmove = (event) =>
       @updateFromAttributes()
-      callbacks.dragmove?(event)
+      callbacks?.dragmove?(event)
     element.dragend = (event) =>
-      @model.setTransform(null)
+      @model.setTransformString(null)
       @model.translate([event.x, event.y])
-      callbacks.dragend?(event)
+      callbacks?.dragend?(event)
 
   disableDragging: ->
     element = @svgEl
@@ -166,7 +167,7 @@ class Path extends EventEmitter
   updateFromAttributes: ->
     pathString = @svgEl.attr('d')
     transform = @svgEl.attr('transform')
-    @model.setTransform(transform)
+    @model.setTransformString(transform)
     @model.setPathString(pathString)
 
   # Will render the nodes and the transform

@@ -585,17 +585,21 @@
     };
 
     NodeEditor.prototype._bindNode = function(node) {
+      var _ref;
       if (!node) {
         return;
       }
-      return node.addListener('change', this.render);
+      node.addListener('change', this.render);
+      return (_ref = node.getPath()) != null ? _ref.addListener('change', this.render) : void 0;
     };
 
     NodeEditor.prototype._unbindNode = function(node) {
+      var _ref;
       if (!node) {
         return;
       }
-      return node.removeListener('change', this.render);
+      node.removeListener('change', this.render);
+      return (_ref = node.getPath()) != null ? _ref.addListener('change', this.render) : void 0;
     };
 
     NodeEditor.prototype._setupNodeElement = function() {
@@ -702,8 +706,16 @@
       return this["set" + (referenceHandle.replace('h', 'H'))](this[referenceHandle]);
     };
 
+    Node.prototype.setPath = function(path) {
+      this.path = path;
+    };
+
+    Node.prototype.getPath = function() {
+      return this.path;
+    };
+
     Node.prototype.getPoint = function() {
-      return this.point;
+      return this._transformPoint(this.point);
     };
 
     Node.prototype.getHandleIn = function() {
@@ -716,17 +728,17 @@
 
     Node.prototype.getAbsoluteHandleIn = function() {
       if (this.handleIn) {
-        return this.point.add(this.handleIn);
+        return this._transformPoint(this.point.add(this.handleIn));
       } else {
-        return this.point;
+        return this.getPoint();
       }
     };
 
     Node.prototype.getAbsoluteHandleOut = function() {
       if (this.handleOut) {
-        return this.point.add(this.handleOut);
+        return this._transformPoint(this.point.add(this.handleOut));
       } else {
-        return this.point;
+        return this.getPoint();
       }
     };
 
@@ -783,6 +795,15 @@
     Node.prototype.translate = function(point) {
       point = Point.create(point);
       return this.set('point', this.point.add(point));
+    };
+
+    Node.prototype._transformPoint = function(point) {
+      var transform, _ref;
+      transform = (_ref = this.path) != null ? _ref.getTransform() : void 0;
+      if (transform != null) {
+        point = transform.transformPoint(point);
+      }
+      return point;
     };
 
     return Node;
@@ -1137,7 +1158,7 @@
       return this.transform.toString();
     };
 
-    PathModel.prototype.setTransform = function(transformString) {
+    PathModel.prototype.setTransformString = function(transformString) {
       if (this.transform.setTransformString(transformString)) {
         return this._emitChangeEvent();
       }
@@ -1211,9 +1232,11 @@
 
 
     PathModel.prototype._createSubpath = function(args) {
-      return this._addSubpath(new Subpath(_.extend({
-        path: this
-      }, args)));
+      if (args == null) {
+        args = {};
+      }
+      args.path = this;
+      return this._addSubpath(new Subpath(args));
     };
 
     PathModel.prototype._forwardEvent = function(eventName, eventObject, args) {
@@ -1344,16 +1367,16 @@
       this.disableDragging();
       element.draggable();
       element.dragstart = function(event) {
-        return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
+        return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
       };
       element.dragmove = function(event) {
         _this.updateFromAttributes();
-        return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
+        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
       };
       return element.dragend = function(event) {
-        _this.model.setTransform(null);
+        _this.model.setTransformString(null);
         _this.model.translate([event.x, event.y]);
-        return typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0;
+        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
       };
     };
 
@@ -1375,7 +1398,7 @@
       var pathString, transform;
       pathString = this.svgEl.attr('d');
       transform = this.svgEl.attr('transform');
-      this.model.setTransform(transform);
+      this.model.setTransformString(transform);
       return this.model.setPathString(pathString);
     };
 
@@ -1572,17 +1595,7 @@
       var object, old;
       object = _arg.object, old = _arg.old;
       if (object != null) {
-        return object.enableDragging({
-          dragstart: function(event) {
-            return console.log('start', event);
-          },
-          dragmove: function(event) {
-            return console.log('move', event);
-          },
-          dragend: function(event) {
-            return console.log('end', event);
-          }
-        });
+        return object.enableDragging();
       } else if (old != null) {
         return old.disableDragging();
       }
@@ -1718,7 +1731,7 @@
       this.onChangeSelected = __bind(this.onChangeSelected, this);
       this.path = null;
       this.nodeEditors = [];
-      this._nodeEditorStash = [];
+      this._nodeEditorPool = [];
       this.objectSelection = new Curve.ObjectSelection(this.svgDocument);
       this.objectPreselection = new Curve.ObjectSelection(this.svgDocument, {
         "class": 'object-preselection'
@@ -1787,7 +1800,7 @@
 
     SelectionView.prototype._createNodeEditors = function(object) {
       var node, nodeEditor, nodes, _i, _j, _len, _len1, _ref1, _results;
-      this._nodeEditorStash = this._nodeEditorStash.concat(this.nodeEditors);
+      this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
       this.nodeEditors = [];
       if (object) {
         nodes = object.getNodes();
@@ -1796,7 +1809,7 @@
           this._addNodeEditor(node);
         }
       }
-      _ref1 = this._nodeEditorStash;
+      _ref1 = this._nodeEditorPool;
       _results = [];
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         nodeEditor = _ref1[_j];
@@ -1810,7 +1823,7 @@
       if (!node) {
         return false;
       }
-      nodeEditor = this._nodeEditorStash.length ? this._nodeEditorStash.pop() : new Curve.NodeEditor(this.svgDocument, this.model);
+      nodeEditor = this._nodeEditorPool.length ? this._nodeEditorPool.pop() : new Curve.NodeEditor(this.svgDocument, this.model);
       nodeEditor.setNode(node);
       this.nodeEditors.push(nodeEditor);
       return true;
@@ -1958,10 +1971,12 @@
     };
 
     Subpath.prototype._bindNode = function(node) {
+      node.setPath(this.path);
       return node.on('change', this.onNodeChange);
     };
 
     Subpath.prototype._unbindNode = function(node) {
+      node.setPath(null);
       return node.off('change', this.onNodeChange);
     };
 

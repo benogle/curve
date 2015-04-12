@@ -502,9 +502,12 @@ class NodeEditor
   _bindNode: (node) ->
     return unless node
     node.addListener 'change', @render
+    node.getPath()?.addListener 'change', @render
+
   _unbindNode: (node) ->
     return unless node
     node.removeListener 'change', @render
+    node.getPath()?.addListener 'change', @render
 
   _setupNodeElement: ->
     @nodeElement = @svgToolParent.circle(@nodeSize)
@@ -582,23 +585,30 @@ class Node extends EventEmitter
     @isJoined = true
     @["set#{referenceHandle.replace('h', 'H')}"](@[referenceHandle])
 
-  getPoint: -> @point
+  setPath: (@path) ->
+
+  getPath: -> @path
+
+  getPoint: ->
+    @_transformPoint(@point)
   getHandleIn: -> @handleIn
   getHandleOut: -> @handleOut
 
   getAbsoluteHandleIn: ->
     if @handleIn
-      @point.add(@handleIn)
+      @_transformPoint(@point.add(@handleIn))
     else
-      @point
+      @getPoint()
+
   getAbsoluteHandleOut: ->
     if @handleOut
-      @point.add(@handleOut)
+      @_transformPoint(@point.add(@handleOut))
     else
-      @point
+      @getPoint()
 
   setAbsoluteHandleIn: (point) ->
     @setHandleIn(Point.create(point).subtract(@point))
+
   setAbsoluteHandleOut: (point) ->
     @setHandleOut(Point.create(point).subtract(@point))
 
@@ -629,6 +639,11 @@ class Node extends EventEmitter
   translate: (point) ->
     point = Point.create(point)
     @set('point', @point.add(point))
+
+  _transformPoint: (point) ->
+    transform = @path?.getTransform()
+    point = transform.transformPoint(point) if transform?
+    point
 
 Curve.Node = Node
 
@@ -906,7 +921,7 @@ class PathModel extends EventEmitter
 
   getTransformString: -> @transform.toString()
 
-  setTransform: (transformString) ->
+  setTransformString: (transformString) ->
     if @transform.setTransformString(transformString)
       @_emitChangeEvent()
 
@@ -957,8 +972,9 @@ class PathModel extends EventEmitter
   Section: Private Methods
   ###
 
-  _createSubpath: (args) ->
-    @_addSubpath(new Subpath(_.extend({path: this}, args)))
+  _createSubpath: (args={}) ->
+    args.path = this
+    @_addSubpath(new Subpath(args))
 
   _forwardEvent: (eventName, eventObject, args) ->
     @emit(eventName, this, args)
@@ -1029,14 +1045,14 @@ class Path extends EventEmitter
     return unless element?
     @disableDragging()
     element.draggable()
-    element.dragstart = (event) -> callbacks.dragstart?(event)
+    element.dragstart = (event) -> callbacks?.dragstart?(event)
     element.dragmove = (event) =>
       @updateFromAttributes()
-      callbacks.dragmove?(event)
+      callbacks?.dragmove?(event)
     element.dragend = (event) =>
-      @model.setTransform(null)
+      @model.setTransformString(null)
       @model.translate([event.x, event.y])
-      callbacks.dragend?(event)
+      callbacks?.dragend?(event)
 
   disableDragging: ->
     element = @svgEl
@@ -1049,7 +1065,7 @@ class Path extends EventEmitter
   updateFromAttributes: ->
     pathString = @svgEl.attr('d')
     transform = @svgEl.attr('transform')
-    @model.setTransform(transform)
+    @model.setTransformString(transform)
     @model.setPathString(pathString)
 
   # Will render the nodes and the transform
@@ -1173,13 +1189,7 @@ class Curve.PointerTool
 
   onChangedSelectedObject: ({object, old}) =>
     if object?
-      object.enableDragging
-        dragstart: (event) ->
-          console.log 'start', event
-        dragmove: (event) ->
-          console.log 'move', event
-        dragend: (event) ->
-          console.log 'end', event
+      object.enableDragging()
     else if old?
       old.disableDragging()
 
@@ -1260,7 +1270,7 @@ class Curve.SelectionView
   constructor: (@svgDocument, @model) ->
     @path = null
     @nodeEditors = []
-    @_nodeEditorStash = []
+    @_nodeEditorPool = []
 
     @objectSelection = new Curve.ObjectSelection(@svgDocument)
     @objectPreselection = new Curve.ObjectSelection(@svgDocument, class: 'object-preselection')
@@ -1301,21 +1311,21 @@ class Curve.SelectionView
     object.removeListener 'insert:node', @onInsertNode
 
   _createNodeEditors: (object) ->
-    @_nodeEditorStash = @_nodeEditorStash.concat(@nodeEditors)
+    @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)
     @nodeEditors = []
 
     if object
       nodes = object.getNodes()
       @_addNodeEditor(node) for node in nodes
 
-    for nodeEditor in @_nodeEditorStash
+    for nodeEditor in @_nodeEditorPool
       nodeEditor.setNode(null)
 
   _addNodeEditor: (node) ->
     return false unless node
 
-    nodeEditor = if @_nodeEditorStash.length
-      @_nodeEditorStash.pop()
+    nodeEditor = if @_nodeEditorPool.length
+      @_nodeEditorPool.pop()
     else
       new Curve.NodeEditor(@svgDocument, @model)
 
@@ -1424,8 +1434,10 @@ class Subpath extends EventEmitter
     @emit 'change', this
 
   _bindNode: (node) ->
+    node.setPath(@path)
     node.on 'change', @onNodeChange
   _unbindNode: (node) ->
+    node.setPath(null)
     node.off 'change', @onNodeChange
 
   _findNodeIndex: (node) ->

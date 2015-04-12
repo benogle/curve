@@ -94,8 +94,10 @@ class Subpath extends EventEmitter
     @emit 'change', this
 
   _bindNode: (node) ->
+    node.setPath(@path)
     node.on 'change', @onNodeChange
   _unbindNode: (node) ->
+    node.setPath(null)
     node.off 'change', @onNodeChange
 
   _findNodeIndex: (node) ->

@@ -6,7 +6,7 @@ class Curve.SelectionView
   constructor: (@svgDocument, @model) ->
     @path = null
     @nodeEditors = []
-    @_nodeEditorStash = []
+    @_nodeEditorPool = []
 
     @objectSelection = new Curve.ObjectSelection(@svgDocument)
     @objectPreselection = new Curve.ObjectSelection(@svgDocument, class: 'object-preselection')
@@ -47,21 +47,21 @@ class Curve.SelectionView
     object.removeListener 'insert:node', @onInsertNode
 
   _createNodeEditors: (object) ->
-    @_nodeEditorStash = @_nodeEditorStash.concat(@nodeEditors)
+    @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)
     @nodeEditors = []
 
     if object
       nodes = object.getNodes()
       @_addNodeEditor(node) for node in nodes
 
-    for nodeEditor in @_nodeEditorStash
+    for nodeEditor in @_nodeEditorPool
       nodeEditor.setNode(null)
 
   _addNodeEditor: (node) ->
     return false unless node
 
-    nodeEditor = if @_nodeEditorStash.length
-      @_nodeEditorStash.pop()
+    nodeEditor = if @_nodeEditorPool.length
+      @_nodeEditorPool.pop()
     else
       new Curve.NodeEditor(@svgDocument, @model)
 

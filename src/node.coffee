@@ -13,23 +13,30 @@ class Node extends EventEmitter
     @isJoined = true
     @["set#{referenceHandle.replace('h', 'H')}"](@[referenceHandle])
 
-  getPoint: -> @point
+  setPath: (@path) ->
+
+  getPath: -> @path
+
+  getPoint: ->
+    @_transformPoint(@point)
   getHandleIn: -> @handleIn
   getHandleOut: -> @handleOut
 
   getAbsoluteHandleIn: ->
     if @handleIn
-      @point.add(@handleIn)
+      @_transformPoint(@point.add(@handleIn))
     else
-      @point
+      @getPoint()
+
   getAbsoluteHandleOut: ->
     if @handleOut
-      @point.add(@handleOut)
+      @_transformPoint(@point.add(@handleOut))
     else
-      @point
+      @getPoint()
 
   setAbsoluteHandleIn: (point) ->
     @setHandleIn(Point.create(point).subtract(@point))
+
   setAbsoluteHandleOut: (point) ->
     @setHandleOut(Point.create(point).subtract(@point))
 
@@ -60,5 +67,10 @@ class Node extends EventEmitter
   translate: (point) ->
     point = Point.create(point)
     @set('point', @point.add(point))
+
+  _transformPoint: (point) ->
+    transform = @path?.getTransform()
+    point = transform.transformPoint(point) if transform?
+    point
 
 Curve.Node = Node

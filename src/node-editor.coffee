@@ -88,9 +88,12 @@ class NodeEditor
   _bindNode: (node) ->
     return unless node
     node.addListener 'change', @render
+    node.getPath()?.addListener 'change', @render
+
   _unbindNode: (node) ->
     return unless node
     node.removeListener 'change', @render
+    node.getPath()?.addListener 'change', @render
 
   _setupNodeElement: ->
     @nodeElement = @svgToolParent.circle(@nodeSize)

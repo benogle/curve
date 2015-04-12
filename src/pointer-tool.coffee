@@ -21,13 +21,7 @@ class Curve.PointerTool
 
   onChangedSelectedObject: ({object, old}) =>
     if object?
-      object.enableDragging
-        dragstart: (event) ->
-          console.log 'start', event
-        dragmove: (event) ->
-          console.log 'move', event
-        dragend: (event) ->
-          console.log 'end', event
+      object.enableDragging()
     else if old?
       old.disableDragging()
 
