@@ -34,8 +34,8 @@ class Curve.SelectionView
     @objectSelection.setObject(object)
     @_createNodeEditors(object)
 
-  onInsertNode: (object, {value, index}={}) =>
-    @_addNodeEditor(value)
+  onInsertNode: (object, {node, index}={}) =>
+    @_addNodeEditor(node)
     null # Force null. otherwise _insertNodeEditor returns true and tells event emitter 'once'. Ugh
 
   _bindToObject: (object) ->

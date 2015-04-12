@@ -69,12 +69,7 @@ class Subpath extends EventEmitter
     @_bindNode(node) for node in nodes
 
     @nodes = nodes
-
-    args =
-      event: 'replace:nodes'
-      value: @nodes
-    @emit(args.event, this, args)
-    @emit('change', this, args)
+    @emit('change', this)
 
   addNode: (node) ->
     @insertNode(node, @nodes.length)
@@ -82,20 +77,12 @@ class Subpath extends EventEmitter
   insertNode: (node, index) ->
     @_bindNode(node)
     @nodes.splice(index, 0, node)
-
-    args =
-      event: 'insert:node'
-      index: index
-      value: node
-    @emit('insert:node', this, args)
-    @emit('change', this, args)
+    @emit('insert:node', this, {subpath: this, index, node})
+    @emit('change', this)
 
   close: ->
     @closed = true
-
-    args = event: 'close'
-    @emit('close', this, args)
-    @emit('change', this, args)
+    @emit('change', this)
 
   translate: (point) ->
     point = Point.create(point)
@@ -103,9 +90,8 @@ class Subpath extends EventEmitter
       node.translate(point)
     return
 
-  onNodeChange: (node, eventArgs) =>
-    index = @_findNodeIndex(node)
-    @emit 'change', this, _.extend({index}, eventArgs)
+  onNodeChange: =>
+    @emit 'change', this
 
   _bindNode: (node) ->
     node.on 'change', @onNodeChange

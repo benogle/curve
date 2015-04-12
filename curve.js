@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, Point, SVG, Subpath, SvgDocument, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, SVG, Subpath, SvgDocument, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1100,39 +1100,17 @@
 
   IDS = 0;
 
-  Path = (function(_super) {
-    __extends(Path, _super);
+  PathModel = (function(_super) {
+    __extends(PathModel, _super);
 
-    function Path(svgDocument, _arg) {
-      var svgEl;
-      this.svgDocument = svgDocument;
-      svgEl = (_arg != null ? _arg : {}).svgEl;
+    function PathModel() {
       this.onSubpathChange = __bind(this.onSubpathChange, this);
-      this.onSubpathEvent = __bind(this.onSubpathEvent, this);
-      this.id = IDS++;
       this.subpaths = [];
-      this._setupSVGObject(svgEl);
+      this.pathString = '';
+      this.transform = null;
     }
 
-    Path.prototype.toString = function() {
-      return "Path " + this.id + " " + (this.toPathString());
-    };
-
-    Path.prototype.toPathString = function() {
-      var subpath;
-      return ((function() {
-        var _i, _len, _ref1, _results;
-        _ref1 = this.subpaths;
-        _results = [];
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          subpath = _ref1[_i];
-          _results.push(subpath.toPathString());
-        }
-        return _results;
-      }).call(this)).join(' ');
-    };
-
-    Path.prototype.getNodes = function() {
+    PathModel.prototype.getNodes = function() {
       var subpath;
       return _.flatten((function() {
         var _i, _len, _ref1, _results;
@@ -1144,6 +1122,185 @@
         }
         return _results;
       }).call(this), true);
+    };
+
+    PathModel.prototype.getTransform = function() {
+      return this.transform;
+    };
+
+    PathModel.prototype.setTransform = function(transform) {
+      if (transform !== this.transform) {
+        this.transform = transform;
+        return this._emitChangeEvent();
+      }
+    };
+
+    PathModel.prototype.getPathString = function() {
+      return this.pathString;
+    };
+
+    PathModel.prototype.setPathString = function(pathString) {
+      if (pathString !== this.pathString) {
+        return this._parseFromPathString(pathString);
+      }
+    };
+
+    PathModel.prototype.toString = function() {
+      return this.getPathString();
+    };
+
+    PathModel.prototype.translate = function(point) {
+      var subpath, _i, _len, _ref1;
+      point = Point.create(point);
+      _ref1 = this.subpaths;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        subpath = _ref1[_i];
+        subpath.translate(point);
+      }
+    };
+
+    PathModel.prototype.addNode = function(node) {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.addNode(node);
+    };
+
+    PathModel.prototype.insertNode = function(node, index) {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.insertNode(node, index);
+    };
+
+    PathModel.prototype.close = function() {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.close();
+    };
+
+    PathModel.prototype._addCurrentSubpathIfNotPresent = function() {
+      if (!this.currentSubpath) {
+        return this.currentSubpath = this._createSubpath();
+      }
+    };
+
+    PathModel.prototype._addSubpath = function(subpath) {
+      this.subpaths.push(subpath);
+      this._bindSubpath(subpath);
+      this._updatePathString();
+      return subpath;
+    };
+
+    PathModel.prototype.onSubpathChange = function(subpath, eventArgs) {
+      this._updatePathString();
+      return this._emitChangeEvent();
+    };
+
+    PathModel.prototype._createSubpath = function(args) {
+      return this._addSubpath(new Subpath(_.extend({
+        path: this
+      }, args)));
+    };
+
+    PathModel.prototype._forwardEvent = function(eventName, eventObject, args) {
+      return this.emit(eventName, this, args);
+    };
+
+    PathModel.prototype._bindSubpath = function(subpath) {
+      if (!subpath) {
+        return;
+      }
+      subpath.on('change', this.onSubpathChange);
+      return subpath.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
+    };
+
+    PathModel.prototype._unbindSubpath = function(subpath) {
+      if (!subpath) {
+        return;
+      }
+      return subpath.off();
+    };
+
+    PathModel.prototype._removeAllSubpaths = function() {
+      var subpath, _i, _len, _ref1;
+      _ref1 = this.subpaths;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        subpath = _ref1[_i];
+        this._unbindSubpath(subpath);
+      }
+      return this.subpaths = [];
+    };
+
+    PathModel.prototype._updatePathString = function() {
+      var oldPathString, subpath;
+      oldPathString = this.pathString;
+      this.pathString = ((function() {
+        var _i, _len, _ref1, _results;
+        _ref1 = this.subpaths;
+        _results = [];
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          subpath = _ref1[_i];
+          _results.push(subpath.toPathString());
+        }
+        return _results;
+      }).call(this)).join(' ');
+      if (oldPathString !== this.pathString) {
+        return this._emitChangeEvent();
+      }
+    };
+
+    PathModel.prototype._parseFromPathString = function(pathString) {
+      var parsedPath, parsedSubpath, _i, _len, _ref1;
+      if (!pathString) {
+        return;
+      }
+      if (pathString === this.pathString) {
+        return;
+      }
+      this._removeAllSubpaths();
+      parsedPath = Curve.PathParser.parsePath(pathString);
+      _ref1 = parsedPath.subpaths;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        parsedSubpath = _ref1[_i];
+        this._createSubpath(parsedSubpath);
+      }
+      this.currentSubpath = _.last(this.subpaths);
+      return null;
+    };
+
+    PathModel.prototype._emitChangeEvent = function() {
+      return this.emit('change', this);
+    };
+
+    return PathModel;
+
+  })(EventEmitter);
+
+  Path = (function(_super) {
+    __extends(Path, _super);
+
+    function Path(svgDocument, _arg) {
+      var svgEl;
+      this.svgDocument = svgDocument;
+      svgEl = (_arg != null ? _arg : {}).svgEl;
+      this.onModelChange = __bind(this.onModelChange, this);
+      this.id = IDS++;
+      this.model = new PathModel;
+      this.model.on('change', this.onModelChange);
+      this.model.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
+      this._setupSVGObject(svgEl);
+    }
+
+    Path.prototype.toString = function() {
+      return "Path " + this.id + " " + (this.model.toString());
+    };
+
+    Path.prototype.getPathString = function() {
+      return this.model.getPathString();
+    };
+
+    Path.prototype.getNodes = function() {
+      return this.model.getNodes();
+    };
+
+    Path.prototype.getSubpaths = function() {
+      return this.model.subpaths;
     };
 
     Path.prototype.enableDragging = function(callbacks) {
@@ -1163,8 +1320,8 @@
         return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
       };
       return element.dragend = function(event) {
-        _this.transform = null;
-        _this.translate([event.x, event.y]);
+        _this.model.setTransform(null);
+        _this.model.translate([event.x, event.y]);
         return typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0;
       };
     };
@@ -1184,58 +1341,20 @@
     };
 
     Path.prototype.addNode = function(node) {
-      this._addCurrentSubpathIfNotPresent();
-      return this.currentSubpath.addNode(node);
+      return this.model.addNode(node);
     };
 
     Path.prototype.insertNode = function(node, index) {
-      this._addCurrentSubpathIfNotPresent();
-      return this.currentSubpath.insertNode(node, index);
+      return this.model.insertNode(node, index);
     };
 
     Path.prototype.close = function() {
-      this._addCurrentSubpathIfNotPresent();
-      return this.currentSubpath.close();
-    };
-
-    Path.prototype._addCurrentSubpathIfNotPresent = function() {
-      if (!this.currentSubpath) {
-        return this.currentSubpath = this._createSubpath();
-      }
-    };
-
-    Path.prototype.addSubpath = function(subpath) {
-      var args;
-      this.subpaths.push(subpath);
-      this._bindSubpath(subpath);
-      args = {
-        event: 'add:subpath',
-        value: subpath
-      };
-      this.emit(args.event, this, args);
-      this.emit('change', this, args);
-      return subpath;
-    };
-
-    Path.prototype.translate = function(point) {
-      var subpath, _i, _len, _ref1;
-      point = Point.create(point);
-      _ref1 = this.subpaths;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        subpath = _ref1[_i];
-        subpath.translate(point);
-      }
+      return this.model.close();
     };
 
     Path.prototype.update = function(event) {
-      var newTransform;
-      newTransform = this.svgEl.attr('transform');
-      if (newTransform !== this.transform) {
-        this.transform = newTransform;
-        return this.emit('change', this, {
-          transform: this.transform
-        });
-      }
+      this.model.setTransform(this.svgEl.attr('transform'));
+      return this.model.setPathString(this.svgEl.attr('d'));
     };
 
     Path.prototype.render = function(svgEl) {
@@ -1243,69 +1362,25 @@
       if (svgEl == null) {
         svgEl = this.svgEl;
       }
-      pathStr = this.toPathString();
+      pathStr = this.model.getPathString();
       if (pathStr) {
         svgEl.attr({
           d: pathStr
         });
       }
       return svgEl.attr({
-        transform: this.transform
+        transform: this.model.getTransform()
       });
     };
 
-    Path.prototype.onSubpathEvent = function(subpath, eventArgs) {
-      return this.emit(eventArgs.event, this, _.extend({
-        subpath: subpath
-      }, eventArgs));
-    };
-
-    Path.prototype.onSubpathChange = function(subpath, eventArgs) {
+    Path.prototype.onModelChange = function() {
       this.render();
-      return this.emit('change', this, _.extend({
-        subpath: subpath
-      }, eventArgs));
+      return this.emit('change', this);
     };
 
-    Path.prototype._createSubpath = function(args) {
-      return this.addSubpath(new Subpath(_.extend({
-        path: this
-      }, args)));
-    };
-
-    Path.prototype._bindSubpath = function(subpath) {
-      if (!subpath) {
-        return;
-      }
-      subpath.on('change', this.onSubpathChange);
-      subpath.on('close', this.onSubpathEvent);
-      subpath.on('insert:node', this.onSubpathEvent);
-      return subpath.on('replace:nodes', this.onSubpathEvent);
-    };
-
-    Path.prototype._unbindSubpath = function(subpath) {
-      if (!subpath) {
-        return;
-      }
-      subpath.off('change', this.onSubpathChange);
-      subpath.off('close', this.onSubpathEvent);
-      subpath.off('insert:node', this.onSubpathEvent);
-      return subpath.off('replace:nodes', this.onSubpathEvent);
-    };
-
-    Path.prototype._parseFromPathString = function(pathString) {
-      var parsedPath, parsedSubpath, _i, _len, _ref1;
-      if (!pathString) {
-        return;
-      }
-      parsedPath = Curve.PathParser.parsePath(pathString);
-      _ref1 = parsedPath.subpaths;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        parsedSubpath = _ref1[_i];
-        this._createSubpath(parsedSubpath);
-      }
-      this.currentSubpath = _.last(this.subpaths);
-      return null;
+    Path.prototype._forwardEvent = function(eventName, eventObject, args) {
+      args.path = this;
+      return this.emit(eventName, this, args);
     };
 
     Path.prototype._setupSVGObject = function(svgEl) {
@@ -1314,7 +1389,7 @@
         this.svgEl = this.svgDocument.path().attr(attrs);
       }
       Curve.Utils.setObjectOnNode(this.svgEl.node, this);
-      return this._parseFromPathString(this.svgEl.attr('d'));
+      return this.model.setPathString(this.svgEl.attr('d'));
     };
 
     return Path;
@@ -1668,9 +1743,9 @@
     };
 
     SelectionView.prototype.onInsertNode = function(object, _arg) {
-      var index, value, _ref1;
-      _ref1 = _arg != null ? _arg : {}, value = _ref1.value, index = _ref1.index;
-      this._addNodeEditor(value);
+      var index, node, _ref1;
+      _ref1 = _arg != null ? _arg : {}, node = _ref1.node, index = _ref1.index;
+      this._addNodeEditor(node);
       return null;
     };
 
@@ -1809,7 +1884,7 @@
     };
 
     Subpath.prototype.setNodes = function(nodes) {
-      var args, node, _i, _j, _len, _len1, _ref1;
+      var node, _i, _j, _len, _len1, _ref1;
       if (!(nodes && _.isArray(nodes))) {
         return;
       }
@@ -1823,12 +1898,7 @@
         this._bindNode(node);
       }
       this.nodes = nodes;
-      args = {
-        event: 'replace:nodes',
-        value: this.nodes
-      };
-      this.emit(args.event, this, args);
-      return this.emit('change', this, args);
+      return this.emit('change', this);
     };
 
     Subpath.prototype.addNode = function(node) {
@@ -1836,26 +1906,19 @@
     };
 
     Subpath.prototype.insertNode = function(node, index) {
-      var args;
       this._bindNode(node);
       this.nodes.splice(index, 0, node);
-      args = {
-        event: 'insert:node',
+      this.emit('insert:node', this, {
+        subpath: this,
         index: index,
-        value: node
-      };
-      this.emit('insert:node', this, args);
-      return this.emit('change', this, args);
+        node: node
+      });
+      return this.emit('change', this);
     };
 
     Subpath.prototype.close = function() {
-      var args;
       this.closed = true;
-      args = {
-        event: 'close'
-      };
-      this.emit('close', this, args);
-      return this.emit('change', this, args);
+      return this.emit('change', this);
     };
 
     Subpath.prototype.translate = function(point) {
@@ -1868,12 +1931,8 @@
       }
     };
 
-    Subpath.prototype.onNodeChange = function(node, eventArgs) {
-      var index;
-      index = this._findNodeIndex(node);
-      return this.emit('change', this, _.extend({
-        index: index
-      }, eventArgs));
+    Subpath.prototype.onNodeChange = function() {
+      return this.emit('change', this);
     };
 
     Subpath.prototype._bindNode = function(node) {

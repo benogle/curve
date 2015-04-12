@@ -21,7 +21,7 @@ describe 'Curve.SvgDocument', ->
 
       svg.objects[0]
       svg.selectionModel.setSelected(svg.objects[0])
-      svg.selectionModel.setSelectedNode(svg.objects[0].subpaths[0].nodes[0])
+      svg.selectionModel.setSelectedNode(svg.objects[0].getSubpaths()[0].nodes[0])
 
       expect($('#canvas .tool-layer .node-editor-node')).toExist()
       expect($('#canvas .tool-layer .object-selection')).toExist()
@@ -47,13 +47,7 @@ DOCUMENT_WITH_XML_DOCTYPE = '''
   <?xml version="1.0" encoding="UTF-8"?>
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg" style="overflow-x: visible; overflow-y: visible; ">
     <desc>Created with Curve</desc>
-    <path d="M512,384L320,576h128v320h128V576h128L512,384z" id="arrow">
+    <path d="M512,384L320,576H448V896H576V576H704Z" id="arrow">
     </path>
-  </svg>
-  '''
-
-DOCUMENT_NO_ARROW = '''
-  <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">
-    <path id="not-an-arrow" d="M512,384L320,576h128v320h128V576h128L512,384z"/>
   </svg>
   '''

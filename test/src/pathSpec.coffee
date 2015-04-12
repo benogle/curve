@@ -7,12 +7,12 @@ describe 'Curve.Path', ->
 
   it 'has empty path string after creation', ->
     path = new Curve.Path(svg)
-    expect(path.toPathString()).toEqual ''
+    expect(path.getPathString()).toEqual ''
 
   it 'has empty path string with empty subpath', ->
     path = new Curve.Path(svg)
-    path.addSubpath(new Curve.Subpath({path}))
-    expect(path.toPathString()).toEqual ''
+    path.model._addSubpath(new Curve.Subpath({path}))
+    expect(path.getPathString()).toEqual ''
 
   it 'can be created', ->
     path = new Curve.Path(svg)
@@ -48,21 +48,21 @@ describe 'Curve.Path', ->
       node = svg.path(pathString)
       path = new Curve.Path(svg, svgEl: node)
 
-      expect(path.toPathString()).toEqual pathString
+      expect(path.getPathString()).toEqual pathString
 
     it 'can be created with non-wrapped closed shapes', ->
       pathString = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
       node = svg.path(pathString)
       path = new Curve.Path(svg, svgEl: node)
 
-      expect(path.toPathString()).toEqual pathString
+      expect(path.getPathString()).toEqual pathString
 
     it 'handles move nodes', ->
       pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80Z M10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
       node = svg.path(pathString)
       path = new Curve.Path(svg, svgEl: node)
 
-      expect(path.toPathString()).toEqual pathString
+      expect(path.getPathString()).toEqual pathString
 
   describe "::translate()", ->
     beforeEach ->
@@ -73,7 +73,7 @@ describe 'Curve.Path', ->
       path.close()
 
     it "translates all the nodes", ->
-      path.translate(new Curve.Point(-10, 10))
+      path.model.translate(new Curve.Point(-10, 10))
       expect(path.getNodes()[0].getPoint()).toEqual new Curve.Point(40, 60)
       expect(path.getNodes()[1].getPoint()).toEqual new Curve.Point(70, 70)
       expect(path.getNodes()[2].getPoint()).toEqual new Curve.Point(50, 90)
@@ -87,61 +87,39 @@ describe 'Curve.Path', ->
       path.close()
 
     it 'renders when node point is updated', ->
-      path.subpaths[0].nodes[0].setPoint([70, 70])
+      path.getSubpaths()[0].nodes[0].setPoint([70, 70])
       el = path.svgEl
       expect(el.attr('d')).toMatch(/^M70,70C80,70/)
 
     it 'kicks out event when changes', ->
       spy = jasmine.createSpy()
       path.on 'change', spy
-
-      path.subpaths[0].nodes[0].setPoint([70, 70])
-
+      path.getSubpaths()[0].nodes[0].setPoint([70, 70])
       expect(spy).toHaveBeenCalled()
-      expect(spy.mostRecentCall.args[1]).toEqual
-        event: 'change:point',
-        index: 0
-        old: new Curve.Point(50, 50)
-        value: new Curve.Point(70, 70)
-        subpath: path.subpaths[0]
 
     it 'kicks out event when closed', ->
       closespy = jasmine.createSpy()
       changespy = jasmine.createSpy()
-      path.on 'close', closespy
-      path.on 'change', changespy
-
+      path.on 'change', closespy
       path.close()
-
       expect(closespy).toHaveBeenCalled()
-      expect(changespy).toHaveBeenCalled()
 
     it 'node added adds node to the end', ->
       node = new Curve.Node([40, 60], [0, 0], [0, 0])
-
-      spy = jasmine.createSpy()
-      path.on 'insert:node', spy
-
+      path.on 'change', spy = jasmine.createSpy()
+      path.on 'insert:node', insertSpy = jasmine.createSpy()
       path.addNode(node)
-
-      expect(path.subpaths[0].nodes[3]).toEqual node
-      expect(spy.mostRecentCall.args[1]).toEqual
-        event: 'insert:node',
-        index: 3
-        value: node
-        subpath: path.subpaths[0]
+      expect(path.getSubpaths()[0].nodes[3]).toEqual node
+      expect(spy).toHaveBeenCalled()
+      expect(insertSpy).toHaveBeenCalled()
+      expect(insertSpy.mostRecentCall.args[1].index).toEqual 3
+      expect(insertSpy.mostRecentCall.args[1].node).toEqual node
+      expect(insertSpy.mostRecentCall.args[1].path).toEqual path
 
     it 'node inserted inserts node in right place', ->
       node = new Curve.Node([40, 60], [0, 0], [0, 0])
-
       spy = jasmine.createSpy()
-      path.on 'insert:node', spy
-
+      path.on 'change', spy
       path.insertNode(node, 0)
-
-      expect(path.subpaths[0].nodes[0]).toEqual node
-      expect(spy.mostRecentCall.args[1]).toEqual
-        event: 'insert:node',
-        index: 0
-        value: node
-        subpath: path.subpaths[0]
+      expect(path.getSubpaths()[0].nodes[0]).toEqual node
+      expect(spy).toHaveBeenCalled()
