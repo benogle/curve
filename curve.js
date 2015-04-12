@@ -1110,6 +1110,11 @@
       this.transform = null;
     }
 
+    /*
+    Section: Public Methods
+    */
+
+
     PathModel.prototype.getNodes = function() {
       var subpath;
       return _.flatten((function() {
@@ -1187,10 +1192,20 @@
       return subpath;
     };
 
+    /*
+    Section: Event Handlers
+    */
+
+
     PathModel.prototype.onSubpathChange = function(subpath, eventArgs) {
       this._updatePathString();
       return this._emitChangeEvent();
     };
+
+    /*
+    Section: Private Methods
+    */
+
 
     PathModel.prototype._createSubpath = function(args) {
       return this._addSubpath(new Subpath(_.extend({
@@ -1261,6 +1276,7 @@
         this._createSubpath(parsedSubpath);
       }
       this.currentSubpath = _.last(this.subpaths);
+      this._updatePathString();
       return null;
     };
 
@@ -1303,6 +1319,18 @@
       return this.model.subpaths;
     };
 
+    Path.prototype.addNode = function(node) {
+      return this.model.addNode(node);
+    };
+
+    Path.prototype.insertNode = function(node, index) {
+      return this.model.insertNode(node, index);
+    };
+
+    Path.prototype.close = function() {
+      return this.model.close();
+    };
+
     Path.prototype.enableDragging = function(callbacks) {
       var element,
         _this = this;
@@ -1316,7 +1344,7 @@
         return typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0;
       };
       element.dragmove = function(event) {
-        _this.update();
+        _this.updateFromAttributes();
         return typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0;
       };
       return element.dragend = function(event) {
@@ -1340,21 +1368,12 @@
       return element.dragend = null;
     };
 
-    Path.prototype.addNode = function(node) {
-      return this.model.addNode(node);
-    };
-
-    Path.prototype.insertNode = function(node, index) {
-      return this.model.insertNode(node, index);
-    };
-
-    Path.prototype.close = function() {
-      return this.model.close();
-    };
-
-    Path.prototype.update = function(event) {
-      this.model.setTransform(this.svgEl.attr('transform'));
-      return this.model.setPathString(this.svgEl.attr('d'));
+    Path.prototype.updateFromAttributes = function() {
+      var pathString, transform;
+      pathString = this.svgEl.attr('d');
+      transform = this.svgEl.attr('transform');
+      this.model.setTransform(transform);
+      return this.model.setPathString(pathString);
     };
 
     Path.prototype.render = function(svgEl) {

@@ -78,7 +78,34 @@ describe 'Curve.Path', ->
       expect(path.getNodes()[1].getPoint()).toEqual new Curve.Point(70, 70)
       expect(path.getNodes()[2].getPoint()).toEqual new Curve.Point(50, 90)
 
-  describe 'updating', ->
+  describe 'updating via the the node attributes', ->
+    beforeEach ->
+      path = new Curve.Path(svg)
+      path.addNode(new Curve.Node([60, 60], [-10, 0], [10, 0]))
+      expect(path.getPathString()).toBe 'M60,60'
+
+    it 'updates the model when the path string changes', ->
+      newPathString = 'M50,50C60,50,70,55,80,60C90,65,70,80,60,80C50,80,40,50,50,50Z'
+      el = path.svgEl
+      el.attr('d', newPathString)
+      path.updateFromAttributes()
+
+      nodes = path.getNodes()
+      expect(nodes.length).toBe 3
+      expect(nodes[0].getPoint()).toEqual new Curve.Point(50, 50)
+      expect(nodes[1].getPoint()).toEqual new Curve.Point(80, 60)
+      expect(nodes[2].getPoint()).toEqual new Curve.Point(60, 80)
+      expect(el.attr('d')).toBe newPathString
+
+    it 'updates the model when the transform changes', ->
+      el = path.svgEl
+      el.attr(transform: 'translate(10, 20)')
+      path.updateFromAttributes()
+
+      transform = path.model.getTransform()
+      expect(transform).toBeDefined()
+
+  describe 'updating via the model', ->
     beforeEach ->
       path = new Curve.Path(svg)
       path.addNode(new Curve.Node([50, 50], [-10, 0], [10, 0]))

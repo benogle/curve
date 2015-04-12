@@ -12,6 +12,10 @@ class PathModel extends EventEmitter
     @pathString = ''
     @transform = null
 
+  ###
+  Section: Public Methods
+  ###
+
   getNodes: ->
     _.flatten(subpath.getNodes() for subpath in @subpaths, true)
 
@@ -57,10 +61,17 @@ class PathModel extends EventEmitter
     @_updatePathString()
     subpath
 
+  ###
+  Section: Event Handlers
+  ###
 
   onSubpathChange: (subpath, eventArgs) =>
     @_updatePathString()
     @_emitChangeEvent()
+
+  ###
+  Section: Private Methods
+  ###
 
   _createSubpath: (args) ->
     @_addSubpath(new Subpath(_.extend({path: this}, args)))
@@ -94,6 +105,7 @@ class PathModel extends EventEmitter
     parsedPath = Curve.PathParser.parsePath(pathString)
     @_createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
     @currentSubpath = _.last(@subpaths)
+    @_updatePathString()
     null
 
   _emitChangeEvent: ->
@@ -122,6 +134,12 @@ class Path extends EventEmitter
 
   getSubpaths: -> @model.subpaths
 
+  addNode: (node) -> @model.addNode(node)
+
+  insertNode: (node, index) -> @model.insertNode(node, index)
+
+  close: -> @model.close()
+
   enableDragging: (callbacks) ->
     element = @svgEl
     return unless element?
@@ -129,7 +147,7 @@ class Path extends EventEmitter
     element.draggable()
     element.dragstart = (event) -> callbacks.dragstart?(event)
     element.dragmove = (event) =>
-      @update()
+      @updateFromAttributes()
       callbacks.dragmove?(event)
     element.dragend = (event) =>
       @model.setTransform(null)
@@ -144,16 +162,11 @@ class Path extends EventEmitter
     element.dragmove = null
     element.dragend = null
 
-  addNode: (node) -> @model.addNode(node)
-
-  insertNode: (node, index) -> @model.insertNode(node, index)
-
-  close: -> @model.close()
-
-  # Call to update the model based on potentially changed attributes
-  update: (event) ->
-    @model.setTransform(@svgEl.attr('transform'))
-    @model.setPathString(@svgEl.attr('d'))
+  updateFromAttributes: ->
+    pathString = @svgEl.attr('d')
+    transform = @svgEl.attr('transform')
+    @model.setTransform(transform)
+    @model.setPathString(pathString)
 
   # Will render the nodes and the transform
   render: (svgEl=@svgEl) ->
