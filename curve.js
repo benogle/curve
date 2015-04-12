@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, SVG, Subpath, SvgDocument, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, SVG, Subpath, SvgDocument, Transform, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1107,7 +1107,7 @@
       this.onSubpathChange = __bind(this.onSubpathChange, this);
       this.subpaths = [];
       this.pathString = '';
-      this.transform = null;
+      this.transform = new Curve.Transform;
     }
 
     /*
@@ -1133,9 +1133,12 @@
       return this.transform;
     };
 
-    PathModel.prototype.setTransform = function(transform) {
-      if (transform !== this.transform) {
-        this.transform = transform;
+    PathModel.prototype.getTransformString = function() {
+      return this.transform.toString();
+    };
+
+    PathModel.prototype.setTransform = function(transformString) {
+      if (this.transform.setTransformString(transformString)) {
         return this._emitChangeEvent();
       }
     };
@@ -1388,7 +1391,7 @@
         });
       }
       return svgEl.attr({
-        transform: this.model.getTransform()
+        transform: this.model.getTransformString() || null
       });
     };
 
@@ -2028,6 +2031,53 @@
   })();
 
   Curve.SvgDocument = SvgDocument;
+
+  TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/;
+
+  Transform = (function() {
+    function Transform() {
+      this.translation = null;
+      this.transformString = '';
+    }
+
+    Transform.prototype.setTransformString = function(transformString) {
+      var translation, x, y;
+      if (transformString == null) {
+        transformString = '';
+      }
+      if (this.transformString === transformString) {
+        return false;
+      } else {
+        this.transformString = transformString;
+        translation = TranslateRegex.exec(transformString);
+        if (translation != null) {
+          x = parseInt(translation[1]);
+          y = parseInt(translation[2]);
+          this.translation = new Curve.Point(x, y);
+        } else {
+          this.translation = null;
+        }
+        return true;
+      }
+    };
+
+    Transform.prototype.toString = function() {
+      return this.transformString;
+    };
+
+    Transform.prototype.transformPoint = function(point) {
+      point = Curve.Point.create(point);
+      if (this.translation) {
+        point = point.add(this.translation);
+      }
+      return point;
+    };
+
+    return Transform;
+
+  })();
+
+  Curve.Transform = Transform;
 
   _ = window._ || require('underscore');
 

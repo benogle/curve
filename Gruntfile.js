@@ -57,7 +57,8 @@ module.exports = function(grunt) {
           'test/lib/selection-modelSpec.js',
           'test/lib/selection-viewSpec.js',
           'test/lib/subpathSpec.js',
-          'test/lib/svg-documentSpec.js'
+          'test/lib/svg-documentSpec.js',
+          'test/lib/transformSpec.js'
         ],
         helpers: 'test/lib/**/*Helper.js',
         vendor: [

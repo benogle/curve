@@ -10,7 +10,7 @@ class PathModel extends EventEmitter
   constructor: ->
     @subpaths = []
     @pathString = ''
-    @transform = null
+    @transform = new Curve.Transform
 
   ###
   Section: Public Methods
@@ -21,9 +21,10 @@ class PathModel extends EventEmitter
 
   getTransform: -> @transform
 
-  setTransform: (transform) ->
-    if transform isnt @transform
-      @transform = transform
+  getTransformString: -> @transform.toString()
+
+  setTransform: (transformString) ->
+    if @transform.setTransformString(transformString)
       @_emitChangeEvent()
 
   getPathString: -> @pathString
@@ -172,7 +173,7 @@ class Path extends EventEmitter
   render: (svgEl=@svgEl) ->
     pathStr = @model.getPathString()
     svgEl.attr(d: pathStr) if pathStr
-    svgEl.attr(transform: @model.getTransform())
+    svgEl.attr(transform: @model.getTransformString() or null)
 
   onModelChange: =>
     @render()
