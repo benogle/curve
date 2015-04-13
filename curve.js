@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, SVG, Subpath, SvgDocument, Transform, TranslateRegex, attachDragEvents, attrs, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, DefaultAttrs, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, SVG, Subpath, SvgDocument, Transform, TranslateRegex, attachDragEvents, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1114,7 +1114,7 @@
 
   EventEmitter = window.EventEmitter || require('events').EventEmitter;
 
-  attrs = {
+  DefaultAttrs = {
     fill: '#eee',
     stroke: 'none'
   };
@@ -1209,13 +1209,6 @@
       }
     };
 
-    PathModel.prototype._addSubpath = function(subpath) {
-      this.subpaths.push(subpath);
-      this._bindSubpath(subpath);
-      this._updatePathString();
-      return subpath;
-    };
-
     /*
     Section: Event Handlers
     */
@@ -1239,8 +1232,11 @@
       return this._addSubpath(new Subpath(args));
     };
 
-    PathModel.prototype._forwardEvent = function(eventName, eventObject, args) {
-      return this.emit(eventName, this, args);
+    PathModel.prototype._addSubpath = function(subpath) {
+      this.subpaths.push(subpath);
+      this._bindSubpath(subpath);
+      this._updatePathString();
+      return subpath;
     };
 
     PathModel.prototype._bindSubpath = function(subpath) {
@@ -1306,6 +1302,10 @@
       return null;
     };
 
+    PathModel.prototype._forwardEvent = function(eventName, eventObject, args) {
+      return this.emit(eventName, this, args);
+    };
+
     PathModel.prototype._emitChangeEvent = function() {
       return this.emit('change', this);
     };
@@ -1328,6 +1328,11 @@
       this.model.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
       this._setupSVGObject(svgEl);
     }
+
+    /*
+    Section: Public Methods
+    */
+
 
     Path.prototype.toString = function() {
       return "Path " + this.id + " " + (this.model.toString());
@@ -1418,10 +1423,20 @@
       });
     };
 
+    /*
+    Section: Event Handlers
+    */
+
+
     Path.prototype.onModelChange = function() {
       this.render();
       return this.emit('change', this);
     };
+
+    /*
+    Section: Private Methods
+    */
+
 
     Path.prototype._forwardEvent = function(eventName, eventObject, args) {
       args.path = this;
@@ -1431,7 +1446,7 @@
     Path.prototype._setupSVGObject = function(svgEl) {
       this.svgEl = svgEl;
       if (!this.svgEl) {
-        this.svgEl = this.svgDocument.path().attr(attrs);
+        this.svgEl = this.svgDocument.path().attr(DefaultAttrs);
       }
       Curve.Utils.setObjectOnNode(this.svgEl.node, this);
       return this.model.setPathString(this.svgEl.attr('d'));

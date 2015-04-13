@@ -899,11 +899,14 @@ Curve.PathParser = {lexPath, parsePath, groupCommands, parseTokens}
 _ = window._ or require 'underscore'
 
 EventEmitter = window.EventEmitter or require('events').EventEmitter
-
-attrs = {fill: '#eee', stroke: 'none'}
-
+DefaultAttrs = {fill: '#eee', stroke: 'none'}
 IDS = 0
 
+# The PathModel contains the object representation of an SVG path string + SVG
+# object transformations. Basically translates something like 'M0,0C20,30...Z'
+# into a list of {Curve.Subpath} objects that each contains a list of
+# {Curve.Node} objects. This model has no idea how to render SVG or anything
+# about the DOM.
 class PathModel extends EventEmitter
   constructor: ->
     @subpaths = []
@@ -954,12 +957,6 @@ class PathModel extends EventEmitter
     @currentSubpath = @_createSubpath() unless @currentSubpath
   # End currentSubpath stuff
 
-  _addSubpath: (subpath) ->
-    @subpaths.push(subpath)
-    @_bindSubpath(subpath)
-    @_updatePathString()
-    subpath
-
   ###
   Section: Event Handlers
   ###
@@ -976,8 +973,11 @@ class PathModel extends EventEmitter
     args.path = this
     @_addSubpath(new Subpath(args))
 
-  _forwardEvent: (eventName, eventObject, args) ->
-    @emit(eventName, this, args)
+  _addSubpath: (subpath) ->
+    @subpaths.push(subpath)
+    @_bindSubpath(subpath)
+    @_updatePathString()
+    subpath
 
   _bindSubpath: (subpath) ->
     return unless subpath
@@ -1008,15 +1008,17 @@ class PathModel extends EventEmitter
     @_updatePathString()
     null
 
+  _forwardEvent: (eventName, eventObject, args) ->
+    @emit(eventName, this, args)
+
   _emitChangeEvent: ->
     @emit 'change', this
 
 
 
 
-
-
-# Represents a <path> svg element. Contains one or more `Curve.Subpath` objects
+# Represents a <path> svg element. Handles interacting with the element, and
+# rendering from the {PathModel}.
 class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
     @id = IDS++
@@ -1024,6 +1026,10 @@ class Path extends EventEmitter
     @model.on 'change', @onModelChange
     @model.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
     @_setupSVGObject(svgEl)
+
+  ###
+  Section: Public Methods
+  ###
 
   toString: ->
     "Path #{@id} #{@model.toString()}"
@@ -1040,6 +1046,7 @@ class Path extends EventEmitter
 
   close: -> @model.close()
 
+  # Allows for user dragging on the screen
   enableDragging: (callbacks) ->
     element = @svgEl
     return unless element?
@@ -1062,28 +1069,38 @@ class Path extends EventEmitter
     element.dragmove = null
     element.dragend = null
 
+  # Call when the XML attributes change without the model knowing. Will update
+  # the model with the new attributes.
   updateFromAttributes: ->
     pathString = @svgEl.attr('d')
     transform = @svgEl.attr('transform')
     @model.setTransformString(transform)
     @model.setPathString(pathString)
 
-  # Will render the nodes and the transform
+  # Will render the nodes and the transform from the model.
   render: (svgEl=@svgEl) ->
     pathStr = @model.getPathString()
     svgEl.attr(d: pathStr) if pathStr
     svgEl.attr(transform: @model.getTransformString() or null)
 
+  ###
+  Section: Event Handlers
+  ###
+
   onModelChange: =>
     @render()
     @emit 'change', this
+
+  ###
+  Section: Private Methods
+  ###
 
   _forwardEvent: (eventName, eventObject, args) ->
     args.path = this
     @emit(eventName, this, args)
 
   _setupSVGObject: (@svgEl) ->
-    @svgEl = @svgDocument.path().attr(attrs) unless @svgEl
+    @svgEl = @svgDocument.path().attr(DefaultAttrs) unless @svgEl
     Curve.Utils.setObjectOnNode(@svgEl.node, this)
     @model.setPathString(@svgEl.attr('d'))
 
