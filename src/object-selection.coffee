@@ -14,16 +14,16 @@ class Curve.ObjectSelection extends EventEmitter
     @object = object
     @_bindObject(@object)
 
-    @path.remove() if @path
-    @path = null
+    @trackingObject.remove() if @trackingObject
+    @trackingObject = null
     if @object
-      @path = @svgDocument.path('').back()
-      @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
+      @trackingObject = @object.cloneElement(@svgDocument).back()
+      @trackingObject.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
     @emit 'change:object', {objectSelection: this, @object, old}
 
   render: =>
-    @object.render(@path)
+    @object.render(@trackingObject)
 
   _bindObject: (object) ->
     return unless object

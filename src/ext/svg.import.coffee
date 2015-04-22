@@ -12,6 +12,7 @@
 Curve.import = (svgDocument, svgString) ->
   IMPORT_FNS =
     path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
+    rect: (el) -> [new Curve.Rectangle(svgDocument, svgEl: el)]
 
   # create temporary div to receive svg content
   parentNode = document.createElement('div')
@@ -29,6 +30,8 @@ Curve.import = (svgDocument, svgString) ->
     null
 
   parentNode = null
+  window.objs = objects
+  console.log window.objs
   objects
 
 # Convert nodes to svg.js elements

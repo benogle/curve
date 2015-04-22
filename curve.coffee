@@ -244,6 +244,7 @@ SVG.extend SVG.Element,
 Curve.import = (svgDocument, svgString) ->
   IMPORT_FNS =
     path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
+    rect: (el) -> [new Curve.Rectangle(svgDocument, svgEl: el)]
 
   # create temporary div to receive svg content
   parentNode = document.createElement('div')
@@ -261,6 +262,8 @@ Curve.import = (svgDocument, svgString) ->
     null
 
   parentNode = null
+  window.objs = objects
+  console.log window.objs
   objects
 
 # Convert nodes to svg.js elements
@@ -663,16 +666,16 @@ class Curve.ObjectSelection extends EventEmitter
     @object = object
     @_bindObject(@object)
 
-    @path.remove() if @path
-    @path = null
+    @trackingObject.remove() if @trackingObject
+    @trackingObject = null
     if @object
-      @path = @svgDocument.path('').back()
-      @path.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
+      @trackingObject = @object.cloneElement(@svgDocument).back()
+      @trackingObject.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
     @emit 'change:object', {objectSelection: this, @object, old}
 
   render: =>
-    @object.render(@path)
+    @object.render(@trackingObject)
 
   _bindObject: (object) ->
     return unless object
@@ -1083,6 +1086,11 @@ class Path extends EventEmitter
     svgEl.attr(d: pathStr) if pathStr
     svgEl.attr(transform: @model.getTransformString() or null)
 
+  cloneElement: (svgDocument=@svgDocument) ->
+    el = svgDocument.path()
+    @render(el)
+    el
+
   ###
   Section: Event Handlers
   ###
@@ -1235,12 +1243,152 @@ class Curve.PointerTool
     obj = null
     if nodes.length
       for i in [nodes.length-1..0]
-        clas = nodes[i].getAttribute('class')
-        continue if clas and clas.indexOf('invisible-to-hit-test') > -1
+        className = nodes[i].getAttribute('class')
+        continue if className and className.indexOf('invisible-to-hit-test') > -1
         obj = Curve.Utils.getObjectFromNode(nodes[i])
         break
 
+    console.log obj
     obj
+
+_ = window._ or require 'underscore'
+
+EventEmitter = window.EventEmitter or require('events').EventEmitter
+DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
+IDS = 0
+
+class RectangleModel extends EventEmitter
+  position: null
+  size: null
+  transform: null
+
+  constructor: ->
+    @id = IDS++
+    @transform = new Curve.Transform
+
+  ###
+  Section: Public Methods
+  ###
+
+  getTransform: -> @transform
+
+  getTransformString: -> @transform.toString()
+
+  setTransformString: (transformString) ->
+    if @transform.setTransformString(transformString)
+      @_emitChangeEvent()
+
+  getPosition: -> @position
+
+  setPosition: (x, y) ->
+    @position = Point.create(x, y)
+    @_emitChangeEvent()
+
+  getSize: -> @size
+
+  setSize: (width, height) ->
+    @size = Size.create(width, height)
+    @_emitChangeEvent()
+
+  toString: -> "{Rect #{@id}: #{@position} #{@size}"
+
+  translate: (point) ->
+    point = Point.create(point)
+    @setPosition(@position.add(point))
+    @_emitChangeEvent()
+
+  ###
+  Section: Private Methods
+  ###
+
+  _emitChangeEvent: ->
+    @emit 'change', this
+
+
+
+
+# Represents a <rect> svg element. Handles interacting with the element, and
+# rendering from the {RectangleModel}.
+class Rectangle extends EventEmitter
+  constructor: (@svgDocument, {svgEl}={}) ->
+    @model = new RectangleModel
+    @_setupSVGObject(svgEl)
+    @model.on 'change', @onModelChange
+
+  ###
+  Section: Public Methods
+  ###
+
+  toString: -> @model.toString()
+
+  # Allows for user dragging on the screen
+  enableDragging: (callbacks) ->
+    element = @svgEl
+    return unless element?
+    @disableDragging()
+    element.draggable()
+    element.dragstart = (event) -> callbacks?.dragstart?(event)
+    element.dragmove = (event) =>
+      @updateFromAttributes()
+      callbacks?.dragmove?(event)
+    element.dragend = (event) =>
+      @model.setTransformString(null)
+      @model.translate([event.x, event.y])
+      callbacks?.dragend?(event)
+
+  disableDragging: ->
+    element = @svgEl
+    return unless element?
+    element.fixed?()
+    element.dragstart = null
+    element.dragmove = null
+    element.dragend = null
+
+  # Call when the XML attributes change without the model knowing. Will update
+  # the model with the new attributes.
+  updateFromAttributes: ->
+    x = @svgEl.attr('x')
+    y = @svgEl.attr('y')
+    width = @svgEl.attr('width')
+    height = @svgEl.attr('height')
+    transform = @svgEl.attr('transform')
+    @model.setPosition(x, y)
+    @model.setSize(width, height)
+    @model.setTransformString(transform)
+
+  # Will render the nodes and the transform from the model.
+  render: (svgEl=@svgEl) ->
+    position = @model.getPosition()
+    size = @model.getSize()
+    svgEl.attr(x: position.x)
+    svgEl.attr(y: position.y)
+    svgEl.attr(width: size.width)
+    svgEl.attr(height: size.height)
+    svgEl.attr(transform: @model.getTransformString() or null)
+
+  cloneElement: (svgDocument=@svgDocument) ->
+    el = svgDocument.rect()
+    @render(el)
+    el
+
+  ###
+  Section: Event Handlers
+  ###
+
+  onModelChange: =>
+    @render()
+    @emit 'change', this
+
+  ###
+  Section: Private Methods
+  ###
+
+  _setupSVGObject: (@svgEl) ->
+    @svgEl = @svgDocument.rect().attr(DefaultAttrs) unless @svgEl
+    Curve.Utils.setObjectOnNode(@svgEl.node, this)
+    @updateFromAttributes()
+
+Curve.Rectangle = Rectangle
 
 EventEmitter = window.EventEmitter or require('events').EventEmitter
 
@@ -1331,7 +1479,7 @@ class Curve.SelectionView
     @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)
     @nodeEditors = []
 
-    if object
+    if object?.getNodes?
       nodes = object.getNodes()
       @_addNodeEditor(node) for node in nodes
 
@@ -1354,6 +1502,35 @@ class Curve.SelectionView
     for nodeEditor in @nodeEditors
       return nodeEditor if nodeEditor.node == node
     null
+
+_ = window._ or require 'underscore'
+
+#
+class Size
+  @create: (width, height) ->
+    return width if width instanceof Size
+    if Array.isArray(width)
+      new Size(width[0], width[1])
+    else
+      new Size(width, height)
+
+  constructor: (width, height) ->
+    @set(width, height)
+
+  set: (@width, @height) ->
+    [@width, @height] = @width if _.isArray(@width)
+
+  toArray: ->
+    [@width, @height]
+
+  equals: (other) ->
+    other = Size.create(other)
+    other.width == @width and other.height == @height
+
+  toString: ->
+    "(#{@width}, #{@height})"
+
+Curve.Size = Size
 
 _ = window._ or require 'underscore'
 

@@ -185,6 +185,11 @@ class Path extends EventEmitter
     svgEl.attr(d: pathStr) if pathStr
     svgEl.attr(transform: @model.getTransformString() or null)
 
+  cloneElement: (svgDocument=@svgDocument) ->
+    el = svgDocument.path()
+    @render(el)
+    el
+
   ###
   Section: Event Handlers
   ###

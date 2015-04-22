@@ -50,9 +50,10 @@ class Curve.PointerTool
     obj = null
     if nodes.length
       for i in [nodes.length-1..0]
-        clas = nodes[i].getAttribute('class')
-        continue if clas and clas.indexOf('invisible-to-hit-test') > -1
+        className = nodes[i].getAttribute('class')
+        continue if className and className.indexOf('invisible-to-hit-test') > -1
         obj = Curve.Utils.getObjectFromNode(nodes[i])
         break
 
+    console.log obj
     obj

@@ -1,5 +1,5 @@
 (function() {
-  var $, COMMAND, Curve, DefaultAttrs, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, SVG, Subpath, SvgDocument, Transform, TranslateRegex, attachDragEvents, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
+  var $, COMMAND, Curve, DefaultAttrs, EventEmitter, IDS, NUMBER, Node, NodeEditor, Path, PathModel, Point, Rectangle, RectangleModel, SVG, Size, Subpath, SvgDocument, Transform, TranslateRegex, attachDragEvents, convertNodes, detachDragEvents, groupCommands, lexPath, objectifyAttributes, objectifyTransformations, onDrag, onEnd, onStart, parsePath, parseTokens, _, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -283,6 +283,13 @@
             svgEl: el
           })
         ];
+      },
+      rect: function(el) {
+        return [
+          new Curve.Rectangle(svgDocument, {
+            svgEl: el
+          })
+        ];
       }
     };
     parentNode = document.createElement('div');
@@ -298,6 +305,8 @@
       return null;
     });
     parentNode = null;
+    window.objs = objects;
+    console.log(window.objs);
     return objects;
   };
 
@@ -833,13 +842,13 @@
       old = object;
       this.object = object;
       this._bindObject(this.object);
-      if (this.path) {
-        this.path.remove();
+      if (this.trackingObject) {
+        this.trackingObject.remove();
       }
-      this.path = null;
+      this.trackingObject = null;
       if (this.object) {
-        this.path = this.svgDocument.path('').back();
-        this.path.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
+        this.trackingObject = this.object.cloneElement(this.svgDocument).back();
+        this.trackingObject.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
         this.render();
       }
       return this.emit('change:object', {
@@ -850,7 +859,7 @@
     };
 
     ObjectSelection.prototype.render = function() {
-      return this.object.render(this.path);
+      return this.object.render(this.trackingObject);
     };
 
     ObjectSelection.prototype._bindObject = function(object) {
@@ -1423,6 +1432,16 @@
       });
     };
 
+    Path.prototype.cloneElement = function(svgDocument) {
+      var el;
+      if (svgDocument == null) {
+        svgDocument = this.svgDocument;
+      }
+      el = svgDocument.path();
+      this.render(el);
+      return el;
+    };
+
     /*
     Section: Event Handlers
     */
@@ -1639,7 +1658,7 @@
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var clas, i, left, nodes, obj, top, _i, _ref1, _ref2;
+      var className, i, left, nodes, obj, top, _i, _ref1, _ref2;
       _ref1 = $(this.svgDocument.node).offset(), left = _ref1.left, top = _ref1.top;
       this._evrect.x = e.clientX - left;
       this._evrect.y = e.clientY - top;
@@ -1647,20 +1666,245 @@
       obj = null;
       if (nodes.length) {
         for (i = _i = _ref2 = nodes.length - 1; _ref2 <= 0 ? _i <= 0 : _i >= 0; i = _ref2 <= 0 ? ++_i : --_i) {
-          clas = nodes[i].getAttribute('class');
-          if (clas && clas.indexOf('invisible-to-hit-test') > -1) {
+          className = nodes[i].getAttribute('class');
+          if (className && className.indexOf('invisible-to-hit-test') > -1) {
             continue;
           }
           obj = Curve.Utils.getObjectFromNode(nodes[i]);
           break;
         }
       }
+      console.log(obj);
       return obj;
     };
 
     return PointerTool;
 
   })();
+
+  _ = window._ || require('underscore');
+
+  EventEmitter = window.EventEmitter || require('events').EventEmitter;
+
+  DefaultAttrs = {
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    fill: '#eee',
+    stroke: 'none'
+  };
+
+  IDS = 0;
+
+  RectangleModel = (function(_super) {
+    __extends(RectangleModel, _super);
+
+    RectangleModel.prototype.position = null;
+
+    RectangleModel.prototype.size = null;
+
+    RectangleModel.prototype.transform = null;
+
+    function RectangleModel() {
+      this.id = IDS++;
+      this.transform = new Curve.Transform;
+    }
+
+    /*
+    Section: Public Methods
+    */
+
+
+    RectangleModel.prototype.getTransform = function() {
+      return this.transform;
+    };
+
+    RectangleModel.prototype.getTransformString = function() {
+      return this.transform.toString();
+    };
+
+    RectangleModel.prototype.setTransformString = function(transformString) {
+      if (this.transform.setTransformString(transformString)) {
+        return this._emitChangeEvent();
+      }
+    };
+
+    RectangleModel.prototype.getPosition = function() {
+      return this.position;
+    };
+
+    RectangleModel.prototype.setPosition = function(x, y) {
+      this.position = Point.create(x, y);
+      return this._emitChangeEvent();
+    };
+
+    RectangleModel.prototype.getSize = function() {
+      return this.size;
+    };
+
+    RectangleModel.prototype.setSize = function(width, height) {
+      this.size = Size.create(width, height);
+      return this._emitChangeEvent();
+    };
+
+    RectangleModel.prototype.toString = function() {
+      return "{Rect " + this.id + ": " + this.position + " " + this.size;
+    };
+
+    RectangleModel.prototype.translate = function(point) {
+      point = Point.create(point);
+      this.setPosition(this.position.add(point));
+      return this._emitChangeEvent();
+    };
+
+    /*
+    Section: Private Methods
+    */
+
+
+    RectangleModel.prototype._emitChangeEvent = function() {
+      return this.emit('change', this);
+    };
+
+    return RectangleModel;
+
+  })(EventEmitter);
+
+  Rectangle = (function(_super) {
+    __extends(Rectangle, _super);
+
+    function Rectangle(svgDocument, _arg) {
+      var svgEl;
+      this.svgDocument = svgDocument;
+      svgEl = (_arg != null ? _arg : {}).svgEl;
+      this.onModelChange = __bind(this.onModelChange, this);
+      this.model = new RectangleModel;
+      this._setupSVGObject(svgEl);
+      this.model.on('change', this.onModelChange);
+    }
+
+    /*
+    Section: Public Methods
+    */
+
+
+    Rectangle.prototype.toString = function() {
+      return this.model.toString();
+    };
+
+    Rectangle.prototype.enableDragging = function(callbacks) {
+      var element,
+        _this = this;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      this.disableDragging();
+      element.draggable();
+      element.dragstart = function(event) {
+        return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
+      };
+      element.dragmove = function(event) {
+        _this.updateFromAttributes();
+        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+      };
+      return element.dragend = function(event) {
+        _this.model.setTransformString(null);
+        _this.model.translate([event.x, event.y]);
+        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+      };
+    };
+
+    Rectangle.prototype.disableDragging = function() {
+      var element;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      if (typeof element.fixed === "function") {
+        element.fixed();
+      }
+      element.dragstart = null;
+      element.dragmove = null;
+      return element.dragend = null;
+    };
+
+    Rectangle.prototype.updateFromAttributes = function() {
+      var height, transform, width, x, y;
+      x = this.svgEl.attr('x');
+      y = this.svgEl.attr('y');
+      width = this.svgEl.attr('width');
+      height = this.svgEl.attr('height');
+      transform = this.svgEl.attr('transform');
+      this.model.setPosition(x, y);
+      this.model.setSize(width, height);
+      return this.model.setTransformString(transform);
+    };
+
+    Rectangle.prototype.render = function(svgEl) {
+      var position, size;
+      if (svgEl == null) {
+        svgEl = this.svgEl;
+      }
+      position = this.model.getPosition();
+      size = this.model.getSize();
+      svgEl.attr({
+        x: position.x
+      });
+      svgEl.attr({
+        y: position.y
+      });
+      svgEl.attr({
+        width: size.width
+      });
+      svgEl.attr({
+        height: size.height
+      });
+      return svgEl.attr({
+        transform: this.model.getTransformString() || null
+      });
+    };
+
+    Rectangle.prototype.cloneElement = function(svgDocument) {
+      var el;
+      if (svgDocument == null) {
+        svgDocument = this.svgDocument;
+      }
+      el = svgDocument.rect();
+      this.render(el);
+      return el;
+    };
+
+    /*
+    Section: Event Handlers
+    */
+
+
+    Rectangle.prototype.onModelChange = function() {
+      this.render();
+      return this.emit('change', this);
+    };
+
+    /*
+    Section: Private Methods
+    */
+
+
+    Rectangle.prototype._setupSVGObject = function(svgEl) {
+      this.svgEl = svgEl;
+      if (!this.svgEl) {
+        this.svgEl = this.svgDocument.rect().attr(DefaultAttrs);
+      }
+      Curve.Utils.setObjectOnNode(this.svgEl.node, this);
+      return this.updateFromAttributes();
+    };
+
+    return Rectangle;
+
+  })(EventEmitter);
+
+  Curve.Rectangle = Rectangle;
 
   EventEmitter = window.EventEmitter || require('events').EventEmitter;
 
@@ -1817,7 +2061,7 @@
       var node, nodeEditor, nodes, _i, _j, _len, _len1, _ref1, _results;
       this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
       this.nodeEditors = [];
-      if (object) {
+      if ((object != null ? object.getNodes : void 0) != null) {
         nodes = object.getNodes();
         for (_i = 0, _len = nodes.length; _i < _len; _i++) {
           node = nodes[_i];
@@ -1859,6 +2103,52 @@
     return SelectionView;
 
   })();
+
+  _ = window._ || require('underscore');
+
+  Size = (function() {
+    Size.create = function(width, height) {
+      if (width instanceof Size) {
+        return width;
+      }
+      if (Array.isArray(width)) {
+        return new Size(width[0], width[1]);
+      } else {
+        return new Size(width, height);
+      }
+    };
+
+    function Size(width, height) {
+      this.set(width, height);
+    }
+
+    Size.prototype.set = function(width, height) {
+      var _ref1;
+      this.width = width;
+      this.height = height;
+      if (_.isArray(this.width)) {
+        return _ref1 = this.width, this.width = _ref1[0], this.height = _ref1[1], _ref1;
+      }
+    };
+
+    Size.prototype.toArray = function() {
+      return [this.width, this.height];
+    };
+
+    Size.prototype.equals = function(other) {
+      other = Size.create(other);
+      return other.width === this.width && other.height === this.height;
+    };
+
+    Size.prototype.toString = function() {
+      return "(" + this.width + ", " + this.height + ")";
+    };
+
+    return Size;
+
+  })();
+
+  Curve.Size = Size;
 
   _ = window._ || require('underscore');
 

@@ -6,9 +6,6 @@
 
 ## TODO
 
-* Handles + nodes are not quite right 
-* Allow moving an entire object
-  * When an object moves, needs to notify the nodes
 * Use browserify
 * Support other non-path object types. At least selecting / moving!
   * rect

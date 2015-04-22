@@ -50,7 +50,7 @@ class Curve.SelectionView
     @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)
     @nodeEditors = []
 
-    if object
+    if object?.getNodes?
       nodes = object.getNodes()
       @_addNodeEditor(node) for node in nodes
 
