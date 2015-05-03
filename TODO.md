@@ -37,7 +37,7 @@
 
 ### Events originating at path
 
-* How to update the children?
-  * Call `path.update()`. it reads the attrs, if different, calls down into subpaths, who call into nodes.
-  * nodes know about the subpath, and subpaths know about the path
-  * On request for absolute points, take the transform into account
+* Entire object (Path, Rect, etc) is moved by user
+  * While dragging, `object.updateFromAttributes()` updates the model, which primarily updates the transform.
+  * When finished moving, the transform is removed and `object.translate()` is called to update the params (pathString for paths, x,y for rect)
+    * In the case of `Path`, when the pathString is updated, all the nodes will be regenerated
