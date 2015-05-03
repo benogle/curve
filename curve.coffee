@@ -429,7 +429,7 @@ class NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: (@svgToolParent, @selectionModel) ->
+  constructor: (@svgToolParent, @pathEditor) ->
     @svgDocument = @svgToolParent.parent
     @_setupNodeElement()
     @_setupLineElement()
@@ -519,11 +519,11 @@ class NodeEditor
     @nodeElement.click (e) =>
       e.stopPropagation()
       @setEnableHandles(true)
-      @selectionModel.setSelectedNode(@node)
+      @pathEditor.activateNode(@node)
       false
 
     @nodeElement.draggable()
-    @nodeElement.dragstart = => @selectionModel.setSelectedNode(@node)
+    @nodeElement.dragstart = => @pathEditor.activateNode(@node)
     @nodeElement.dragmove = @onDraggingNode
     @nodeElement.on 'mouseover', =>
       @nodeElement.front()
@@ -650,6 +650,38 @@ class Node extends EventEmitter
 
 Curve.Node = Node
 
+class Curve.ObjectEditor
+  constructor: (@svgDocument, @selectionModel) ->
+    @active = false
+    @activeEditor = null
+    @editors =
+      Path: new Curve.PathEditor(@svgDocument)
+
+  isActive: ->
+    @active
+
+  getActiveObject: ->
+    @activeEditor?.getActiveObject() ? null
+
+  activate: ->
+    @active = true
+    @selectionModel.on 'change:selected', @onChangeSelected
+
+  deactivate: ->
+    @selectionModel.removeListener 'change:selected', @onChangeSelected
+    @_deactivateActiveEditor()
+    @active = false
+
+  onChangeSelected: ({object, old}) =>
+    @_deactivateActiveEditor()
+    if object?
+      @activeEditor = @editors[object.getType()]
+      @activeEditor?.activateObject(object)
+
+  _deactivateActiveEditor: ->
+    @activeEditor?.deactivate()
+    @activeEditor = null
+
 EventEmitter = window.EventEmitter or require('events').EventEmitter
 
 # The display for a selected object. i.e. the red or blue outline around the
@@ -684,6 +716,91 @@ class Curve.ObjectSelection extends EventEmitter
   _unbindObject: (object) ->
     return unless object
     object.removeListener 'change', @render
+
+
+#
+class Curve.PathEditor
+  nodeSize: 5
+
+  constructor: (@svgDocument) ->
+    @path = null
+    @node = null
+    @nodeEditors = []
+    @_nodeEditorPool = []
+
+  isActive: -> !!@path
+
+  getActiveObject: -> @path
+
+  activateObject: (object) ->
+    @deactivate()
+    if object?
+      @path = object
+      @_bindToObject(@path)
+      @_createNodeEditors(@path)
+
+  deactivate: ->
+    @deactivateNode()
+    @_unbindFromObject(@path) if @path?
+    @_removeNodeEditors()
+    @path = null
+
+  activateNode: (node) ->
+    @deactivateNode()
+    if node?
+      @selectedNode = node
+      nodeEditor = @_findNodeEditorForNode(node)
+      nodeEditor.setEnableHandles(true) if nodeEditor?
+
+  deactivateNode: ->
+    if @selectedNode?
+      nodeEditor = @_findNodeEditorForNode(@selectedNode)
+      nodeEditor.setEnableHandles(false) if nodeEditor?
+    @selectedNode = null
+
+  onInsertNode: (object, {node, index}={}) =>
+    @_addNodeEditor(node)
+    null # Force null. otherwise _insertNodeEditor returns true and tells event emitter 'once'. Ugh
+
+  _bindToObject: (object) ->
+    return unless object
+    object.on 'insert:node', @onInsertNode
+
+  _unbindFromObject: (object) ->
+    return unless object
+    object.removeListener 'insert:node', @onInsertNode
+
+  _removeNodeEditors: ->
+    @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)
+    @nodeEditors = []
+    for nodeEditor in @_nodeEditorPool
+      nodeEditor.setNode(null)
+    return
+
+  _createNodeEditors: (object) ->
+    @_removeNodeEditors()
+
+    if object?.getNodes?
+      nodes = object.getNodes()
+      @_addNodeEditor(node) for node in nodes
+    return
+
+  _addNodeEditor: (node) ->
+    return false unless node
+
+    nodeEditor = if @_nodeEditorPool.length
+      @_nodeEditorPool.pop()
+    else
+      new Curve.NodeEditor(@svgDocument, this)
+
+    nodeEditor.setNode(node)
+    @nodeEditors.push(nodeEditor)
+    true
+
+  _findNodeEditorForNode: (node) ->
+    for nodeEditor in @nodeEditors
+      return nodeEditor if nodeEditor.node == node
+    null
 
 _ = window._ or require 'underscore'
 
@@ -1034,6 +1151,8 @@ class Path extends EventEmitter
   Section: Public Methods
   ###
 
+  getType: -> 'Path'
+
   toString: ->
     "Path #{@id} #{@model.toString()}"
 
@@ -1318,6 +1437,8 @@ class Rectangle extends EventEmitter
   ###
   Section: Public Methods
   ###
+
+  getType: -> 'Rectangle'
 
   toString: -> @model.toString()
 

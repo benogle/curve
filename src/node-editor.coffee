@@ -12,7 +12,7 @@ class NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: (@svgToolParent, @selectionModel) ->
+  constructor: (@svgToolParent, @pathEditor) ->
     @svgDocument = @svgToolParent.parent
     @_setupNodeElement()
     @_setupLineElement()
@@ -102,11 +102,11 @@ class NodeEditor
     @nodeElement.click (e) =>
       e.stopPropagation()
       @setEnableHandles(true)
-      @selectionModel.setSelectedNode(@node)
+      @pathEditor.activateNode(@node)
       false
 
     @nodeElement.draggable()
-    @nodeElement.dragstart = => @selectionModel.setSelectedNode(@node)
+    @nodeElement.dragstart = => @pathEditor.activateNode(@node)
     @nodeElement.dragmove = @onDraggingNode
     @nodeElement.on 'mouseover', =>
       @nodeElement.front()

@@ -488,9 +488,9 @@
 
     lineElement = null;
 
-    function NodeEditor(svgToolParent, selectionModel) {
+    function NodeEditor(svgToolParent, pathEditor) {
       this.svgToolParent = svgToolParent;
-      this.selectionModel = selectionModel;
+      this.pathEditor = pathEditor;
       this.onDraggingHandleOut = __bind(this.onDraggingHandleOut, this);
       this.onDraggingHandleIn = __bind(this.onDraggingHandleIn, this);
       this.onDraggingNode = __bind(this.onDraggingNode, this);
@@ -618,12 +618,12 @@
       this.nodeElement.click(function(e) {
         e.stopPropagation();
         _this.setEnableHandles(true);
-        _this.selectionModel.setSelectedNode(_this.node);
+        _this.pathEditor.activateNode(_this.node);
         return false;
       });
       this.nodeElement.draggable();
       this.nodeElement.dragstart = function() {
-        return _this.selectionModel.setSelectedNode(_this.node);
+        return _this.pathEditor.activateNode(_this.node);
       };
       this.nodeElement.dragmove = this.onDraggingNode;
       this.nodeElement.on('mouseover', function() {
@@ -821,6 +821,60 @@
 
   Curve.Node = Node;
 
+  Curve.ObjectEditor = (function() {
+    function ObjectEditor(svgDocument, selectionModel) {
+      this.svgDocument = svgDocument;
+      this.selectionModel = selectionModel;
+      this.onChangeSelected = __bind(this.onChangeSelected, this);
+      this.active = false;
+      this.activeEditor = null;
+      this.editors = {
+        Path: new Curve.PathEditor(this.svgDocument)
+      };
+    }
+
+    ObjectEditor.prototype.isActive = function() {
+      return this.active;
+    };
+
+    ObjectEditor.prototype.getActiveObject = function() {
+      var _ref, _ref1;
+      return (_ref = (_ref1 = this.activeEditor) != null ? _ref1.getActiveObject() : void 0) != null ? _ref : null;
+    };
+
+    ObjectEditor.prototype.activate = function() {
+      this.active = true;
+      return this.selectionModel.on('change:selected', this.onChangeSelected);
+    };
+
+    ObjectEditor.prototype.deactivate = function() {
+      this.selectionModel.removeListener('change:selected', this.onChangeSelected);
+      this._deactivateActiveEditor();
+      return this.active = false;
+    };
+
+    ObjectEditor.prototype.onChangeSelected = function(_arg) {
+      var object, old, _ref;
+      object = _arg.object, old = _arg.old;
+      this._deactivateActiveEditor();
+      if (object != null) {
+        this.activeEditor = this.editors[object.getType()];
+        return (_ref = this.activeEditor) != null ? _ref.activateObject(object) : void 0;
+      }
+    };
+
+    ObjectEditor.prototype._deactivateActiveEditor = function() {
+      var _ref;
+      if ((_ref = this.activeEditor) != null) {
+        _ref.deactivate();
+      }
+      return this.activeEditor = null;
+    };
+
+    return ObjectEditor;
+
+  })();
+
   EventEmitter = window.EventEmitter || require('events').EventEmitter;
 
   Curve.ObjectSelection = (function(_super) {
@@ -879,6 +933,138 @@
     return ObjectSelection;
 
   })(EventEmitter);
+
+  Curve.PathEditor = (function() {
+    PathEditor.prototype.nodeSize = 5;
+
+    function PathEditor(svgDocument) {
+      this.svgDocument = svgDocument;
+      this.onInsertNode = __bind(this.onInsertNode, this);
+      this.path = null;
+      this.node = null;
+      this.nodeEditors = [];
+      this._nodeEditorPool = [];
+    }
+
+    PathEditor.prototype.isActive = function() {
+      return !!this.path;
+    };
+
+    PathEditor.prototype.getActiveObject = function() {
+      return this.path;
+    };
+
+    PathEditor.prototype.activateObject = function(object) {
+      this.deactivate();
+      if (object != null) {
+        this.path = object;
+        this._bindToObject(this.path);
+        return this._createNodeEditors(this.path);
+      }
+    };
+
+    PathEditor.prototype.deactivate = function() {
+      this.deactivateNode();
+      if (this.path != null) {
+        this._unbindFromObject(this.path);
+      }
+      this._removeNodeEditors();
+      return this.path = null;
+    };
+
+    PathEditor.prototype.activateNode = function(node) {
+      var nodeEditor;
+      this.deactivateNode();
+      if (node != null) {
+        this.selectedNode = node;
+        nodeEditor = this._findNodeEditorForNode(node);
+        if (nodeEditor != null) {
+          return nodeEditor.setEnableHandles(true);
+        }
+      }
+    };
+
+    PathEditor.prototype.deactivateNode = function() {
+      var nodeEditor;
+      if (this.selectedNode != null) {
+        nodeEditor = this._findNodeEditorForNode(this.selectedNode);
+        if (nodeEditor != null) {
+          nodeEditor.setEnableHandles(false);
+        }
+      }
+      return this.selectedNode = null;
+    };
+
+    PathEditor.prototype.onInsertNode = function(object, _arg) {
+      var index, node, _ref;
+      _ref = _arg != null ? _arg : {}, node = _ref.node, index = _ref.index;
+      this._addNodeEditor(node);
+      return null;
+    };
+
+    PathEditor.prototype._bindToObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.on('insert:node', this.onInsertNode);
+    };
+
+    PathEditor.prototype._unbindFromObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.removeListener('insert:node', this.onInsertNode);
+    };
+
+    PathEditor.prototype._removeNodeEditors = function() {
+      var nodeEditor, _i, _len, _ref;
+      this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
+      this.nodeEditors = [];
+      _ref = this._nodeEditorPool;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        nodeEditor = _ref[_i];
+        nodeEditor.setNode(null);
+      }
+    };
+
+    PathEditor.prototype._createNodeEditors = function(object) {
+      var node, nodes, _i, _len;
+      this._removeNodeEditors();
+      if ((object != null ? object.getNodes : void 0) != null) {
+        nodes = object.getNodes();
+        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
+          node = nodes[_i];
+          this._addNodeEditor(node);
+        }
+      }
+    };
+
+    PathEditor.prototype._addNodeEditor = function(node) {
+      var nodeEditor;
+      if (!node) {
+        return false;
+      }
+      nodeEditor = this._nodeEditorPool.length ? this._nodeEditorPool.pop() : new Curve.NodeEditor(this.svgDocument, this);
+      nodeEditor.setNode(node);
+      this.nodeEditors.push(nodeEditor);
+      return true;
+    };
+
+    PathEditor.prototype._findNodeEditorForNode = function(node) {
+      var nodeEditor, _i, _len, _ref;
+      _ref = this.nodeEditors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        nodeEditor = _ref[_i];
+        if (nodeEditor.node === node) {
+          return nodeEditor;
+        }
+      }
+      return null;
+    };
+
+    return PathEditor;
+
+  })();
 
   _ = window._ || require('underscore');
 
@@ -1343,6 +1529,10 @@
     */
 
 
+    Path.prototype.getType = function() {
+      return 'Path';
+    };
+
     Path.prototype.toString = function() {
       return "Path " + this.id + " " + (this.model.toString());
     };
@@ -1788,6 +1978,10 @@
     Section: Public Methods
     */
 
+
+    Rectangle.prototype.getType = function() {
+      return 'Rectangle';
+    };
 
     Rectangle.prototype.toString = function() {
       return this.model.toString();

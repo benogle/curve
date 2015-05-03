@@ -52,7 +52,9 @@ module.exports = function(grunt) {
         specs: [
           'test/lib/nodeSpec.js',
           'test/lib/node-editorSpec.js',
+          'test/lib/object-editorSpec.js',
           'test/lib/pathSpec.js',
+          'test/lib/path-editorSpec.js',
           'test/lib/path-parserSpec.js',
           'test/lib/selection-modelSpec.js',
           'test/lib/selection-viewSpec.js',

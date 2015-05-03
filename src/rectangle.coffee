@@ -66,6 +66,8 @@ class Rectangle extends EventEmitter
   Section: Public Methods
   ###
 
+  getType: -> 'Rectangle'
+
   toString: -> @model.toString()
 
   # Allows for user dragging on the screen

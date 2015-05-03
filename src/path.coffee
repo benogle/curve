@@ -133,6 +133,8 @@ class Path extends EventEmitter
   Section: Public Methods
   ###
 
+  getType: -> 'Path'
+
   toString: ->
     "Path #{@id} #{@model.toString()}"
 
