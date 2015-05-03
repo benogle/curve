@@ -1,8 +1,6 @@
 
 #
 class Curve.PathEditor
-  nodeSize: 5
-
   constructor: (@svgDocument) ->
     @path = null
     @node = null
