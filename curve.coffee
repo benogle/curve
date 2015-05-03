@@ -418,8 +418,9 @@ objectifyTransformations = (transform) ->
 _ = window._ or require 'underscore'
 $ = window.jQuery or require 'jquery'
 
-# A node display in the interface allowing for user interaction (moving the
-# node, moving the handles). Draws the node, and draws the handles.
+# A node UI in the interface allowing for user interaction (moving the node,
+# moving the handles). Draws the node, and draws the handles.
+# Managed by a PathEditor object.
 class NodeEditor
   nodeSize: 5
   handleSize: 3
@@ -650,6 +651,11 @@ class Node extends EventEmitter
 
 Curve.Node = Node
 
+# Manages the editor UIs for all object types. e.g. PathEditor object for <path>
+# SVG objects.
+#
+# The goal for this arch is flexibility. Any tool can make one of these and
+# activate it when it wants UIs for object editing.
 class Curve.ObjectEditor
   constructor: (@svgDocument, @selectionModel) ->
     @active = false
@@ -717,8 +723,8 @@ class Curve.ObjectSelection extends EventEmitter
     return unless object
     object.removeListener 'change', @render
 
-
-#
+# Handles the UI for free-form path editing. Manages NodeEditor objects based on
+# a Path's nodes.
 class Curve.PathEditor
   constructor: (@svgDocument) ->
     @path = null
@@ -1308,7 +1314,7 @@ class Point
 
 Curve.Point = Point
 
-$ = window.jQuery or require 'underscore'
+$ = window.jQuery or require 'jquery'
 
 class Curve.PointerTool
   constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->
@@ -1548,7 +1554,6 @@ class Curve.SelectionModel extends EventEmitter
     @setPreselected(null)
   clearSelectedNode: ->
     @setSelectedNode(null)
-
 
 # Handles showing / hiding the red and blue outlines when an object is selected /
 # preselected.

@@ -1,4 +1,4 @@
-$ = window.jQuery or require 'underscore'
+$ = window.jQuery or require 'jquery'
 
 class Curve.PointerTool
   constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->

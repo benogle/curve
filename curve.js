@@ -1783,7 +1783,7 @@
 
   Curve.Point = Point;
 
-  $ = window.jQuery || require('underscore');
+  $ = window.jQuery || require('jquery');
 
   Curve.PointerTool = (function() {
     function PointerTool(svgDocument, _arg) {

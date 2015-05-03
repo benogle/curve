@@ -1,4 +1,3 @@
-
 # Handles showing / hiding the red and blue outlines when an object is selected /
 # preselected.
 class Curve.SelectionView

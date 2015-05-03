@@ -1,5 +1,5 @@
-
-#
+# Handles the UI for free-form path editing. Manages NodeEditor objects based on
+# a Path's nodes.
 class Curve.PathEditor
   constructor: (@svgDocument) ->
     @path = null
