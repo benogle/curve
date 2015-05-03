@@ -935,8 +935,6 @@
   })(EventEmitter);
 
   Curve.PathEditor = (function() {
-    PathEditor.prototype.nodeSize = 5;
-
     function PathEditor(svgDocument) {
       this.svgDocument = svgDocument;
       this.onInsertNode = __bind(this.onInsertNode, this);
@@ -1791,16 +1789,18 @@
     function PointerTool(svgDocument, _arg) {
       var _ref1;
       this.svgDocument = svgDocument;
-      _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView;
+      _ref1 = _arg != null ? _arg : {}, this.selectionModel = _ref1.selectionModel, this.selectionView = _ref1.selectionView, this.toolLayer = _ref1.toolLayer;
       this.onMouseMove = __bind(this.onMouseMove, this);
       this.onClick = __bind(this.onClick, this);
       this.onChangedSelectedObject = __bind(this.onChangedSelectedObject, this);
       this._evrect = this.svgDocument.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
+      this.objectEditor = new Curve.ObjectEditor(this.toolLayer, this.selectionModel);
     }
 
     PointerTool.prototype.activate = function() {
       var objectSelection;
+      this.objectEditor.activate();
       this.svgDocument.on('click', this.onClick);
       this.svgDocument.on('mousemove', this.onMouseMove);
       objectSelection = this.selectionView.getObjectSelection();
@@ -1809,6 +1809,7 @@
 
     PointerTool.prototype.deactivate = function() {
       var objectSelection;
+      this.objectEditor.deactivate();
       this.svgDocument.off('click', this.onClick);
       this.svgDocument.off('mousemove', this.onMouseMove);
       objectSelection = this.selectionView.getObjectSelection();
@@ -2173,25 +2174,17 @@
   })(EventEmitter);
 
   Curve.SelectionView = (function() {
-    SelectionView.prototype.nodeSize = 5;
-
     function SelectionView(svgDocument, model) {
       this.svgDocument = svgDocument;
       this.model = model;
-      this.onInsertNode = __bind(this.onInsertNode, this);
-      this.onChangeSelectedNode = __bind(this.onChangeSelectedNode, this);
       this.onChangePreselected = __bind(this.onChangePreselected, this);
       this.onChangeSelected = __bind(this.onChangeSelected, this);
-      this.path = null;
-      this.nodeEditors = [];
-      this._nodeEditorPool = [];
       this.objectSelection = new Curve.ObjectSelection(this.svgDocument);
       this.objectPreselection = new Curve.ObjectSelection(this.svgDocument, {
         "class": 'object-preselection'
       });
       this.model.on('change:selected', this.onChangeSelected);
       this.model.on('change:preselected', this.onChangePreselected);
-      this.model.on('change:selectedNode', this.onChangeSelectedNode);
     }
 
     SelectionView.prototype.getObjectSelection = function() {
@@ -2201,97 +2194,13 @@
     SelectionView.prototype.onChangeSelected = function(_arg) {
       var object, old;
       object = _arg.object, old = _arg.old;
-      this._unbindFromObject(old);
-      this._bindToObject(object);
-      return this.setSelectedObject(object);
+      return this.objectSelection.setObject(object);
     };
 
     SelectionView.prototype.onChangePreselected = function(_arg) {
       var object;
       object = _arg.object;
       return this.objectPreselection.setObject(object);
-    };
-
-    SelectionView.prototype.onChangeSelectedNode = function(_arg) {
-      var node, nodeEditor, old;
-      node = _arg.node, old = _arg.old;
-      nodeEditor = this._findNodeEditorForNode(old);
-      if (nodeEditor) {
-        nodeEditor.setEnableHandles(false);
-      }
-      nodeEditor = this._findNodeEditorForNode(node);
-      if (nodeEditor) {
-        return nodeEditor.setEnableHandles(true);
-      }
-    };
-
-    SelectionView.prototype.setSelectedObject = function(object) {
-      this.objectSelection.setObject(object);
-      return this._createNodeEditors(object);
-    };
-
-    SelectionView.prototype.onInsertNode = function(object, _arg) {
-      var index, node, _ref1;
-      _ref1 = _arg != null ? _arg : {}, node = _ref1.node, index = _ref1.index;
-      this._addNodeEditor(node);
-      return null;
-    };
-
-    SelectionView.prototype._bindToObject = function(object) {
-      if (!object) {
-        return;
-      }
-      return object.on('insert:node', this.onInsertNode);
-    };
-
-    SelectionView.prototype._unbindFromObject = function(object) {
-      if (!object) {
-        return;
-      }
-      return object.removeListener('insert:node', this.onInsertNode);
-    };
-
-    SelectionView.prototype._createNodeEditors = function(object) {
-      var node, nodeEditor, nodes, _i, _j, _len, _len1, _ref1, _results;
-      this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
-      this.nodeEditors = [];
-      if ((object != null ? object.getNodes : void 0) != null) {
-        nodes = object.getNodes();
-        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
-          node = nodes[_i];
-          this._addNodeEditor(node);
-        }
-      }
-      _ref1 = this._nodeEditorPool;
-      _results = [];
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        nodeEditor = _ref1[_j];
-        _results.push(nodeEditor.setNode(null));
-      }
-      return _results;
-    };
-
-    SelectionView.prototype._addNodeEditor = function(node) {
-      var nodeEditor;
-      if (!node) {
-        return false;
-      }
-      nodeEditor = this._nodeEditorPool.length ? this._nodeEditorPool.pop() : new Curve.NodeEditor(this.svgDocument, this.model);
-      nodeEditor.setNode(node);
-      this.nodeEditors.push(nodeEditor);
-      return true;
-    };
-
-    SelectionView.prototype._findNodeEditorForNode = function(node) {
-      var nodeEditor, _i, _len, _ref1;
-      _ref1 = this.nodeEditors;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        nodeEditor = _ref1[_i];
-        if (nodeEditor.node === node) {
-          return nodeEditor;
-        }
-      }
-      return null;
     };
 
     return SelectionView;
@@ -2507,7 +2416,8 @@
       this.selectionView = new Curve.SelectionView(this.toolLayer, this.selectionModel);
       this.tool = new Curve.PointerTool(this.svgDocument, {
         selectionModel: this.selectionModel,
-        selectionView: this.selectionView
+        selectionView: this.selectionView,
+        toolLayer: this.toolLayer
       });
       this.tool.activate();
     }

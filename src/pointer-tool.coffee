@@ -1,11 +1,13 @@
 $ = window.jQuery or require 'underscore'
 
 class Curve.PointerTool
-  constructor: (@svgDocument, {@selectionModel, @selectionView}={}) ->
+  constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->
     @_evrect = @svgDocument.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
+    @objectEditor = new Curve.ObjectEditor(@toolLayer, @selectionModel)
 
   activate: ->
+    @objectEditor.activate()
     @svgDocument.on 'click', @onClick
     @svgDocument.on 'mousemove', @onMouseMove
 
@@ -13,6 +15,7 @@ class Curve.PointerTool
     objectSelection.on 'change:object', @onChangedSelectedObject
 
   deactivate: ->
+    @objectEditor.deactivate()
     @svgDocument.off 'click', @onClick
     @svgDocument.off 'mousemove', @onMouseMove
 

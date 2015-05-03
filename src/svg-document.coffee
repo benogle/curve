@@ -11,7 +11,7 @@ class SvgDocument
     @selectionModel = new Curve.SelectionModel()
     @selectionView = new Curve.SelectionView(@toolLayer, @selectionModel)
 
-    @tool = new Curve.PointerTool(@svgDocument, {@selectionModel, @selectionView})
+    @tool = new Curve.PointerTool(@svgDocument, {@selectionModel, @selectionView, @toolLayer})
     @tool.activate()
 
   deserialize: (svgString) ->
