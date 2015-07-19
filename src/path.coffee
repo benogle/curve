@@ -1,10 +1,10 @@
 {EventEmitter} = require 'events'
 
-Utils = require './utils.coffee'
-PathParser = require './path-parser.coffee'
-Transform = require './transform.coffee'
-Subpath = require './subpath.coffee'
-Point = require './point.coffee'
+Utils = require './utils'
+PathParser = require './path-parser'
+Transform = require './transform'
+Subpath = require './subpath'
+Point = require './point'
 
 DefaultAttrs = {fill: '#eee', stroke: 'none'}
 IDS = 0

@@ -1,4 +1,2752 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Curve = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function (global){
+(function() {
+  var Point, Utils, getObjectMap;
+
+  Point = require("./point");
+
+  getObjectMap = function() {
+    var g;
+    g = typeof global !== "undefined" && global !== null ? global : window;
+    if (g.NodeObjectMap == null) {
+      g.NodeObjectMap = {};
+    }
+    return g.NodeObjectMap;
+  };
+
+  Utils = {
+    getObjectFromNode: function(domNode) {
+      return getObjectMap()[domNode.id];
+    },
+    setObjectOnNode: function(domNode, object) {
+      return getObjectMap()[domNode.id] = object;
+    },
+    pointForEvent: function(svgDocument, event) {
+      var clientX, clientY, left, top;
+      clientX = event.clientX, clientY = event.clientY;
+      top = this.svgDocument.node.offsetTop;
+      left = this.svgDocument.node.offsetLeft;
+      return new Point(event.clientX - left, event.clientY - top);
+    }
+  };
+
+  module.exports = Utils;
+
+}).call(this);
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./point":15}],2:[function(require,module,exports){
+(function() {
+  require('./ext/svg-circle');
+
+  require('./ext/svg-draggable');
+
+  require('./ext/svg-export');
+
+  module.exports = {
+    Point: require("./point"),
+    Size: require("./size"),
+    Transform: require("./transform"),
+    Utils: require("./utils"),
+    Node: require("./node"),
+    Path: require("./path"),
+    Subpath: require("./subpath"),
+    Rectangle: require("./rectangle"),
+    NodeEditor: require("./node-editor"),
+    ObjectEditor: require("./object-editor"),
+    ObjectSelection: require("./object-selection"),
+    PathEditor: require("./path-editor"),
+    PathParser: require("./path-parser"),
+    SelectionModel: require("./selection-model"),
+    SelectionView: require("./selection-view"),
+    PenTool: require("./pen-tool"),
+    PointerTool: require("./pointer-tool"),
+    SVGDocument: require("./svg-document")
+  };
+
+}).call(this);
+
+},{"./ext/svg-circle":4,"./ext/svg-draggable":5,"./ext/svg-export":6,"./node":8,"./node-editor":7,"./object-editor":9,"./object-selection":10,"./path":13,"./path-editor":11,"./path-parser":12,"./pen-tool":14,"./point":15,"./pointer-tool":16,"./rectangle":17,"./selection-model":18,"./selection-view":19,"./size":20,"./subpath":21,"./svg-document":22,"./transform":23,"./utils":24}],3:[function(require,module,exports){
+(function() {
+  var Path, Rectangle, convertNodes, objectifyAttributes, objectifyTransformations;
+
+  Path = require("./path");
+
+  Rectangle = require("./rectangle");
+
+  module.exports = function(svgDocument, svgString) {
+    var IMPORT_FNS, objects, parentNode, store;
+    IMPORT_FNS = {
+      path: function(el) {
+        return [
+          new Path(svgDocument, {
+            svgEl: el
+          })
+        ];
+      },
+      rect: function(el) {
+        return [
+          new Rectangle(svgDocument, {
+            svgEl: el
+          })
+        ];
+      }
+    };
+    parentNode = document.createElement('div');
+    store = {};
+    parentNode.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
+    objects = [];
+    convertNodes(parentNode.childNodes, svgDocument, 0, store, function() {
+      var nodeType;
+      nodeType = this.node.nodeName;
+      if (IMPORT_FNS[nodeType]) {
+        objects = objects.concat(IMPORT_FNS[nodeType](this));
+      }
+      return null;
+    });
+    parentNode = null;
+    window.objs = objects;
+    console.log(window.objs);
+    return objects;
+  };
+
+  convertNodes = function(nodes, context, level, store, block) {
+    var attr, child, clips, element, grandchild, i, j, transform, type, _i, _j, _ref, _ref1, _ref2;
+    for (i = _i = 0, _ref = nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      child = nodes[i];
+      attr = {};
+      clips = [];
+      type = child.nodeName.toLowerCase();
+      attr = objectifyAttributes(child);
+      switch (type) {
+        case 'path':
+          element = context[type]();
+          break;
+        case 'polygon':
+          element = context[type]();
+          break;
+        case 'polyline':
+          element = context[type]();
+          break;
+        case 'rect':
+          element = context[type](0, 0);
+          break;
+        case 'circle':
+          element = context[type](0, 0);
+          break;
+        case 'ellipse':
+          element = context[type](0, 0);
+          break;
+        case 'line':
+          element = context.line(0, 0, 0, 0);
+          break;
+        case 'text':
+          if (child.childNodes.length === 0) {
+            element = context[type](child.textContent);
+          } else {
+            element = null;
+            for (j = _j = 0, _ref1 = child.childNodes.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
+              grandchild = child.childNodes[j];
+              if (grandchild.nodeName.toLowerCase() === 'tspan') {
+                if (element === null) {
+                  element = context[type](grandchild.textContent);
+                } else {
+                  element.tspan(grandchild.textContent).attr(objectifyAttributes(grandchild));
+                }
+              }
+            }
+          }
+          break;
+        case 'image':
+          element = context.image(attr['xlink:href']);
+          break;
+        case 'g':
+        case 'svg':
+          element = context[type === 'g' ? 'group' : 'nested']();
+          convertNodes(child.childNodes, element, level + 1, store, block);
+          break;
+        case 'defs':
+          convertNodes(child.childNodes, context.defs(), level + 1, store, block);
+          break;
+        case 'use':
+          element = context.use();
+          break;
+        case 'clippath':
+        case 'mask':
+          element = context[(_ref2 = type === 'mask') != null ? _ref2 : {
+            'mask': 'clip'
+          }]();
+          convertNodes(child.childNodes, element, level + 1, store, block);
+          break;
+        case 'lineargradient':
+        case 'radialgradient':
+          element = context.defs().gradient(type.split('gradient')[0], function(stop) {
+            var _k, _ref3, _results;
+            _results = [];
+            for (j = _k = 0, _ref3 = child.childNodes.length; 0 <= _ref3 ? _k < _ref3 : _k > _ref3; j = 0 <= _ref3 ? ++_k : --_k) {
+              _results.push(stop.at(objectifyAttributes(child.childNodes[j])).style(child.childNodes[j].getAttribute('style')));
+            }
+            return _results;
+          });
+          break;
+        case '#comment':
+        case '#text':
+        case 'metadata':
+        case 'desc':
+          break;
+        default:
+          console.log('SVG Import got unexpected type ' + type, child);
+      }
+      if (element) {
+        transform = objectifyTransformations(attr.transform);
+        delete attr.transform;
+        element.attr(attr).transform(transform);
+        if (element.attr('id')) {
+          store[element.attr('id')] = element;
+        }
+        if (type === 'text') {
+          element.rebuild();
+        }
+        if (typeof block === 'function') {
+          block.call(element);
+        }
+      }
+    }
+    return context;
+  };
+
+  objectifyAttributes = function(child) {
+    var attr, attrs, i, _i, _ref;
+    attrs = child.attributes || [];
+    attr = {};
+    if (attrs.length) {
+      for (i = _i = _ref = attrs.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+        attr[attrs[i].nodeName] = attrs[i].nodeValue;
+      }
+    }
+    return attr;
+  };
+
+  objectifyTransformations = function(transform) {
+    var def, i, list, t, trans, v, _i, _ref;
+    trans = {};
+    list = (transform || '').match(/[A-Za-z]+\([^\)]+\)/g) || [];
+    def = SVG.defaults.trans();
+    if (list.length) {
+      for (i = _i = _ref = list.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+        t = list[i].match(/([A-Za-z]+)\(([^\)]+)\)/);
+        v = (t[2] || '').replace(/^\s+/, '').replace(/,/g, ' ').replace(/\s+/g, ' ').split(' ');
+        switch (t[1]) {
+          case 'matrix':
+            trans.a = parseFloat(v[0]) || def.a;
+            trans.b = parseFloat(v[1]) || def.b;
+            trans.c = parseFloat(v[2]) || def.c;
+            trans.d = parseFloat(v[3]) || def.d;
+            trans.e = parseFloat(v[4]) || def.e;
+            trans.f = parseFloat(v[5]) || def.f;
+            break;
+          case 'rotate':
+            trans.rotation = parseFloat(v[0]) || def.rotation;
+            trans.cx = parseFloat(v[1]) || def.cx;
+            trans.cy = parseFloat(v[2]) || def.cy;
+            break;
+          case 'scale':
+            trans.scaleX = parseFloat(v[0]) || def.scaleX;
+            trans.scaleY = parseFloat(v[1]) || def.scaleY;
+            break;
+          case 'skewX':
+            trans.skewX = parseFloat(v[0]) || def.skewX;
+            break;
+          case 'skewY':
+            trans.skewY = parseFloat(v[0]) || def.skewY;
+            break;
+          case 'translate':
+            trans.x = parseFloat(v[0]) || def.x;
+            trans.y = parseFloat(v[1]) || def.y;
+        }
+      }
+    }
+    return trans;
+  };
+
+}).call(this);
+
+},{"./path":13,"./rectangle":17}],4:[function(require,module,exports){
+(function() {
+  var SVG,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  SVG = require('../../vendor/svg.js');
+
+  SVG.Circle = (function(_super) {
+    __extends(Circle, _super);
+
+    function Circle() {
+      Circle.__super__.constructor.call(this, SVG.create('circle'));
+    }
+
+    Circle.prototype.cx = function(x) {
+      if (x === null) {
+        return this.attr('cx');
+      } else {
+        return this.attr('cx', new SVG.Number(x).divide(this.trans.scaleX));
+      }
+    };
+
+    Circle.prototype.cy = function(y) {
+      if (y === null) {
+        return this.attr('cy');
+      } else {
+        return this.attr('cy', new SVG.Number(y).divide(this.trans.scaleY));
+      }
+    };
+
+    Circle.prototype.radius = function(rad) {
+      return this.attr({
+        r: new SVG.Number(rad)
+      });
+    };
+
+    return Circle;
+
+  })(SVG.Shape);
+
+  SVG.extend(SVG.Container, {
+    circle: function(radius) {
+      return this.put(new SVG.Circle).radius(radius).move(0, 0);
+    }
+  });
+
+}).call(this);
+
+},{"../../vendor/svg.js":26}],5:[function(require,module,exports){
+(function() {
+  var SVG, TranslateRegex, attachDragEvents, detachDragEvents, onDrag, onEnd, onStart;
+
+  SVG = require('../../vendor/svg');
+
+  TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/;
+
+  SVG.extend(SVG.Element, {
+    draggable: function() {
+      var dragHandler, element, endHandler, startHandler;
+      element = this;
+      if (typeof this.fixed === "function") {
+        this.fixed();
+      }
+      startHandler = function(event) {
+        onStart(element, event);
+        return attachDragEvents(dragHandler, endHandler);
+      };
+      dragHandler = function(event) {
+        return onDrag(element, event);
+      };
+      endHandler = function(event) {
+        onEnd(element, event);
+        return detachDragEvents(dragHandler, endHandler);
+      };
+      element.on('mousedown', startHandler);
+      element.fixed = function() {
+        element.off('mousedown', startHandler);
+        detachDragEvents();
+        startHandler = dragHandler = endHandler = null;
+        return element;
+      };
+      return this;
+    }
+  });
+
+  attachDragEvents = function(dragHandler, endHandler) {
+    SVG.on(window, 'mousemove', dragHandler);
+    return SVG.on(window, 'mouseup', endHandler);
+  };
+
+  detachDragEvents = function(dragHandler, endHandler) {
+    SVG.off(window, 'mousemove', dragHandler);
+    return SVG.off(window, 'mouseup', endHandler);
+  };
+
+  onStart = function(element, event) {
+    var parent, rotation, translation, x, y, zoom;
+    if (event == null) {
+      event = window.event;
+    }
+    parent = element.parent._parent(SVG.Nested) || element._parent(SVG.Doc);
+    element.startEvent = event;
+    x = y = 0;
+    translation = TranslateRegex.exec(element.attr('transform'));
+    if (translation != null) {
+      x = parseInt(translation[1]);
+      y = parseInt(translation[2]);
+    }
+    zoom = parent.viewbox().zoom;
+    rotation = element.transform('rotation') * Math.PI / 180;
+    element.startPosition = {
+      x: x,
+      y: y,
+      zoom: zoom,
+      rotation: rotation
+    };
+    if (typeof element.dragstart === "function") {
+      element.dragstart({
+        x: 0,
+        y: 0,
+        zoom: zoom
+      }, event);
+    }
+    /* prevent selection dragging*/
+
+    if (event.preventDefault) {
+      return event.preventDefault();
+    } else {
+      return event.returnValue = false;
+    }
+  };
+
+  onDrag = function(element, event) {
+    var delta, rotation, x, y;
+    if (event == null) {
+      event = window.event;
+    }
+    if (element.startEvent) {
+      rotation = element.startPosition.rotation;
+      delta = {
+        x: event.pageX - element.startEvent.pageX,
+        y: event.pageY - element.startEvent.pageY,
+        zoom: element.startPosition.zoom
+      };
+      /* caculate new position [with rotation correction]*/
+
+      x = element.startPosition.x + (delta.x * Math.cos(rotation) + delta.y * Math.sin(rotation)) / element.startPosition.zoom;
+      y = element.startPosition.y + (delta.y * Math.cos(rotation) + delta.x * Math.sin(-rotation)) / element.startPosition.zoom;
+      element.transform({
+        x: x,
+        y: y
+      });
+      return typeof element.dragmove === "function" ? element.dragmove(delta, event) : void 0;
+    }
+  };
+
+  onEnd = function(element, event) {
+    var delta;
+    if (event == null) {
+      event = window.event;
+    }
+    delta = {
+      x: event.pageX - element.startEvent.pageX,
+      y: event.pageY - element.startEvent.pageY,
+      zoom: element.startPosition.zoom
+    };
+    element.startEvent = null;
+    element.startPosition = null;
+    return typeof element.dragend === "function" ? element.dragend(delta, event) : void 0;
+  };
+
+}).call(this);
+
+},{"../../vendor/svg":26}],6:[function(require,module,exports){
+(function() {
+  var SVG;
+
+  SVG = require('../../vendor/svg');
+
+  SVG.extend(SVG.Element, {
+    "export": function(options, level) {
+      var height, i, isRootSvgElement, name, node, width, _i, _j, _k, _ref, _ref1, _ref2;
+      name = this.node.nodeName;
+      node = '';
+      isRootSvgElement = name === 'svg' && !level;
+      options = options || {};
+      if (!options.exclude || !options.exclude.call(this)) {
+        options = options || {};
+        level = level || 0;
+        if (isRootSvgElement) {
+          node += this._whitespaced('<?xml version="1.0" encoding="UTF-8"?>', options.whitespace, level);
+          width = this.attr('width');
+          height = this.attr('height');
+          if (options.width) {
+            this.attr('width', options.width);
+          }
+          if (options.height) {
+            this.attr('height', options.height);
+          }
+        }
+        node += this._whitespaced('<' + name + this.attrToString() + '>', options.whitespace, level);
+        if (isRootSvgElement) {
+          this.attr({
+            width: width,
+            height: height
+          });
+          node += this._whitespaced('<desc>Created with Curve</desc>', options.whitespace, level + 1);
+          if (this._defs) {
+            node += this._whitespaced('<defs>', options.whitespace, level + 1);
+            for (i = _i = 0, _ref = this._defs.children().length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+              node += this._defs.children()[i]["export"](options, level + 2);
+            }
+            node += this._whitespaced('</defs>', options.whitespace, level + 1);
+          }
+        }
+        if (this instanceof SVG.Container) {
+          for (i = _j = 0, _ref1 = this.children().length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+            node += this.children()[i]["export"](options, level + 1);
+          }
+        } else if (this instanceof SVG.Text) {
+          for (i = _k = 0, _ref2 = this.lines.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+            node += this.lines[i]["export"](options, level + 1);
+          }
+        }
+        if (this instanceof SVG.TSpan) {
+          node += this._whitespaced(this.node.firstChild.nodeValue, options.whitespace, level + 1);
+        }
+        node += this._whitespaced('</' + name + '>', options.whitespace, level);
+      }
+      return node;
+    },
+    exportAttr: function(attr) {
+      if (arguments.length === 0) {
+        return this.data('svg-export-attr');
+      }
+      return this.data('svg-export-attr', attr);
+    },
+    attrToString: function() {
+      var attr, data, exportAttrs, isGeneratedId, key, value;
+      attr = [];
+      data = this.exportAttr();
+      exportAttrs = this.attr();
+      if (typeof data === 'object') {
+        for (key in data) {
+          if (key !== 'data-svg-export-attr') {
+            exportAttrs[key] = data[key];
+          }
+        }
+      }
+      for (key in exportAttrs) {
+        value = exportAttrs[key];
+        if (key === 'xlink') {
+          key = 'xmlns:xlink';
+        }
+        isGeneratedId = key === 'id' && value.indexOf('Svgjs') > -1;
+        if (!isGeneratedId && key !== 'data-svg-export-attr' && (key !== 'stroke' || parseFloat(exportAttrs['stroke-width']) > 0)) {
+          attr.push(key + '="' + value + '"');
+        }
+      }
+      if (attr.length) {
+        return ' ' + attr.join(' ');
+      } else {
+        return '';
+      }
+    },
+    _whitespaced: function(value, add, level) {
+      var i, space, whitespace, _i, _ref;
+      if (add) {
+        whitespace = '';
+        space = add === true ? '  ' : add || '';
+        if (level) {
+          for (i = _i = _ref = level - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+            whitespace += space;
+          }
+        }
+        value = whitespace + value + '\n';
+      }
+      return value;
+    }
+  });
+
+}).call(this);
+
+},{"../../vendor/svg":26}],7:[function(require,module,exports){
+(function() {
+  var NodeEditor, Point,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  Point = require('./point');
+
+  module.exports = NodeEditor = (function() {
+    var handleElements, lineElement, node, nodeElement;
+
+    NodeEditor.prototype.nodeSize = 5;
+
+    NodeEditor.prototype.handleSize = 3;
+
+    node = null;
+
+    nodeElement = null;
+
+    handleElements = null;
+
+    lineElement = null;
+
+    function NodeEditor(svgToolParent, pathEditor) {
+      this.svgToolParent = svgToolParent;
+      this.pathEditor = pathEditor;
+      this.onDraggingHandleOut = __bind(this.onDraggingHandleOut, this);
+      this.onDraggingHandleIn = __bind(this.onDraggingHandleIn, this);
+      this.onDraggingNode = __bind(this.onDraggingNode, this);
+      this.render = __bind(this.render, this);
+      this.svgDocument = this.svgToolParent.parent;
+      this._setupNodeElement();
+      this._setupLineElement();
+      this._setupHandleElements();
+      this.hide();
+    }
+
+    NodeEditor.prototype.hide = function() {
+      this.visible = false;
+      this.lineElement.hide();
+      this.nodeElement.hide();
+      return this.handleElements.hide();
+    };
+
+    NodeEditor.prototype.show = function(toFront) {
+      this.visible = true;
+      this.nodeElement.show();
+      if (toFront) {
+        this.lineElement.front();
+        this.nodeElement.front();
+        this.handleElements.front();
+      }
+      if (this.enableHandles) {
+        this.lineElement.show();
+        return this.handleElements.show();
+      } else {
+        this.lineElement.hide();
+        return this.handleElements.hide();
+      }
+    };
+
+    NodeEditor.prototype.setEnableHandles = function(enableHandles) {
+      this.enableHandles = enableHandles;
+      if (this.visible) {
+        return this.show();
+      }
+    };
+
+    NodeEditor.prototype.setNode = function(node) {
+      this._unbindNode(this.node);
+      this.node = node;
+      this._bindNode(this.node);
+      this.setEnableHandles(false);
+      return this.render();
+    };
+
+    NodeEditor.prototype.render = function() {
+      var handleIn, handleOut, linePath, point;
+      if (!this.node) {
+        return this.hide();
+      }
+      handleIn = this.node.getAbsoluteHandleIn();
+      handleOut = this.node.getAbsoluteHandleOut();
+      point = this.node.getPoint();
+      linePath = "M" + handleIn.x + "," + handleIn.y + "L" + point.x + "," + point.y + "L" + handleOut.x + "," + handleOut.y;
+      this.lineElement.attr({
+        d: linePath
+      });
+      this.handleElements.members[0].attr({
+        cx: handleIn.x,
+        cy: handleIn.y,
+        transform: ''
+      });
+      this.handleElements.members[1].attr({
+        cx: handleOut.x,
+        cy: handleOut.y,
+        transform: ''
+      });
+      this.nodeElement.attr({
+        cx: point.x,
+        cy: point.y,
+        transform: ''
+      });
+      this.show();
+      if (this._draggingHandle) {
+        return this._draggingHandle.front();
+      }
+    };
+
+    NodeEditor.prototype.onDraggingNode = function(delta, event) {
+      return this.node.setPoint(this.pointForEvent(event));
+    };
+
+    NodeEditor.prototype.onDraggingHandleIn = function(delta, event) {
+      return this.node.setAbsoluteHandleIn(this.pointForEvent(event));
+    };
+
+    NodeEditor.prototype.onDraggingHandleOut = function(delta, event) {
+      return this.node.setAbsoluteHandleOut(this.pointForEvent(event));
+    };
+
+    NodeEditor.prototype.pointForEvent = function(event) {
+      var clientX, clientY, left, top;
+      clientX = event.clientX, clientY = event.clientY;
+      top = this.svgDocument.node.offsetTop;
+      left = this.svgDocument.node.offsetLeft;
+      return new Point(event.clientX - left, event.clientY - top);
+    };
+
+    NodeEditor.prototype._bindNode = function(node) {
+      var _ref;
+      if (!node) {
+        return;
+      }
+      node.addListener('change', this.render);
+      return (_ref = node.getPath()) != null ? _ref.addListener('change', this.render) : void 0;
+    };
+
+    NodeEditor.prototype._unbindNode = function(node) {
+      var _ref;
+      if (!node) {
+        return;
+      }
+      node.removeListener('change', this.render);
+      return (_ref = node.getPath()) != null ? _ref.addListener('change', this.render) : void 0;
+    };
+
+    NodeEditor.prototype._setupNodeElement = function() {
+      var _this = this;
+      this.nodeElement = this.svgToolParent.circle(this.nodeSize);
+      this.nodeElement.node.setAttribute('class', 'node-editor-node');
+      this.nodeElement.click(function(e) {
+        e.stopPropagation();
+        _this.setEnableHandles(true);
+        _this.pathEditor.activateNode(_this.node);
+        return false;
+      });
+      this.nodeElement.draggable();
+      this.nodeElement.dragstart = function() {
+        return _this.pathEditor.activateNode(_this.node);
+      };
+      this.nodeElement.dragmove = this.onDraggingNode;
+      this.nodeElement.on('mouseover', function() {
+        _this.nodeElement.front();
+        return _this.nodeElement.attr({
+          'r': _this.nodeSize + 2
+        });
+      });
+      return this.nodeElement.on('mouseout', function() {
+        return _this.nodeElement.attr({
+          'r': _this.nodeSize
+        });
+      });
+    };
+
+    NodeEditor.prototype._setupLineElement = function() {
+      this.lineElement = this.svgToolParent.path('');
+      return this.lineElement.node.setAttribute('class', 'node-editor-lines');
+    };
+
+    NodeEditor.prototype._setupHandleElements = function() {
+      var onStartDraggingHandle, onStopDraggingHandle, self,
+        _this = this;
+      self = this;
+      this.handleElements = this.svgToolParent.set();
+      this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
+      this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
+      this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
+      this.handleElements.click(function(e) {
+        e.stopPropagation();
+        return false;
+      });
+      onStartDraggingHandle = function() {
+        return self._draggingHandle = this;
+      };
+      onStopDraggingHandle = function() {
+        return self._draggingHandle = null;
+      };
+      this.handleElements.members[0].draggable();
+      this.handleElements.members[0].dragmove = this.onDraggingHandleIn;
+      this.handleElements.members[0].dragstart = onStartDraggingHandle;
+      this.handleElements.members[0].dragend = onStopDraggingHandle;
+      this.handleElements.members[1].draggable();
+      this.handleElements.members[1].dragmove = this.onDraggingHandleOut;
+      this.handleElements.members[1].dragstart = onStartDraggingHandle;
+      this.handleElements.members[1].dragend = onStopDraggingHandle;
+      this.handleElements.on('mouseover', function() {
+        this.front();
+        return this.attr({
+          'r': self.handleSize + 2
+        });
+      });
+      return this.handleElements.on('mouseout', function() {
+        return this.attr({
+          'r': self.handleSize
+        });
+      });
+    };
+
+    return NodeEditor;
+
+  })();
+
+}).call(this);
+
+},{"./point":15}],8:[function(require,module,exports){
+(function() {
+  var EventEmitter, Node, Point,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  EventEmitter = require('events').EventEmitter;
+
+  Point = require('./point');
+
+  module.exports = Node = (function(_super) {
+    __extends(Node, _super);
+
+    function Node(point, handleIn, handleOut, isJoined) {
+      this.isJoined = isJoined != null ? isJoined : false;
+      this.setPoint(point);
+      if (handleIn) {
+        this.setHandleIn(handleIn);
+      }
+      if (handleOut) {
+        this.setHandleOut(handleOut);
+      }
+    }
+
+    Node.prototype.join = function(referenceHandle) {
+      if (referenceHandle == null) {
+        referenceHandle = 'handleIn';
+      }
+      this.isJoined = true;
+      return this["set" + (referenceHandle.replace('h', 'H'))](this[referenceHandle]);
+    };
+
+    Node.prototype.setPath = function(path) {
+      this.path = path;
+    };
+
+    Node.prototype.getPath = function() {
+      return this.path;
+    };
+
+    Node.prototype.getPoint = function() {
+      return this._transformPoint(this.point);
+    };
+
+    Node.prototype.getHandleIn = function() {
+      return this.handleIn;
+    };
+
+    Node.prototype.getHandleOut = function() {
+      return this.handleOut;
+    };
+
+    Node.prototype.getAbsoluteHandleIn = function() {
+      if (this.handleIn) {
+        return this._transformPoint(this.point.add(this.handleIn));
+      } else {
+        return this.getPoint();
+      }
+    };
+
+    Node.prototype.getAbsoluteHandleOut = function() {
+      if (this.handleOut) {
+        return this._transformPoint(this.point.add(this.handleOut));
+      } else {
+        return this.getPoint();
+      }
+    };
+
+    Node.prototype.setAbsoluteHandleIn = function(point) {
+      return this.setHandleIn(Point.create(point).subtract(this.point));
+    };
+
+    Node.prototype.setAbsoluteHandleOut = function(point) {
+      return this.setHandleOut(Point.create(point).subtract(this.point));
+    };
+
+    Node.prototype.setPoint = function(point) {
+      return this.set('point', Point.create(point));
+    };
+
+    Node.prototype.setHandleIn = function(point) {
+      if (point) {
+        point = Point.create(point);
+      }
+      this.set('handleIn', point);
+      if (this.isJoined) {
+        return this.set('handleOut', point ? new Point(0, 0).subtract(point) : point);
+      }
+    };
+
+    Node.prototype.setHandleOut = function(point) {
+      if (point) {
+        point = Point.create(point);
+      }
+      this.set('handleOut', point);
+      if (this.isJoined) {
+        return this.set('handleIn', point ? new Point(0, 0).subtract(point) : point);
+      }
+    };
+
+    Node.prototype.computeIsjoined = function() {
+      return this.isJoined = (!this.handleIn && !this.handleOut) || (this.handleIn && this.handleOut && Math.round(this.handleIn.x) === Math.round(-this.handleOut.x) && Math.round(this.handleIn.y) === Math.round(-this.handleOut.y));
+    };
+
+    Node.prototype.set = function(attribute, value) {
+      var event, eventArgs, old;
+      old = this[attribute];
+      this[attribute] = value;
+      event = "change:" + attribute;
+      eventArgs = {
+        event: event,
+        value: value,
+        old: old
+      };
+      this.emit(event, this, eventArgs);
+      return this.emit('change', this, eventArgs);
+    };
+
+    Node.prototype.translate = function(point) {
+      point = Point.create(point);
+      return this.set('point', this.point.add(point));
+    };
+
+    Node.prototype._transformPoint = function(point) {
+      var transform, _ref;
+      transform = (_ref = this.path) != null ? _ref.getTransform() : void 0;
+      if (transform != null) {
+        point = transform.transformPoint(point);
+      }
+      return point;
+    };
+
+    return Node;
+
+  })(EventEmitter);
+
+}).call(this);
+
+},{"./point":15,"events":25}],9:[function(require,module,exports){
+(function() {
+  var ObjectEditor, PathEditor,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  PathEditor = require('./path-editor');
+
+  module.exports = ObjectEditor = (function() {
+    function ObjectEditor(svgDocument, selectionModel) {
+      this.svgDocument = svgDocument;
+      this.selectionModel = selectionModel;
+      this.onChangeSelected = __bind(this.onChangeSelected, this);
+      this.active = false;
+      this.activeEditor = null;
+      this.editors = {
+        Path: new PathEditor(this.svgDocument)
+      };
+    }
+
+    ObjectEditor.prototype.isActive = function() {
+      return this.active;
+    };
+
+    ObjectEditor.prototype.getActiveObject = function() {
+      var _ref, _ref1;
+      return (_ref = (_ref1 = this.activeEditor) != null ? _ref1.getActiveObject() : void 0) != null ? _ref : null;
+    };
+
+    ObjectEditor.prototype.activate = function() {
+      this.active = true;
+      return this.selectionModel.on('change:selected', this.onChangeSelected);
+    };
+
+    ObjectEditor.prototype.deactivate = function() {
+      this.selectionModel.removeListener('change:selected', this.onChangeSelected);
+      this._deactivateActiveEditor();
+      return this.active = false;
+    };
+
+    ObjectEditor.prototype.onChangeSelected = function(_arg) {
+      var object, old, _ref;
+      object = _arg.object, old = _arg.old;
+      this._deactivateActiveEditor();
+      if (object != null) {
+        this.activeEditor = this.editors[object.getType()];
+        return (_ref = this.activeEditor) != null ? _ref.activateObject(object) : void 0;
+      }
+    };
+
+    ObjectEditor.prototype._deactivateActiveEditor = function() {
+      var _ref;
+      if ((_ref = this.activeEditor) != null) {
+        _ref.deactivate();
+      }
+      return this.activeEditor = null;
+    };
+
+    return ObjectEditor;
+
+  })();
+
+}).call(this);
+
+},{"./path-editor":11}],10:[function(require,module,exports){
+(function() {
+  var EventEmitter, ObjectSelection,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  EventEmitter = require('events').EventEmitter;
+
+  module.exports = ObjectSelection = (function(_super) {
+    __extends(ObjectSelection, _super);
+
+    function ObjectSelection(svgDocument, options) {
+      var _base;
+      this.svgDocument = svgDocument;
+      this.options = options != null ? options : {};
+      this.render = __bind(this.render, this);
+      if ((_base = this.options)["class"] == null) {
+        _base["class"] = 'object-selection';
+      }
+    }
+
+    ObjectSelection.prototype.setObject = function(object) {
+      var old;
+      this._unbindObject(this.object);
+      old = object;
+      this.object = object;
+      this._bindObject(this.object);
+      if (this.trackingObject) {
+        this.trackingObject.remove();
+      }
+      this.trackingObject = null;
+      if (this.object) {
+        this.trackingObject = this.object.cloneElement(this.svgDocument).back();
+        this.trackingObject.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
+        this.render();
+      }
+      return this.emit('change:object', {
+        objectSelection: this,
+        object: this.object,
+        old: old
+      });
+    };
+
+    ObjectSelection.prototype.render = function() {
+      return this.object.render(this.trackingObject);
+    };
+
+    ObjectSelection.prototype._bindObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.on('change', this.render);
+    };
+
+    ObjectSelection.prototype._unbindObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.removeListener('change', this.render);
+    };
+
+    return ObjectSelection;
+
+  })(EventEmitter);
+
+}).call(this);
+
+},{"events":25}],11:[function(require,module,exports){
+(function() {
+  var NodeEditor, PathEditor,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  NodeEditor = require('./node-editor');
+
+  module.exports = PathEditor = (function() {
+    function PathEditor(svgDocument) {
+      this.svgDocument = svgDocument;
+      this.onInsertNode = __bind(this.onInsertNode, this);
+      this.path = null;
+      this.node = null;
+      this.nodeEditors = [];
+      this._nodeEditorPool = [];
+    }
+
+    PathEditor.prototype.isActive = function() {
+      return !!this.path;
+    };
+
+    PathEditor.prototype.getActiveObject = function() {
+      return this.path;
+    };
+
+    PathEditor.prototype.activateObject = function(object) {
+      this.deactivate();
+      if (object != null) {
+        this.path = object;
+        this._bindToObject(this.path);
+        return this._createNodeEditors(this.path);
+      }
+    };
+
+    PathEditor.prototype.deactivate = function() {
+      this.deactivateNode();
+      if (this.path != null) {
+        this._unbindFromObject(this.path);
+      }
+      this._removeNodeEditors();
+      return this.path = null;
+    };
+
+    PathEditor.prototype.activateNode = function(node) {
+      var nodeEditor;
+      this.deactivateNode();
+      if (node != null) {
+        this.selectedNode = node;
+        nodeEditor = this._findNodeEditorForNode(node);
+        if (nodeEditor != null) {
+          return nodeEditor.setEnableHandles(true);
+        }
+      }
+    };
+
+    PathEditor.prototype.deactivateNode = function() {
+      var nodeEditor;
+      if (this.selectedNode != null) {
+        nodeEditor = this._findNodeEditorForNode(this.selectedNode);
+        if (nodeEditor != null) {
+          nodeEditor.setEnableHandles(false);
+        }
+      }
+      return this.selectedNode = null;
+    };
+
+    PathEditor.prototype.onInsertNode = function(object, _arg) {
+      var index, node, _ref;
+      _ref = _arg != null ? _arg : {}, node = _ref.node, index = _ref.index;
+      this._addNodeEditor(node);
+      return null;
+    };
+
+    PathEditor.prototype._bindToObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.on('insert:node', this.onInsertNode);
+    };
+
+    PathEditor.prototype._unbindFromObject = function(object) {
+      if (!object) {
+        return;
+      }
+      return object.removeListener('insert:node', this.onInsertNode);
+    };
+
+    PathEditor.prototype._removeNodeEditors = function() {
+      var nodeEditor, _i, _len, _ref;
+      this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
+      this.nodeEditors = [];
+      _ref = this._nodeEditorPool;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        nodeEditor = _ref[_i];
+        nodeEditor.setNode(null);
+      }
+    };
+
+    PathEditor.prototype._createNodeEditors = function(object) {
+      var node, nodes, _i, _len;
+      this._removeNodeEditors();
+      if ((object != null ? object.getNodes : void 0) != null) {
+        nodes = object.getNodes();
+        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
+          node = nodes[_i];
+          this._addNodeEditor(node);
+        }
+      }
+    };
+
+    PathEditor.prototype._addNodeEditor = function(node) {
+      var nodeEditor;
+      if (!node) {
+        return false;
+      }
+      nodeEditor = this._nodeEditorPool.length ? this._nodeEditorPool.pop() : new NodeEditor(this.svgDocument, this);
+      nodeEditor.setNode(node);
+      this.nodeEditors.push(nodeEditor);
+      return true;
+    };
+
+    PathEditor.prototype._findNodeEditorForNode = function(node) {
+      var nodeEditor, _i, _len, _ref;
+      _ref = this.nodeEditors;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        nodeEditor = _ref[_i];
+        if (nodeEditor.node === node) {
+          return nodeEditor;
+        }
+      }
+      return null;
+    };
+
+    return PathEditor;
+
+  })();
+
+}).call(this);
+
+},{"./node-editor":7}],12:[function(require,module,exports){
+(function() {
+  var COMMAND, NUMBER, Node, groupCommands, lexPath, parsePath, parseTokens, _ref;
+
+  Node = require("./node");
+
+  _ref = ['COMMAND', 'NUMBER'], COMMAND = _ref[0], NUMBER = _ref[1];
+
+  parsePath = function(pathString) {
+    var tokens;
+    tokens = lexPath(pathString);
+    return parseTokens(groupCommands(tokens));
+  };
+
+  parseTokens = function(groupedCommands) {
+    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
+    result = {
+      subpaths: []
+    };
+    if (groupedCommands.length === 1 && ((_ref1 = groupedCommands[0].type) === 'M' || _ref1 === 'm')) {
+      return result;
+    }
+    currentPoint = null;
+    currentSubpath = null;
+    addNewSubpath = function(movePoint) {
+      var node;
+      node = new Node(movePoint);
+      currentSubpath = {
+        closed: false,
+        nodes: [node]
+      };
+      result.subpaths.push(currentSubpath);
+      return node;
+    };
+    slicePoint = function(array, index) {
+      return [array[index], array[index + 1]];
+    };
+    makeAbsolute = function(array) {
+      var i, val, _i, _len, _results;
+      _results = [];
+      for (i = _i = 0, _len = array.length; _i < _len; i = ++_i) {
+        val = array[i];
+        _results.push(val + currentPoint[i % 2]);
+      }
+      return _results;
+    };
+    createNode = function(point, commandIndex) {
+      var firstNode, nextCommand, node, _ref2;
+      currentPoint = point;
+      node = null;
+      firstNode = currentSubpath.nodes[0];
+      nextCommand = groupedCommands[commandIndex + 1];
+      if (!(nextCommand && ((_ref2 = nextCommand.type) === 'z' || _ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint))) {
+        node = new Node(currentPoint);
+        currentSubpath.nodes.push(node);
+      }
+      return node;
+    };
+    for (i = _i = 0, _ref2 = groupedCommands.length; 0 <= _ref2 ? _i < _ref2 : _i > _ref2; i = 0 <= _ref2 ? ++_i : --_i) {
+      command = groupedCommands[i];
+      switch (command.type) {
+        case 'M':
+          currentPoint = command.parameters;
+          addNewSubpath(currentPoint);
+          break;
+        case 'L':
+        case 'l':
+          params = command.parameters;
+          if (command.type === 'l') {
+            params = makeAbsolute(params);
+          }
+          createNode(slicePoint(params, 0), i);
+          break;
+        case 'H':
+        case 'h':
+          params = command.parameters;
+          if (command.type === 'h') {
+            params = makeAbsolute(params);
+          }
+          createNode([params[0], currentPoint[1]], i);
+          break;
+        case 'V':
+        case 'v':
+          params = command.parameters;
+          if (command.type === 'v') {
+            params = makeAbsolute([0, params[0]]);
+            params = params.slice(1);
+          }
+          createNode([currentPoint[0], params[0]], i);
+          break;
+        case 'C':
+        case 'c':
+        case 'Q':
+        case 'q':
+          params = command.parameters;
+          if ((_ref3 = command.type) === 'c' || _ref3 === 'q') {
+            params = makeAbsolute(params);
+          }
+          if ((_ref4 = command.type) === 'C' || _ref4 === 'c') {
+            currentPoint = slicePoint(params, 4);
+            handleIn = slicePoint(params, 2);
+            handleOut = slicePoint(params, 0);
+          } else {
+            currentPoint = slicePoint(params, 2);
+            handleIn = handleOut = slicePoint(params, 0);
+          }
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+          lastNode.setAbsoluteHandleOut(handleOut);
+          if (node = createNode(currentPoint, i)) {
+            node.setAbsoluteHandleIn(handleIn);
+          } else {
+            firstNode = currentSubpath.nodes[0];
+            firstNode.setAbsoluteHandleIn(handleIn);
+          }
+          break;
+        case 'S':
+        case 's':
+          params = command.parameters;
+          if (command.type === 's') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = slicePoint(params, 2);
+          handleIn = slicePoint(params, 0);
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+          lastNode.join('handleIn');
+          if (node = createNode(currentPoint, i)) {
+            node.setAbsoluteHandleIn(handleIn);
+          } else {
+            firstNode = currentSubpath.nodes[0];
+            firstNode.setAbsoluteHandleIn(handleIn);
+          }
+          break;
+        case 'T':
+        case 't':
+          params = command.parameters;
+          if (command.type === 't') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = slicePoint(params, 0);
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+          lastNode.join('handleIn');
+          handleIn = lastNode.getAbsoluteHandleOut();
+          if (node = createNode(currentPoint, i)) {
+            node.setAbsoluteHandleIn(handleIn);
+          } else {
+            firstNode = currentSubpath.nodes[0];
+            firstNode.setAbsoluteHandleIn(handleIn);
+          }
+          break;
+        case 'Z':
+        case 'z':
+          currentSubpath.closed = true;
+      }
+    }
+    _ref5 = result.subpaths;
+    for (_j = 0, _len = _ref5.length; _j < _len; _j++) {
+      subpath = _ref5[_j];
+      _ref6 = subpath.nodes;
+      for (_k = 0, _len1 = _ref6.length; _k < _len1; _k++) {
+        node = _ref6[_k];
+        node.computeIsjoined();
+      }
+    }
+    return result;
+  };
+
+  groupCommands = function(pathTokens) {
+    var command, commands, i, nextToken, token, _i, _ref1;
+    commands = [];
+    for (i = _i = 0, _ref1 = pathTokens.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+      token = pathTokens[i];
+      if (token.type !== COMMAND) {
+        continue;
+      }
+      command = {
+        type: token.string,
+        parameters: []
+      };
+      while (nextToken = pathTokens[i + 1]) {
+        if (nextToken.type === NUMBER) {
+          command.parameters.push(parseFloat(nextToken.string));
+          i++;
+        } else {
+          break;
+        }
+      }
+      commands.push(command);
+    }
+    return commands;
+  };
+
+  lexPath = function(pathString) {
+    var ch, currentToken, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens, _i, _len;
+    numberMatch = '-0123456789.';
+    separatorMatch = ' ,\n\t';
+    tokens = [];
+    currentToken = null;
+    saveCurrentTokenWhenDifferentThan = function(command) {
+      if (currentToken && currentToken.type !== command) {
+        return saveCurrentToken();
+      }
+    };
+    saveCurrentToken = function() {
+      if (!currentToken) {
+        return;
+      }
+      if (currentToken.string.join) {
+        currentToken.string = currentToken.string.join('');
+      }
+      tokens.push(currentToken);
+      return currentToken = null;
+    };
+    for (_i = 0, _len = pathString.length; _i < _len; _i++) {
+      ch = pathString[_i];
+      if (numberMatch.indexOf(ch) > -1) {
+        saveCurrentTokenWhenDifferentThan(NUMBER);
+        if (ch === '-') {
+          saveCurrentToken();
+        }
+        if (!currentToken) {
+          currentToken = {
+            type: NUMBER,
+            string: []
+          };
+        }
+        currentToken.string.push(ch);
+      } else if (separatorMatch.indexOf(ch) > -1) {
+        saveCurrentToken();
+      } else {
+        saveCurrentToken();
+        tokens.push({
+          type: COMMAND,
+          string: ch
+        });
+      }
+    }
+    saveCurrentToken();
+    return tokens;
+  };
+
+  module.exports = {
+    lexPath: lexPath,
+    parsePath: parsePath,
+    groupCommands: groupCommands,
+    parseTokens: parseTokens
+  };
+
+}).call(this);
+
+},{"./node":8}],13:[function(require,module,exports){
+(function() {
+  var DefaultAttrs, EventEmitter, IDS, Path, PathModel, PathParser, Point, Subpath, Transform, Utils, flatten,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  EventEmitter = require('events').EventEmitter;
+
+  Utils = require('./utils');
+
+  PathParser = require('./path-parser');
+
+  Transform = require('./transform');
+
+  Subpath = require('./subpath');
+
+  Point = require('./point');
+
+  DefaultAttrs = {
+    fill: '#eee',
+    stroke: 'none'
+  };
+
+  IDS = 0;
+
+  PathModel = (function(_super) {
+    __extends(PathModel, _super);
+
+    function PathModel() {
+      this.onSubpathChange = __bind(this.onSubpathChange, this);
+      this.subpaths = [];
+      this.pathString = '';
+      this.transform = new Transform;
+    }
+
+    /*
+    Section: Public Methods
+    */
+
+
+    PathModel.prototype.getNodes = function() {
+      var nodes, subpath;
+      nodes = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.subpaths;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          subpath = _ref[_i];
+          _results.push(subpath.getNodes());
+        }
+        return _results;
+      }).call(this);
+      return flatten(nodes);
+    };
+
+    PathModel.prototype.getTransform = function() {
+      return this.transform;
+    };
+
+    PathModel.prototype.getTransformString = function() {
+      return this.transform.toString();
+    };
+
+    PathModel.prototype.setTransformString = function(transformString) {
+      if (this.transform.setTransformString(transformString)) {
+        return this._emitChangeEvent();
+      }
+    };
+
+    PathModel.prototype.getPathString = function() {
+      return this.pathString;
+    };
+
+    PathModel.prototype.setPathString = function(pathString) {
+      if (pathString !== this.pathString) {
+        return this._parseFromPathString(pathString);
+      }
+    };
+
+    PathModel.prototype.toString = function() {
+      return this.getPathString();
+    };
+
+    PathModel.prototype.translate = function(point) {
+      var subpath, _i, _len, _ref;
+      point = Point.create(point);
+      _ref = this.subpaths;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        subpath = _ref[_i];
+        subpath.translate(point);
+      }
+    };
+
+    PathModel.prototype.addNode = function(node) {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.addNode(node);
+    };
+
+    PathModel.prototype.insertNode = function(node, index) {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.insertNode(node, index);
+    };
+
+    PathModel.prototype.close = function() {
+      this._addCurrentSubpathIfNotPresent();
+      return this.currentSubpath.close();
+    };
+
+    PathModel.prototype._addCurrentSubpathIfNotPresent = function() {
+      if (!this.currentSubpath) {
+        return this.currentSubpath = this._createSubpath();
+      }
+    };
+
+    /*
+    Section: Event Handlers
+    */
+
+
+    PathModel.prototype.onSubpathChange = function(subpath, eventArgs) {
+      this._updatePathString();
+      return this._emitChangeEvent();
+    };
+
+    /*
+    Section: Private Methods
+    */
+
+
+    PathModel.prototype._createSubpath = function(args) {
+      if (args == null) {
+        args = {};
+      }
+      args.path = this;
+      return this._addSubpath(new Subpath(args));
+    };
+
+    PathModel.prototype._addSubpath = function(subpath) {
+      this.subpaths.push(subpath);
+      this._bindSubpath(subpath);
+      this._updatePathString();
+      return subpath;
+    };
+
+    PathModel.prototype._bindSubpath = function(subpath) {
+      if (!subpath) {
+        return;
+      }
+      subpath.on('change', this.onSubpathChange);
+      return subpath.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
+    };
+
+    PathModel.prototype._unbindSubpath = function(subpath) {
+      if (!subpath) {
+        return;
+      }
+      return subpath.off();
+    };
+
+    PathModel.prototype._removeAllSubpaths = function() {
+      var subpath, _i, _len, _ref;
+      _ref = this.subpaths;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        subpath = _ref[_i];
+        this._unbindSubpath(subpath);
+      }
+      return this.subpaths = [];
+    };
+
+    PathModel.prototype._updatePathString = function() {
+      var oldPathString, subpath;
+      oldPathString = this.pathString;
+      this.pathString = ((function() {
+        var _i, _len, _ref, _results;
+        _ref = this.subpaths;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          subpath = _ref[_i];
+          _results.push(subpath.toPathString());
+        }
+        return _results;
+      }).call(this)).join(' ');
+      if (oldPathString !== this.pathString) {
+        return this._emitChangeEvent();
+      }
+    };
+
+    PathModel.prototype._parseFromPathString = function(pathString) {
+      var parsedPath, parsedSubpath, _i, _len, _ref;
+      if (!pathString) {
+        return;
+      }
+      if (pathString === this.pathString) {
+        return;
+      }
+      this._removeAllSubpaths();
+      parsedPath = PathParser.parsePath(pathString);
+      _ref = parsedPath.subpaths;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        parsedSubpath = _ref[_i];
+        this._createSubpath(parsedSubpath);
+      }
+      this.currentSubpath = _.last(this.subpaths);
+      this._updatePathString();
+      return null;
+    };
+
+    PathModel.prototype._forwardEvent = function(eventName, eventObject, args) {
+      return this.emit(eventName, this, args);
+    };
+
+    PathModel.prototype._emitChangeEvent = function() {
+      return this.emit('change', this);
+    };
+
+    return PathModel;
+
+  })(EventEmitter);
+
+  module.exports = Path = (function(_super) {
+    __extends(Path, _super);
+
+    function Path(svgDocument, _arg) {
+      var svgEl;
+      this.svgDocument = svgDocument;
+      svgEl = (_arg != null ? _arg : {}).svgEl;
+      this.onModelChange = __bind(this.onModelChange, this);
+      this.id = IDS++;
+      this.model = new PathModel;
+      this.model.on('change', this.onModelChange);
+      this.model.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
+      this._setupSVGObject(svgEl);
+    }
+
+    /*
+    Section: Public Methods
+    */
+
+
+    Path.prototype.getType = function() {
+      return 'Path';
+    };
+
+    Path.prototype.toString = function() {
+      return "Path " + this.id + " " + (this.model.toString());
+    };
+
+    Path.prototype.getPathString = function() {
+      return this.model.getPathString();
+    };
+
+    Path.prototype.getNodes = function() {
+      return this.model.getNodes();
+    };
+
+    Path.prototype.getSubpaths = function() {
+      return this.model.subpaths;
+    };
+
+    Path.prototype.addNode = function(node) {
+      return this.model.addNode(node);
+    };
+
+    Path.prototype.insertNode = function(node, index) {
+      return this.model.insertNode(node, index);
+    };
+
+    Path.prototype.close = function() {
+      return this.model.close();
+    };
+
+    Path.prototype.enableDragging = function(callbacks) {
+      var element,
+        _this = this;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      this.disableDragging();
+      element.draggable();
+      element.dragstart = function(event) {
+        return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
+      };
+      element.dragmove = function(event) {
+        _this.updateFromAttributes();
+        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+      };
+      return element.dragend = function(event) {
+        _this.model.setTransformString(null);
+        _this.model.translate([event.x, event.y]);
+        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+      };
+    };
+
+    Path.prototype.disableDragging = function() {
+      var element;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      if (typeof element.fixed === "function") {
+        element.fixed();
+      }
+      element.dragstart = null;
+      element.dragmove = null;
+      return element.dragend = null;
+    };
+
+    Path.prototype.updateFromAttributes = function() {
+      var pathString, transform;
+      pathString = this.svgEl.attr('d');
+      transform = this.svgEl.attr('transform');
+      this.model.setTransformString(transform);
+      return this.model.setPathString(pathString);
+    };
+
+    Path.prototype.render = function(svgEl) {
+      var pathStr;
+      if (svgEl == null) {
+        svgEl = this.svgEl;
+      }
+      pathStr = this.model.getPathString();
+      if (pathStr) {
+        svgEl.attr({
+          d: pathStr
+        });
+      }
+      return svgEl.attr({
+        transform: this.model.getTransformString() || null
+      });
+    };
+
+    Path.prototype.cloneElement = function(svgDocument) {
+      var el;
+      if (svgDocument == null) {
+        svgDocument = this.svgDocument;
+      }
+      el = svgDocument.path();
+      this.render(el);
+      return el;
+    };
+
+    /*
+    Section: Event Handlers
+    */
+
+
+    Path.prototype.onModelChange = function() {
+      this.render();
+      return this.emit('change', this);
+    };
+
+    /*
+    Section: Private Methods
+    */
+
+
+    Path.prototype._forwardEvent = function(eventName, eventObject, args) {
+      args.path = this;
+      return this.emit(eventName, this, args);
+    };
+
+    Path.prototype._setupSVGObject = function(svgEl) {
+      this.svgEl = svgEl;
+      if (!this.svgEl) {
+        this.svgEl = this.svgDocument.path().attr(DefaultAttrs);
+      }
+      Utils.setObjectOnNode(this.svgEl.node, this);
+      return this.model.setPathString(this.svgEl.attr('d'));
+    };
+
+    return Path;
+
+  })(EventEmitter);
+
+  flatten = function(array) {
+    var concat;
+    concat = function(accumulator, item) {
+      if (Array.isArray(item)) {
+        return accumulator.concat(flatten(item));
+      } else {
+        return accumulator.concat(item);
+      }
+    };
+    return array.reduce(concat, []);
+  };
+
+}).call(this);
+
+},{"./path-parser":12,"./point":15,"./subpath":21,"./transform":23,"./utils":24,"events":25}],14:[function(require,module,exports){
+(function() {
+  var Node, Path, PenTool,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  Node = require('./node');
+
+  Path = require('./path');
+
+  module.exports = PenTool = (function() {
+    PenTool.prototype.currentObject = null;
+
+    PenTool.prototype.currentNode = null;
+
+    function PenTool(svgDocument, _arg) {
+      var _ref;
+      this.svgDocument = svgDocument;
+      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
+      this.onMouseUp = __bind(this.onMouseUp, this);
+      this.onMouseMove = __bind(this.onMouseMove, this);
+      this.onMouseDown = __bind(this.onMouseDown, this);
+    }
+
+    PenTool.prototype.activate = function() {
+      this.svgDocument.on('mousedown', this.onMouseDown);
+      this.svgDocument.on('mousemove', this.onMouseMove);
+      return this.svgDocument.on('mouseup', this.onMouseUp);
+    };
+
+    PenTool.prototype.deactivate = function() {
+      this.svgDocument.off('mousedown', this.onMouseDown);
+      this.svgDocument.off('mousemove', this.onMouseMove);
+      return this.svgDocument.off('mouseup', this.onMouseUp);
+    };
+
+    PenTool.prototype.onMouseDown = function(e) {
+      var makeNode,
+        _this = this;
+      makeNode = function() {
+        _this.currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0]);
+        _this.currentObject.addNode(_this.currentNode);
+        return _this.selectionModel.setSelectedNode(_this.currentNode);
+      };
+      if (this.currentObject) {
+        if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement.node) {
+          this.currentObject.close();
+          return this.currentObject = null;
+        } else {
+          return makeNode();
+        }
+      } else {
+        this.currentObject = new Path(this.svgDocument);
+        this.selectionModel.setSelected(this.currentObject);
+        return makeNode();
+      }
+    };
+
+    PenTool.prototype.onMouseMove = function(e) {
+      if (this.currentNode) {
+        return this.currentNode.setAbsoluteHandleOut([e.clientX, e.clientY]);
+      }
+    };
+
+    PenTool.prototype.onMouseUp = function(e) {
+      return this.currentNode = null;
+    };
+
+    return PenTool;
+
+  })();
+
+}).call(this);
+
+},{"./node":8,"./path":13}],15:[function(require,module,exports){
+(function() {
+  var Point;
+
+  module.exports = Point = (function() {
+    Point.create = function(x, y) {
+      if (x instanceof Point) {
+        return x;
+      }
+      if (Array.isArray(x)) {
+        return new Point(x[0], x[1]);
+      } else {
+        return new Point(x, y);
+      }
+    };
+
+    function Point(x, y) {
+      this.set(x, y);
+    }
+
+    Point.prototype.set = function(x, y) {
+      var _ref;
+      this.x = x;
+      this.y = y;
+      if (Array.isArray(this.x)) {
+        return _ref = this.x, this.x = _ref[0], this.y = _ref[1], _ref;
+      }
+    };
+
+    Point.prototype.add = function(other) {
+      other = Point.create(other);
+      return new Point(this.x + other.x, this.y + other.y);
+    };
+
+    Point.prototype.subtract = function(other) {
+      other = Point.create(other);
+      return new Point(this.x - other.x, this.y - other.y);
+    };
+
+    Point.prototype.toArray = function() {
+      return [this.x, this.y];
+    };
+
+    Point.prototype.equals = function(other) {
+      other = Point.create(other);
+      return other.x === this.x && other.y === this.y;
+    };
+
+    Point.prototype.toString = function() {
+      return "(" + this.x + ", " + this.y + ")";
+    };
+
+    return Point;
+
+  })();
+
+}).call(this);
+
+},{}],16:[function(require,module,exports){
+(function() {
+  var ObjectEditor, PointerTool, Utils,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  ObjectEditor = require('./object-editor');
+
+  Utils = require('./Utils');
+
+  module.exports = PointerTool = (function() {
+    function PointerTool(svgDocument, _arg) {
+      var _ref;
+      this.svgDocument = svgDocument;
+      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView, this.toolLayer = _ref.toolLayer;
+      this.onMouseMove = __bind(this.onMouseMove, this);
+      this.onClick = __bind(this.onClick, this);
+      this.onChangedSelectedObject = __bind(this.onChangedSelectedObject, this);
+      this._evrect = this.svgDocument.node.createSVGRect();
+      this._evrect.width = this._evrect.height = 1;
+      this.objectEditor = new ObjectEditor(this.toolLayer, this.selectionModel);
+    }
+
+    PointerTool.prototype.activate = function() {
+      var objectSelection;
+      this.objectEditor.activate();
+      this.svgDocument.on('click', this.onClick);
+      this.svgDocument.on('mousemove', this.onMouseMove);
+      objectSelection = this.selectionView.getObjectSelection();
+      return objectSelection.on('change:object', this.onChangedSelectedObject);
+    };
+
+    PointerTool.prototype.deactivate = function() {
+      var objectSelection;
+      this.objectEditor.deactivate();
+      this.svgDocument.off('click', this.onClick);
+      this.svgDocument.off('mousemove', this.onMouseMove);
+      objectSelection = this.selectionView.getObjectSelection();
+      return objectSelection.off('change:object', this.onChangedSelectedObject);
+    };
+
+    PointerTool.prototype.onChangedSelectedObject = function(_arg) {
+      var object, old;
+      object = _arg.object, old = _arg.old;
+      if (object != null) {
+        return object.enableDragging();
+      } else if (old != null) {
+        return old.disableDragging();
+      }
+    };
+
+    PointerTool.prototype.onClick = function(e) {
+      var obj;
+      obj = this._hitWithTarget(e);
+      this.selectionModel.setSelected(obj);
+      if (obj) {
+        return false;
+      }
+    };
+
+    PointerTool.prototype.onMouseMove = function(e) {
+      return this.selectionModel.setPreselected(this._hitWithTarget(e));
+    };
+
+    PointerTool.prototype._hitWithTarget = function(e) {
+      var obj;
+      obj = null;
+      if (e.target !== this.svgDocument.node) {
+        obj = Utils.getObjectFromNode(e.target);
+      }
+      return obj;
+    };
+
+    PointerTool.prototype._hitWithIntersectionList = function(e) {
+      var className, i, left, nodes, obj, top, _i, _ref;
+      top = this.svgDocument.node.offsetTop;
+      left = this.svgDocument.node.offsetLeft;
+      this._evrect.x = e.clientX - left;
+      this._evrect.y = e.clientY - top;
+      nodes = this.svgDocument.node.getIntersectionList(this._evrect, null);
+      obj = null;
+      if (nodes.length) {
+        for (i = _i = _ref = nodes.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+          className = nodes[i].getAttribute('class');
+          if (className && className.indexOf('invisible-to-hit-test') > -1) {
+            continue;
+          }
+          obj = Utils.getObjectFromNode(nodes[i]);
+          break;
+        }
+      }
+      console.log(obj);
+      return obj;
+    };
+
+    return PointerTool;
+
+  })();
+
+}).call(this);
+
+},{"./Utils":1,"./object-editor":9}],17:[function(require,module,exports){
+(function() {
+  var DefaultAttrs, EventEmitter, IDS, Point, Rectangle, RectangleModel, Size, Transform, Utils,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  EventEmitter = require('events').EventEmitter;
+
+  Transform = require('./transform');
+
+  Utils = require('./utils');
+
+  Point = require('./point');
+
+  Size = require('./size');
+
+  DefaultAttrs = {
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    fill: '#eee',
+    stroke: 'none'
+  };
+
+  IDS = 0;
+
+  RectangleModel = (function(_super) {
+    __extends(RectangleModel, _super);
+
+    RectangleModel.prototype.position = null;
+
+    RectangleModel.prototype.size = null;
+
+    RectangleModel.prototype.transform = null;
+
+    function RectangleModel() {
+      this.id = IDS++;
+      this.transform = new Transform;
+    }
+
+    /*
+    Section: Public Methods
+    */
+
+
+    RectangleModel.prototype.getTransform = function() {
+      return this.transform;
+    };
+
+    RectangleModel.prototype.getTransformString = function() {
+      return this.transform.toString();
+    };
+
+    RectangleModel.prototype.setTransformString = function(transformString) {
+      if (this.transform.setTransformString(transformString)) {
+        return this._emitChangeEvent();
+      }
+    };
+
+    RectangleModel.prototype.getPosition = function() {
+      return this.position;
+    };
+
+    RectangleModel.prototype.setPosition = function(x, y) {
+      this.position = Point.create(x, y);
+      return this._emitChangeEvent();
+    };
+
+    RectangleModel.prototype.getSize = function() {
+      return this.size;
+    };
+
+    RectangleModel.prototype.setSize = function(width, height) {
+      this.size = Size.create(width, height);
+      return this._emitChangeEvent();
+    };
+
+    RectangleModel.prototype.toString = function() {
+      return "{Rect " + this.id + ": " + this.position + " " + this.size;
+    };
+
+    RectangleModel.prototype.translate = function(point) {
+      point = Point.create(point);
+      this.setPosition(this.position.add(point));
+      return this._emitChangeEvent();
+    };
+
+    /*
+    Section: Private Methods
+    */
+
+
+    RectangleModel.prototype._emitChangeEvent = function() {
+      return this.emit('change', this);
+    };
+
+    return RectangleModel;
+
+  })(EventEmitter);
+
+  module.exports = Rectangle = (function(_super) {
+    __extends(Rectangle, _super);
+
+    function Rectangle(svgDocument, _arg) {
+      var svgEl;
+      this.svgDocument = svgDocument;
+      svgEl = (_arg != null ? _arg : {}).svgEl;
+      this.onModelChange = __bind(this.onModelChange, this);
+      this.model = new RectangleModel;
+      this._setupSVGObject(svgEl);
+      this.model.on('change', this.onModelChange);
+    }
+
+    /*
+    Section: Public Methods
+    */
+
+
+    Rectangle.prototype.getType = function() {
+      return 'Rectangle';
+    };
+
+    Rectangle.prototype.toString = function() {
+      return this.model.toString();
+    };
+
+    Rectangle.prototype.enableDragging = function(callbacks) {
+      var element,
+        _this = this;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      this.disableDragging();
+      element.draggable();
+      element.dragstart = function(event) {
+        return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
+      };
+      element.dragmove = function(event) {
+        _this.updateFromAttributes();
+        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+      };
+      return element.dragend = function(event) {
+        _this.model.setTransformString(null);
+        _this.model.translate([event.x, event.y]);
+        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+      };
+    };
+
+    Rectangle.prototype.disableDragging = function() {
+      var element;
+      element = this.svgEl;
+      if (element == null) {
+        return;
+      }
+      if (typeof element.fixed === "function") {
+        element.fixed();
+      }
+      element.dragstart = null;
+      element.dragmove = null;
+      return element.dragend = null;
+    };
+
+    Rectangle.prototype.updateFromAttributes = function() {
+      var height, transform, width, x, y;
+      x = this.svgEl.attr('x');
+      y = this.svgEl.attr('y');
+      width = this.svgEl.attr('width');
+      height = this.svgEl.attr('height');
+      transform = this.svgEl.attr('transform');
+      this.model.setPosition(x, y);
+      this.model.setSize(width, height);
+      return this.model.setTransformString(transform);
+    };
+
+    Rectangle.prototype.render = function(svgEl) {
+      var position, size;
+      if (svgEl == null) {
+        svgEl = this.svgEl;
+      }
+      position = this.model.getPosition();
+      size = this.model.getSize();
+      svgEl.attr({
+        x: position.x
+      });
+      svgEl.attr({
+        y: position.y
+      });
+      svgEl.attr({
+        width: size.width
+      });
+      svgEl.attr({
+        height: size.height
+      });
+      return svgEl.attr({
+        transform: this.model.getTransformString() || null
+      });
+    };
+
+    Rectangle.prototype.cloneElement = function(svgDocument) {
+      var el;
+      if (svgDocument == null) {
+        svgDocument = this.svgDocument;
+      }
+      el = svgDocument.rect();
+      this.render(el);
+      return el;
+    };
+
+    /*
+    Section: Event Handlers
+    */
+
+
+    Rectangle.prototype.onModelChange = function() {
+      this.render();
+      return this.emit('change', this);
+    };
+
+    /*
+    Section: Private Methods
+    */
+
+
+    Rectangle.prototype._setupSVGObject = function(svgEl) {
+      this.svgEl = svgEl;
+      if (!this.svgEl) {
+        this.svgEl = this.svgDocument.rect().attr(DefaultAttrs);
+      }
+      Utils.setObjectOnNode(this.svgEl.node, this);
+      return this.updateFromAttributes();
+    };
+
+    return Rectangle;
+
+  })(EventEmitter);
+
+}).call(this);
+
+},{"./point":15,"./size":20,"./transform":23,"./utils":24,"events":25}],18:[function(require,module,exports){
+(function() {
+  var EventEmitter, SelectionModel,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  EventEmitter = require('events').EventEmitter;
+
+  module.exports = SelectionModel = (function(_super) {
+    __extends(SelectionModel, _super);
+
+    function SelectionModel() {
+      this.preselected = null;
+      this.selected = null;
+      this.selectedNode = null;
+    }
+
+    SelectionModel.prototype.setPreselected = function(preselected) {
+      var old;
+      if (preselected === this.preselected) {
+        return;
+      }
+      if (preselected && preselected === this.selected) {
+        return;
+      }
+      old = this.preselected;
+      this.preselected = preselected;
+      return this.emit('change:preselected', {
+        object: this.preselected,
+        old: old
+      });
+    };
+
+    SelectionModel.prototype.setSelected = function(selected) {
+      var old;
+      if (selected === this.selected) {
+        return;
+      }
+      old = this.selected;
+      this.selected = selected;
+      if (this.preselected === selected) {
+        this.setPreselected(null);
+      }
+      return this.emit('change:selected', {
+        object: this.selected,
+        old: old
+      });
+    };
+
+    SelectionModel.prototype.setSelectedNode = function(selectedNode) {
+      var old;
+      if (selectedNode === this.selectedNode) {
+        return;
+      }
+      old = this.selectedNode;
+      this.selectedNode = selectedNode;
+      return this.emit('change:selectedNode', {
+        node: this.selectedNode,
+        old: old
+      });
+    };
+
+    SelectionModel.prototype.clearSelected = function() {
+      return this.setSelected(null);
+    };
+
+    SelectionModel.prototype.clearPreselected = function() {
+      return this.setPreselected(null);
+    };
+
+    SelectionModel.prototype.clearSelectedNode = function() {
+      return this.setSelectedNode(null);
+    };
+
+    return SelectionModel;
+
+  })(EventEmitter);
+
+}).call(this);
+
+},{"events":25}],19:[function(require,module,exports){
+(function() {
+  var ObjectSelection, SelectionView,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  ObjectSelection = require("./object-selection");
+
+  module.exports = SelectionView = (function() {
+    function SelectionView(svgDocument, model) {
+      this.svgDocument = svgDocument;
+      this.model = model;
+      this.onChangePreselected = __bind(this.onChangePreselected, this);
+      this.onChangeSelected = __bind(this.onChangeSelected, this);
+      this.objectSelection = new ObjectSelection(this.svgDocument);
+      this.objectPreselection = new ObjectSelection(this.svgDocument, {
+        "class": 'object-preselection'
+      });
+      this.model.on('change:selected', this.onChangeSelected);
+      this.model.on('change:preselected', this.onChangePreselected);
+    }
+
+    SelectionView.prototype.getObjectSelection = function() {
+      return this.objectSelection;
+    };
+
+    SelectionView.prototype.onChangeSelected = function(_arg) {
+      var object, old;
+      object = _arg.object, old = _arg.old;
+      return this.objectSelection.setObject(object);
+    };
+
+    SelectionView.prototype.onChangePreselected = function(_arg) {
+      var object;
+      object = _arg.object;
+      return this.objectPreselection.setObject(object);
+    };
+
+    return SelectionView;
+
+  })();
+
+}).call(this);
+
+},{"./object-selection":10}],20:[function(require,module,exports){
+(function() {
+  var Size;
+
+  module.exports = Size = (function() {
+    Size.create = function(width, height) {
+      if (width instanceof Size) {
+        return width;
+      }
+      if (Array.isArray(width)) {
+        return new Size(width[0], width[1]);
+      } else {
+        return new Size(width, height);
+      }
+    };
+
+    function Size(width, height) {
+      this.set(width, height);
+    }
+
+    Size.prototype.set = function(width, height) {
+      var _ref;
+      this.width = width;
+      this.height = height;
+      if (Array.isArray(this.width)) {
+        return _ref = this.width, this.width = _ref[0], this.height = _ref[1], _ref;
+      }
+    };
+
+    Size.prototype.toArray = function() {
+      return [this.width, this.height];
+    };
+
+    Size.prototype.equals = function(other) {
+      other = Size.create(other);
+      return other.width === this.width && other.height === this.height;
+    };
+
+    Size.prototype.toString = function() {
+      return "(" + this.width + ", " + this.height + ")";
+    };
+
+    return Size;
+
+  })();
+
+}).call(this);
+
+},{}],21:[function(require,module,exports){
+(function() {
+  var EventEmitter, Point, Subpath,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  EventEmitter = require('events').EventEmitter;
+
+  Point = require('./point');
+
+  module.exports = Subpath = (function(_super) {
+    __extends(Subpath, _super);
+
+    function Subpath(_arg) {
+      var nodes, _ref;
+      _ref = _arg != null ? _arg : {}, this.path = _ref.path, this.closed = _ref.closed, nodes = _ref.nodes;
+      this.onNodeChange = __bind(this.onNodeChange, this);
+      this.nodes = [];
+      this.setNodes(nodes);
+      this.closed = !!this.closed;
+    }
+
+    Subpath.prototype.toString = function() {
+      return "Subpath " + (this.toPathString());
+    };
+
+    Subpath.prototype.toPathString = function() {
+      var closePath, lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref;
+      path = '';
+      lastPoint = null;
+      makeCurve = function(fromNode, toNode) {
+        var curve;
+        curve = '';
+        if (fromNode.handleOut || toNode.handleIn) {
+          curve = [];
+          curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
+          curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
+          curve = curve.concat(toNode.point.toArray());
+          curve = "C" + (curve.join(','));
+        } else if (fromNode.point.x === toNode.point.x) {
+          curve = "V" + toNode.point.y;
+        } else if (fromNode.point.y === toNode.point.y) {
+          curve = "H" + toNode.point.x;
+        } else {
+          curve = "L" + (toNode.point.toArray().join(','));
+        }
+        return curve;
+      };
+      closePath = function(firstNode, lastNode) {
+        var closingPath;
+        if (!(firstNode && lastNode)) {
+          return '';
+        }
+        closingPath = '';
+        if (lastNode.handleOut || firstNode.handleIn) {
+          closingPath += makeCurve(lastNode, firstNode);
+        }
+        return closingPath += 'Z';
+      };
+      _ref = this.nodes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        node = _ref[_i];
+        if (path) {
+          path += makeCurve(lastNode, node);
+        } else {
+          path += 'M' + node.point.toArray().join(',');
+        }
+        lastNode = node;
+      }
+      if (this.closed) {
+        path += closePath(this.nodes[0], this.nodes[this.nodes.length - 1]);
+      }
+      return path;
+    };
+
+    Subpath.prototype.getNodes = function() {
+      return this.nodes;
+    };
+
+    Subpath.prototype.setNodes = function(nodes) {
+      var node, _i, _j, _len, _len1, _ref;
+      if (!(nodes && Array.isArray(nodes))) {
+        return;
+      }
+      _ref = this.nodes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        node = _ref[_i];
+        this._unbindNode(node);
+      }
+      for (_j = 0, _len1 = nodes.length; _j < _len1; _j++) {
+        node = nodes[_j];
+        this._bindNode(node);
+      }
+      this.nodes = nodes;
+      return this.emit('change', this);
+    };
+
+    Subpath.prototype.addNode = function(node) {
+      return this.insertNode(node, this.nodes.length);
+    };
+
+    Subpath.prototype.insertNode = function(node, index) {
+      this._bindNode(node);
+      this.nodes.splice(index, 0, node);
+      this.emit('insert:node', this, {
+        subpath: this,
+        index: index,
+        node: node
+      });
+      return this.emit('change', this);
+    };
+
+    Subpath.prototype.close = function() {
+      this.closed = true;
+      return this.emit('change', this);
+    };
+
+    Subpath.prototype.translate = function(point) {
+      var node, _i, _len, _ref;
+      point = Point.create(point);
+      _ref = this.nodes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        node = _ref[_i];
+        node.translate(point);
+      }
+    };
+
+    Subpath.prototype.onNodeChange = function() {
+      return this.emit('change', this);
+    };
+
+    Subpath.prototype._bindNode = function(node) {
+      node.setPath(this.path);
+      return node.on('change', this.onNodeChange);
+    };
+
+    Subpath.prototype._unbindNode = function(node) {
+      node.setPath(null);
+      return node.off('change', this.onNodeChange);
+    };
+
+    Subpath.prototype._findNodeIndex = function(node) {
+      var i, _i, _ref;
+      for (i = _i = 0, _ref = this.nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        if (this.nodes[i] === node) {
+          return i;
+        }
+      }
+      return -1;
+    };
+
+    return Subpath;
+
+  })(EventEmitter);
+
+}).call(this);
+
+},{"./point":15,"events":25}],22:[function(require,module,exports){
+(function() {
+  var DeserializeSVG, PointerTool, SVG, SVGDocument, SelectionModel, SelectionView;
+
+  SVG = require('../vendor/svg');
+
+  SelectionModel = require("./selection-model");
+
+  SelectionView = require("./selection-view");
+
+  PointerTool = require("./pointer-tool");
+
+  DeserializeSVG = require("./deserialize-svg");
+
+  module.exports = SVGDocument = (function() {
+    function SVGDocument(rootNode) {
+      this.objects = [];
+      this.svgDocument = SVG(rootNode);
+      this.toolLayer = this.svgDocument.group();
+      this.toolLayer.node.setAttribute('class', 'tool-layer');
+      this.selectionModel = new SelectionModel();
+      this.selectionView = new SelectionView(this.toolLayer, this.selectionModel);
+      this.tool = new PointerTool(this.svgDocument, {
+        selectionModel: this.selectionModel,
+        selectionView: this.selectionView,
+        toolLayer: this.toolLayer
+      });
+      this.tool.activate();
+    }
+
+    SVGDocument.prototype.deserialize = function(svgString) {
+      this.objects = DeserializeSVG(this.svgDocument, svgString);
+      return this.toolLayer.front();
+    };
+
+    SVGDocument.prototype.serialize = function() {
+      var svgRoot;
+      svgRoot = this.getSvgRoot();
+      if (svgRoot) {
+        return svgRoot["export"]({
+          whitespace: true
+        });
+      } else {
+        return '';
+      }
+    };
+
+    SVGDocument.prototype.getSvgRoot = function() {
+      var svgRoot;
+      svgRoot = null;
+      this.svgDocument.each(function() {
+        if (this.node.nodeName === 'svg') {
+          return svgRoot = this;
+        }
+      });
+      return svgRoot;
+    };
+
+    return SVGDocument;
+
+  })();
+
+}).call(this);
+
+},{"../vendor/svg":26,"./deserialize-svg":3,"./pointer-tool":16,"./selection-model":18,"./selection-view":19}],23:[function(require,module,exports){
+(function() {
+  var Point, Transform, TranslateRegex;
+
+  Point = require("./point");
+
+  TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/;
+
+  module.exports = Transform = (function() {
+    function Transform() {
+      this.translation = null;
+      this.transformString = '';
+    }
+
+    Transform.prototype.setTransformString = function(transformString) {
+      var translation, x, y;
+      if (transformString == null) {
+        transformString = '';
+      }
+      if (this.transformString === transformString) {
+        return false;
+      } else {
+        this.transformString = transformString;
+        translation = TranslateRegex.exec(transformString);
+        if (translation != null) {
+          x = parseInt(translation[1]);
+          y = parseInt(translation[2]);
+          this.translation = new Point(x, y);
+        } else {
+          this.translation = null;
+        }
+        return true;
+      }
+    };
+
+    Transform.prototype.toString = function() {
+      return this.transformString;
+    };
+
+    Transform.prototype.transformPoint = function(point) {
+      point = Point.create(point);
+      if (this.translation) {
+        point = point.add(this.translation);
+      }
+      return point;
+    };
+
+    return Transform;
+
+  })();
+
+}).call(this);
+
+},{"./point":15}],24:[function(require,module,exports){
+arguments[4][1][0].apply(exports,arguments)
+},{"./point":15,"dup":1}],25:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -301,2755 +3049,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],2:[function(require,module,exports){
-(function (global){
-var Point, Utils, getObjectMap;
-
-Point = require("./point.coffee");
-
-getObjectMap = function() {
-  var g;
-  g = typeof global !== "undefined" && global !== null ? global : window;
-  if (g.NodeObjectMap == null) {
-    g.NodeObjectMap = {};
-  }
-  return g.NodeObjectMap;
-};
-
-Utils = {
-  getObjectFromNode: function(domNode) {
-    return getObjectMap()[domNode.id];
-  },
-  setObjectOnNode: function(domNode, object) {
-    return getObjectMap()[domNode.id] = object;
-  },
-  pointForEvent: function(svgDocument, event) {
-    var clientX, clientY, left, top;
-    clientX = event.clientX, clientY = event.clientY;
-    top = this.svgDocument.node.offsetTop;
-    left = this.svgDocument.node.offsetLeft;
-    return new Point(event.clientX - left, event.clientY - top);
-  }
-};
-
-module.exports = Utils;
-
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./point.coffee":16}],3:[function(require,module,exports){
-require('./ext/svg.circle.coffee');
-
-require('./ext/svg.draggable.coffee');
-
-require('./ext/svg.export.coffee');
-
-module.exports = {
-  Point: require("./point.coffee"),
-  Size: require("./size.coffee"),
-  Transform: require("./transform.coffee"),
-  Utils: require("./utils.coffee"),
-  Node: require("./node.coffee"),
-  Path: require("./path.coffee"),
-  Subpath: require("./subpath.coffee"),
-  Rectangle: require("./rectangle.coffee"),
-  NodeEditor: require("./node-editor.coffee"),
-  ObjectEditor: require("./object-editor.coffee"),
-  ObjectSelection: require("./object-selection.coffee"),
-  PathEditor: require("./path-editor.coffee"),
-  PathParser: require("./path-parser.coffee"),
-  SelectionModel: require("./selection-model.coffee"),
-  SelectionView: require("./selection-view.coffee"),
-  PenTool: require("./pen-tool.coffee"),
-  PointerTool: require("./pointer-tool.coffee"),
-  SVGDocument: require("./svg-document.coffee")
-};
-
-
-},{"./ext/svg.circle.coffee":5,"./ext/svg.draggable.coffee":6,"./ext/svg.export.coffee":7,"./node-editor.coffee":8,"./node.coffee":9,"./object-editor.coffee":10,"./object-selection.coffee":11,"./path-editor.coffee":12,"./path-parser.coffee":13,"./path.coffee":14,"./pen-tool.coffee":15,"./point.coffee":16,"./pointer-tool.coffee":17,"./rectangle.coffee":18,"./selection-model.coffee":19,"./selection-view.coffee":20,"./size.coffee":21,"./subpath.coffee":22,"./svg-document.coffee":23,"./transform.coffee":24,"./utils.coffee":25}],4:[function(require,module,exports){
-var Path, Rectangle, convertNodes, objectifyAttributes, objectifyTransformations;
-
-Path = require("./path.coffee");
-
-Rectangle = require("./rectangle.coffee");
-
-module.exports = function(svgDocument, svgString) {
-  var IMPORT_FNS, objects, parentNode, store;
-  IMPORT_FNS = {
-    path: function(el) {
-      return [
-        new Path(svgDocument, {
-          svgEl: el
-        })
-      ];
-    },
-    rect: function(el) {
-      return [
-        new Rectangle(svgDocument, {
-          svgEl: el
-        })
-      ];
-    }
-  };
-  parentNode = document.createElement('div');
-  store = {};
-  parentNode.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
-  objects = [];
-  convertNodes(parentNode.childNodes, svgDocument, 0, store, function() {
-    var nodeType;
-    nodeType = this.node.nodeName;
-    if (IMPORT_FNS[nodeType]) {
-      objects = objects.concat(IMPORT_FNS[nodeType](this));
-    }
-    return null;
-  });
-  parentNode = null;
-  window.objs = objects;
-  console.log(window.objs);
-  return objects;
-};
-
-convertNodes = function(nodes, context, level, store, block) {
-  var attr, child, clips, element, grandchild, i, j, k, l, ref, ref1, ref2, transform, type;
-  for (i = k = 0, ref = nodes.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
-    child = nodes[i];
-    attr = {};
-    clips = [];
-    type = child.nodeName.toLowerCase();
-    attr = objectifyAttributes(child);
-    switch (type) {
-      case 'path':
-        element = context[type]();
-        break;
-      case 'polygon':
-        element = context[type]();
-        break;
-      case 'polyline':
-        element = context[type]();
-        break;
-      case 'rect':
-        element = context[type](0, 0);
-        break;
-      case 'circle':
-        element = context[type](0, 0);
-        break;
-      case 'ellipse':
-        element = context[type](0, 0);
-        break;
-      case 'line':
-        element = context.line(0, 0, 0, 0);
-        break;
-      case 'text':
-        if (child.childNodes.length === 0) {
-          element = context[type](child.textContent);
-        } else {
-          element = null;
-          for (j = l = 0, ref1 = child.childNodes.length; 0 <= ref1 ? l < ref1 : l > ref1; j = 0 <= ref1 ? ++l : --l) {
-            grandchild = child.childNodes[j];
-            if (grandchild.nodeName.toLowerCase() === 'tspan') {
-              if (element === null) {
-                element = context[type](grandchild.textContent);
-              } else {
-                element.tspan(grandchild.textContent).attr(objectifyAttributes(grandchild));
-              }
-            }
-          }
-        }
-        break;
-      case 'image':
-        element = context.image(attr['xlink:href']);
-        break;
-      case 'g':
-      case 'svg':
-        element = context[type === 'g' ? 'group' : 'nested']();
-        convertNodes(child.childNodes, element, level + 1, store, block);
-        break;
-      case 'defs':
-        convertNodes(child.childNodes, context.defs(), level + 1, store, block);
-        break;
-      case 'use':
-        element = context.use();
-        break;
-      case 'clippath':
-      case 'mask':
-        element = context[(ref2 = type === 'mask') != null ? ref2 : {
-          'mask': 'clip'
-        }]();
-        convertNodes(child.childNodes, element, level + 1, store, block);
-        break;
-      case 'lineargradient':
-      case 'radialgradient':
-        element = context.defs().gradient(type.split('gradient')[0], function(stop) {
-          var m, ref3, results;
-          results = [];
-          for (j = m = 0, ref3 = child.childNodes.length; 0 <= ref3 ? m < ref3 : m > ref3; j = 0 <= ref3 ? ++m : --m) {
-            results.push(stop.at(objectifyAttributes(child.childNodes[j])).style(child.childNodes[j].getAttribute('style')));
-          }
-          return results;
-        });
-        break;
-      case '#comment':
-      case '#text':
-      case 'metadata':
-      case 'desc':
-        break;
-      default:
-        console.log('SVG Import got unexpected type ' + type, child);
-    }
-    if (element) {
-      transform = objectifyTransformations(attr.transform);
-      delete attr.transform;
-      element.attr(attr).transform(transform);
-      if (element.attr('id')) {
-        store[element.attr('id')] = element;
-      }
-      if (type === 'text') {
-        element.rebuild();
-      }
-      if (typeof block === 'function') {
-        block.call(element);
-      }
-    }
-  }
-  return context;
-};
-
-objectifyAttributes = function(child) {
-  var attr, attrs, i, k, ref;
-  attrs = child.attributes || [];
-  attr = {};
-  if (attrs.length) {
-    for (i = k = ref = attrs.length - 1; ref <= 0 ? k <= 0 : k >= 0; i = ref <= 0 ? ++k : --k) {
-      attr[attrs[i].nodeName] = attrs[i].nodeValue;
-    }
-  }
-  return attr;
-};
-
-objectifyTransformations = function(transform) {
-  var def, i, k, list, ref, t, trans, v;
-  trans = {};
-  list = (transform || '').match(/[A-Za-z]+\([^\)]+\)/g) || [];
-  def = SVG.defaults.trans();
-  if (list.length) {
-    for (i = k = ref = list.length - 1; ref <= 0 ? k <= 0 : k >= 0; i = ref <= 0 ? ++k : --k) {
-      t = list[i].match(/([A-Za-z]+)\(([^\)]+)\)/);
-      v = (t[2] || '').replace(/^\s+/, '').replace(/,/g, ' ').replace(/\s+/g, ' ').split(' ');
-      switch (t[1]) {
-        case 'matrix':
-          trans.a = parseFloat(v[0]) || def.a;
-          trans.b = parseFloat(v[1]) || def.b;
-          trans.c = parseFloat(v[2]) || def.c;
-          trans.d = parseFloat(v[3]) || def.d;
-          trans.e = parseFloat(v[4]) || def.e;
-          trans.f = parseFloat(v[5]) || def.f;
-          break;
-        case 'rotate':
-          trans.rotation = parseFloat(v[0]) || def.rotation;
-          trans.cx = parseFloat(v[1]) || def.cx;
-          trans.cy = parseFloat(v[2]) || def.cy;
-          break;
-        case 'scale':
-          trans.scaleX = parseFloat(v[0]) || def.scaleX;
-          trans.scaleY = parseFloat(v[1]) || def.scaleY;
-          break;
-        case 'skewX':
-          trans.skewX = parseFloat(v[0]) || def.skewX;
-          break;
-        case 'skewY':
-          trans.skewY = parseFloat(v[0]) || def.skewY;
-          break;
-        case 'translate':
-          trans.x = parseFloat(v[0]) || def.x;
-          trans.y = parseFloat(v[1]) || def.y;
-      }
-    }
-  }
-  return trans;
-};
-
-
-},{"./path.coffee":14,"./rectangle.coffee":18}],5:[function(require,module,exports){
-var SVG,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-SVG = require('../../vendor/svg.js');
-
-SVG.Circle = (function(superClass) {
-  extend(Circle, superClass);
-
-  function Circle() {
-    Circle.__super__.constructor.call(this, SVG.create('circle'));
-  }
-
-  Circle.prototype.cx = function(x) {
-    if (x === null) {
-      return this.attr('cx');
-    } else {
-      return this.attr('cx', new SVG.Number(x).divide(this.trans.scaleX));
-    }
-  };
-
-  Circle.prototype.cy = function(y) {
-    if (y === null) {
-      return this.attr('cy');
-    } else {
-      return this.attr('cy', new SVG.Number(y).divide(this.trans.scaleY));
-    }
-  };
-
-  Circle.prototype.radius = function(rad) {
-    return this.attr({
-      r: new SVG.Number(rad)
-    });
-  };
-
-  return Circle;
-
-})(SVG.Shape);
-
-SVG.extend(SVG.Container, {
-  circle: function(radius) {
-    return this.put(new SVG.Circle).radius(radius).move(0, 0);
-  }
-});
-
-
-},{"../../vendor/svg.js":26}],6:[function(require,module,exports){
-var SVG, TranslateRegex, attachDragEvents, detachDragEvents, onDrag, onEnd, onStart;
-
-SVG = require('../../vendor/svg');
-
-TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/;
-
-SVG.extend(SVG.Element, {
-  draggable: function() {
-    var dragHandler, element, endHandler, startHandler;
-    element = this;
-    if (typeof this.fixed === "function") {
-      this.fixed();
-    }
-    startHandler = function(event) {
-      onStart(element, event);
-      return attachDragEvents(dragHandler, endHandler);
-    };
-    dragHandler = function(event) {
-      return onDrag(element, event);
-    };
-    endHandler = function(event) {
-      onEnd(element, event);
-      return detachDragEvents(dragHandler, endHandler);
-    };
-    element.on('mousedown', startHandler);
-    element.fixed = function() {
-      element.off('mousedown', startHandler);
-      detachDragEvents();
-      startHandler = dragHandler = endHandler = null;
-      return element;
-    };
-    return this;
-  }
-});
-
-attachDragEvents = function(dragHandler, endHandler) {
-  SVG.on(window, 'mousemove', dragHandler);
-  return SVG.on(window, 'mouseup', endHandler);
-};
-
-detachDragEvents = function(dragHandler, endHandler) {
-  SVG.off(window, 'mousemove', dragHandler);
-  return SVG.off(window, 'mouseup', endHandler);
-};
-
-onStart = function(element, event) {
-  var parent, rotation, translation, x, y, zoom;
-  if (event == null) {
-    event = window.event;
-  }
-  parent = element.parent._parent(SVG.Nested) || element._parent(SVG.Doc);
-  element.startEvent = event;
-  x = y = 0;
-  translation = TranslateRegex.exec(element.attr('transform'));
-  if (translation != null) {
-    x = parseInt(translation[1]);
-    y = parseInt(translation[2]);
-  }
-  zoom = parent.viewbox().zoom;
-  rotation = element.transform('rotation') * Math.PI / 180;
-  element.startPosition = {
-    x: x,
-    y: y,
-    zoom: zoom,
-    rotation: rotation
-  };
-  if (typeof element.dragstart === "function") {
-    element.dragstart({
-      x: 0,
-      y: 0,
-      zoom: zoom
-    }, event);
-  }
-
-  /* prevent selection dragging */
-  if (event.preventDefault) {
-    return event.preventDefault();
-  } else {
-    return event.returnValue = false;
-  }
-};
-
-onDrag = function(element, event) {
-  var delta, rotation, x, y;
-  if (event == null) {
-    event = window.event;
-  }
-  if (element.startEvent) {
-    rotation = element.startPosition.rotation;
-    delta = {
-      x: event.pageX - element.startEvent.pageX,
-      y: event.pageY - element.startEvent.pageY,
-      zoom: element.startPosition.zoom
-    };
-
-    /* caculate new position [with rotation correction] */
-    x = element.startPosition.x + (delta.x * Math.cos(rotation) + delta.y * Math.sin(rotation)) / element.startPosition.zoom;
-    y = element.startPosition.y + (delta.y * Math.cos(rotation) + delta.x * Math.sin(-rotation)) / element.startPosition.zoom;
-    element.transform({
-      x: x,
-      y: y
-    });
-    return typeof element.dragmove === "function" ? element.dragmove(delta, event) : void 0;
-  }
-};
-
-onEnd = function(element, event) {
-  var delta;
-  if (event == null) {
-    event = window.event;
-  }
-  delta = {
-    x: event.pageX - element.startEvent.pageX,
-    y: event.pageY - element.startEvent.pageY,
-    zoom: element.startPosition.zoom
-  };
-  element.startEvent = null;
-  element.startPosition = null;
-  return typeof element.dragend === "function" ? element.dragend(delta, event) : void 0;
-};
-
-
-},{"../../vendor/svg":26}],7:[function(require,module,exports){
-var SVG;
-
-SVG = require('../../vendor/svg');
-
-SVG.extend(SVG.Element, {
-  "export": function(options, level) {
-    var height, i, isRootSvgElement, j, k, l, name, node, ref, ref1, ref2, width;
-    name = this.node.nodeName;
-    node = '';
-    isRootSvgElement = name === 'svg' && !level;
-    options = options || {};
-    if (!options.exclude || !options.exclude.call(this)) {
-      options = options || {};
-      level = level || 0;
-      if (isRootSvgElement) {
-        node += this._whitespaced('<?xml version="1.0" encoding="UTF-8"?>', options.whitespace, level);
-        width = this.attr('width');
-        height = this.attr('height');
-        if (options.width) {
-          this.attr('width', options.width);
-        }
-        if (options.height) {
-          this.attr('height', options.height);
-        }
-      }
-      node += this._whitespaced('<' + name + this.attrToString() + '>', options.whitespace, level);
-      if (isRootSvgElement) {
-        this.attr({
-          width: width,
-          height: height
-        });
-        node += this._whitespaced('<desc>Created with Curve</desc>', options.whitespace, level + 1);
-        if (this._defs) {
-          node += this._whitespaced('<defs>', options.whitespace, level + 1);
-          for (i = j = 0, ref = this._defs.children().length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-            node += this._defs.children()[i]["export"](options, level + 2);
-          }
-          node += this._whitespaced('</defs>', options.whitespace, level + 1);
-        }
-      }
-      if (this instanceof SVG.Container) {
-        for (i = k = 0, ref1 = this.children().length; 0 <= ref1 ? k < ref1 : k > ref1; i = 0 <= ref1 ? ++k : --k) {
-          node += this.children()[i]["export"](options, level + 1);
-        }
-      } else if (this instanceof SVG.Text) {
-        for (i = l = 0, ref2 = this.lines.length; 0 <= ref2 ? l < ref2 : l > ref2; i = 0 <= ref2 ? ++l : --l) {
-          node += this.lines[i]["export"](options, level + 1);
-        }
-      }
-      if (this instanceof SVG.TSpan) {
-        node += this._whitespaced(this.node.firstChild.nodeValue, options.whitespace, level + 1);
-      }
-      node += this._whitespaced('</' + name + '>', options.whitespace, level);
-    }
-    return node;
-  },
-  exportAttr: function(attr) {
-    if (arguments.length === 0) {
-      return this.data('svg-export-attr');
-    }
-    return this.data('svg-export-attr', attr);
-  },
-  attrToString: function() {
-    var attr, data, exportAttrs, isGeneratedId, key, value;
-    attr = [];
-    data = this.exportAttr();
-    exportAttrs = this.attr();
-    if (typeof data === 'object') {
-      for (key in data) {
-        if (key !== 'data-svg-export-attr') {
-          exportAttrs[key] = data[key];
-        }
-      }
-    }
-    for (key in exportAttrs) {
-      value = exportAttrs[key];
-      if (key === 'xlink') {
-        key = 'xmlns:xlink';
-      }
-      isGeneratedId = key === 'id' && value.indexOf('Svgjs') > -1;
-      if (!isGeneratedId && key !== 'data-svg-export-attr' && (key !== 'stroke' || parseFloat(exportAttrs['stroke-width']) > 0)) {
-        attr.push(key + '="' + value + '"');
-      }
-    }
-    if (attr.length) {
-      return ' ' + attr.join(' ');
-    } else {
-      return '';
-    }
-  },
-  _whitespaced: function(value, add, level) {
-    var i, j, ref, space, whitespace;
-    if (add) {
-      whitespace = '';
-      space = add === true ? '  ' : add || '';
-      if (level) {
-        for (i = j = ref = level - 1; ref <= 0 ? j <= 0 : j >= 0; i = ref <= 0 ? ++j : --j) {
-          whitespace += space;
-        }
-      }
-      value = whitespace + value + '\n';
-    }
-    return value;
-  }
-});
-
-
-},{"../../vendor/svg":26}],8:[function(require,module,exports){
-var NodeEditor, Point,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-Point = require('./point.coffee');
-
-module.exports = NodeEditor = (function() {
-  var handleElements, lineElement, node, nodeElement;
-
-  NodeEditor.prototype.nodeSize = 5;
-
-  NodeEditor.prototype.handleSize = 3;
-
-  node = null;
-
-  nodeElement = null;
-
-  handleElements = null;
-
-  lineElement = null;
-
-  function NodeEditor(svgToolParent, pathEditor) {
-    this.svgToolParent = svgToolParent;
-    this.pathEditor = pathEditor;
-    this.onDraggingHandleOut = bind(this.onDraggingHandleOut, this);
-    this.onDraggingHandleIn = bind(this.onDraggingHandleIn, this);
-    this.onDraggingNode = bind(this.onDraggingNode, this);
-    this.render = bind(this.render, this);
-    this.svgDocument = this.svgToolParent.parent;
-    this._setupNodeElement();
-    this._setupLineElement();
-    this._setupHandleElements();
-    this.hide();
-  }
-
-  NodeEditor.prototype.hide = function() {
-    this.visible = false;
-    this.lineElement.hide();
-    this.nodeElement.hide();
-    return this.handleElements.hide();
-  };
-
-  NodeEditor.prototype.show = function(toFront) {
-    this.visible = true;
-    this.nodeElement.show();
-    if (toFront) {
-      this.lineElement.front();
-      this.nodeElement.front();
-      this.handleElements.front();
-    }
-    if (this.enableHandles) {
-      this.lineElement.show();
-      return this.handleElements.show();
-    } else {
-      this.lineElement.hide();
-      return this.handleElements.hide();
-    }
-  };
-
-  NodeEditor.prototype.setEnableHandles = function(enableHandles) {
-    this.enableHandles = enableHandles;
-    if (this.visible) {
-      return this.show();
-    }
-  };
-
-  NodeEditor.prototype.setNode = function(node) {
-    this._unbindNode(this.node);
-    this.node = node;
-    this._bindNode(this.node);
-    this.setEnableHandles(false);
-    return this.render();
-  };
-
-  NodeEditor.prototype.render = function() {
-    var handleIn, handleOut, linePath, point;
-    if (!this.node) {
-      return this.hide();
-    }
-    handleIn = this.node.getAbsoluteHandleIn();
-    handleOut = this.node.getAbsoluteHandleOut();
-    point = this.node.getPoint();
-    linePath = "M" + handleIn.x + "," + handleIn.y + "L" + point.x + "," + point.y + "L" + handleOut.x + "," + handleOut.y;
-    this.lineElement.attr({
-      d: linePath
-    });
-    this.handleElements.members[0].attr({
-      cx: handleIn.x,
-      cy: handleIn.y,
-      transform: ''
-    });
-    this.handleElements.members[1].attr({
-      cx: handleOut.x,
-      cy: handleOut.y,
-      transform: ''
-    });
-    this.nodeElement.attr({
-      cx: point.x,
-      cy: point.y,
-      transform: ''
-    });
-    this.show();
-    if (this._draggingHandle) {
-      return this._draggingHandle.front();
-    }
-  };
-
-  NodeEditor.prototype.onDraggingNode = function(delta, event) {
-    return this.node.setPoint(this.pointForEvent(event));
-  };
-
-  NodeEditor.prototype.onDraggingHandleIn = function(delta, event) {
-    return this.node.setAbsoluteHandleIn(this.pointForEvent(event));
-  };
-
-  NodeEditor.prototype.onDraggingHandleOut = function(delta, event) {
-    return this.node.setAbsoluteHandleOut(this.pointForEvent(event));
-  };
-
-  NodeEditor.prototype.pointForEvent = function(event) {
-    var clientX, clientY, left, top;
-    clientX = event.clientX, clientY = event.clientY;
-    top = this.svgDocument.node.offsetTop;
-    left = this.svgDocument.node.offsetLeft;
-    return new Point(event.clientX - left, event.clientY - top);
-  };
-
-  NodeEditor.prototype._bindNode = function(node) {
-    var ref;
-    if (!node) {
-      return;
-    }
-    node.addListener('change', this.render);
-    return (ref = node.getPath()) != null ? ref.addListener('change', this.render) : void 0;
-  };
-
-  NodeEditor.prototype._unbindNode = function(node) {
-    var ref;
-    if (!node) {
-      return;
-    }
-    node.removeListener('change', this.render);
-    return (ref = node.getPath()) != null ? ref.addListener('change', this.render) : void 0;
-  };
-
-  NodeEditor.prototype._setupNodeElement = function() {
-    this.nodeElement = this.svgToolParent.circle(this.nodeSize);
-    this.nodeElement.node.setAttribute('class', 'node-editor-node');
-    this.nodeElement.click((function(_this) {
-      return function(e) {
-        e.stopPropagation();
-        _this.setEnableHandles(true);
-        _this.pathEditor.activateNode(_this.node);
-        return false;
-      };
-    })(this));
-    this.nodeElement.draggable();
-    this.nodeElement.dragstart = (function(_this) {
-      return function() {
-        return _this.pathEditor.activateNode(_this.node);
-      };
-    })(this);
-    this.nodeElement.dragmove = this.onDraggingNode;
-    this.nodeElement.on('mouseover', (function(_this) {
-      return function() {
-        _this.nodeElement.front();
-        return _this.nodeElement.attr({
-          'r': _this.nodeSize + 2
-        });
-      };
-    })(this));
-    return this.nodeElement.on('mouseout', (function(_this) {
-      return function() {
-        return _this.nodeElement.attr({
-          'r': _this.nodeSize
-        });
-      };
-    })(this));
-  };
-
-  NodeEditor.prototype._setupLineElement = function() {
-    this.lineElement = this.svgToolParent.path('');
-    return this.lineElement.node.setAttribute('class', 'node-editor-lines');
-  };
-
-  NodeEditor.prototype._setupHandleElements = function() {
-    var onStartDraggingHandle, onStopDraggingHandle, self;
-    self = this;
-    this.handleElements = this.svgToolParent.set();
-    this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
-    this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
-    this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
-    this.handleElements.click((function(_this) {
-      return function(e) {
-        e.stopPropagation();
-        return false;
-      };
-    })(this));
-    onStartDraggingHandle = function() {
-      return self._draggingHandle = this;
-    };
-    onStopDraggingHandle = function() {
-      return self._draggingHandle = null;
-    };
-    this.handleElements.members[0].draggable();
-    this.handleElements.members[0].dragmove = this.onDraggingHandleIn;
-    this.handleElements.members[0].dragstart = onStartDraggingHandle;
-    this.handleElements.members[0].dragend = onStopDraggingHandle;
-    this.handleElements.members[1].draggable();
-    this.handleElements.members[1].dragmove = this.onDraggingHandleOut;
-    this.handleElements.members[1].dragstart = onStartDraggingHandle;
-    this.handleElements.members[1].dragend = onStopDraggingHandle;
-    this.handleElements.on('mouseover', function() {
-      this.front();
-      return this.attr({
-        'r': self.handleSize + 2
-      });
-    });
-    return this.handleElements.on('mouseout', function() {
-      return this.attr({
-        'r': self.handleSize
-      });
-    });
-  };
-
-  return NodeEditor;
-
-})();
-
-
-},{"./point.coffee":16}],9:[function(require,module,exports){
-var EventEmitter, Node, Point,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-EventEmitter = require('events').EventEmitter;
-
-Point = require('./point.coffee');
-
-module.exports = Node = (function(superClass) {
-  extend(Node, superClass);
-
-  function Node(point, handleIn, handleOut, isJoined) {
-    this.isJoined = isJoined != null ? isJoined : false;
-    this.setPoint(point);
-    if (handleIn) {
-      this.setHandleIn(handleIn);
-    }
-    if (handleOut) {
-      this.setHandleOut(handleOut);
-    }
-  }
-
-  Node.prototype.join = function(referenceHandle) {
-    if (referenceHandle == null) {
-      referenceHandle = 'handleIn';
-    }
-    this.isJoined = true;
-    return this["set" + (referenceHandle.replace('h', 'H'))](this[referenceHandle]);
-  };
-
-  Node.prototype.setPath = function(path) {
-    this.path = path;
-  };
-
-  Node.prototype.getPath = function() {
-    return this.path;
-  };
-
-  Node.prototype.getPoint = function() {
-    return this._transformPoint(this.point);
-  };
-
-  Node.prototype.getHandleIn = function() {
-    return this.handleIn;
-  };
-
-  Node.prototype.getHandleOut = function() {
-    return this.handleOut;
-  };
-
-  Node.prototype.getAbsoluteHandleIn = function() {
-    if (this.handleIn) {
-      return this._transformPoint(this.point.add(this.handleIn));
-    } else {
-      return this.getPoint();
-    }
-  };
-
-  Node.prototype.getAbsoluteHandleOut = function() {
-    if (this.handleOut) {
-      return this._transformPoint(this.point.add(this.handleOut));
-    } else {
-      return this.getPoint();
-    }
-  };
-
-  Node.prototype.setAbsoluteHandleIn = function(point) {
-    return this.setHandleIn(Point.create(point).subtract(this.point));
-  };
-
-  Node.prototype.setAbsoluteHandleOut = function(point) {
-    return this.setHandleOut(Point.create(point).subtract(this.point));
-  };
-
-  Node.prototype.setPoint = function(point) {
-    return this.set('point', Point.create(point));
-  };
-
-  Node.prototype.setHandleIn = function(point) {
-    if (point) {
-      point = Point.create(point);
-    }
-    this.set('handleIn', point);
-    if (this.isJoined) {
-      return this.set('handleOut', point ? new Point(0, 0).subtract(point) : point);
-    }
-  };
-
-  Node.prototype.setHandleOut = function(point) {
-    if (point) {
-      point = Point.create(point);
-    }
-    this.set('handleOut', point);
-    if (this.isJoined) {
-      return this.set('handleIn', point ? new Point(0, 0).subtract(point) : point);
-    }
-  };
-
-  Node.prototype.computeIsjoined = function() {
-    return this.isJoined = (!this.handleIn && !this.handleOut) || (this.handleIn && this.handleOut && Math.round(this.handleIn.x) === Math.round(-this.handleOut.x) && Math.round(this.handleIn.y) === Math.round(-this.handleOut.y));
-  };
-
-  Node.prototype.set = function(attribute, value) {
-    var event, eventArgs, old;
-    old = this[attribute];
-    this[attribute] = value;
-    event = "change:" + attribute;
-    eventArgs = {
-      event: event,
-      value: value,
-      old: old
-    };
-    this.emit(event, this, eventArgs);
-    return this.emit('change', this, eventArgs);
-  };
-
-  Node.prototype.translate = function(point) {
-    point = Point.create(point);
-    return this.set('point', this.point.add(point));
-  };
-
-  Node.prototype._transformPoint = function(point) {
-    var ref, transform;
-    transform = (ref = this.path) != null ? ref.getTransform() : void 0;
-    if (transform != null) {
-      point = transform.transformPoint(point);
-    }
-    return point;
-  };
-
-  return Node;
-
-})(EventEmitter);
-
-
-},{"./point.coffee":16,"events":1}],10:[function(require,module,exports){
-var ObjectEditor, PathEditor,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-PathEditor = require('./path-editor.coffee');
-
-module.exports = ObjectEditor = (function() {
-  function ObjectEditor(svgDocument, selectionModel) {
-    this.svgDocument = svgDocument;
-    this.selectionModel = selectionModel;
-    this.onChangeSelected = bind(this.onChangeSelected, this);
-    this.active = false;
-    this.activeEditor = null;
-    this.editors = {
-      Path: new PathEditor(this.svgDocument)
-    };
-  }
-
-  ObjectEditor.prototype.isActive = function() {
-    return this.active;
-  };
-
-  ObjectEditor.prototype.getActiveObject = function() {
-    var ref, ref1;
-    return (ref = (ref1 = this.activeEditor) != null ? ref1.getActiveObject() : void 0) != null ? ref : null;
-  };
-
-  ObjectEditor.prototype.activate = function() {
-    this.active = true;
-    return this.selectionModel.on('change:selected', this.onChangeSelected);
-  };
-
-  ObjectEditor.prototype.deactivate = function() {
-    this.selectionModel.removeListener('change:selected', this.onChangeSelected);
-    this._deactivateActiveEditor();
-    return this.active = false;
-  };
-
-  ObjectEditor.prototype.onChangeSelected = function(arg) {
-    var object, old, ref;
-    object = arg.object, old = arg.old;
-    this._deactivateActiveEditor();
-    if (object != null) {
-      this.activeEditor = this.editors[object.getType()];
-      return (ref = this.activeEditor) != null ? ref.activateObject(object) : void 0;
-    }
-  };
-
-  ObjectEditor.prototype._deactivateActiveEditor = function() {
-    var ref;
-    if ((ref = this.activeEditor) != null) {
-      ref.deactivate();
-    }
-    return this.activeEditor = null;
-  };
-
-  return ObjectEditor;
-
-})();
-
-
-},{"./path-editor.coffee":12}],11:[function(require,module,exports){
-var EventEmitter, ObjectSelection,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-EventEmitter = require('events').EventEmitter;
-
-module.exports = ObjectSelection = (function(superClass) {
-  extend(ObjectSelection, superClass);
-
-  function ObjectSelection(svgDocument, options) {
-    var base;
-    this.svgDocument = svgDocument;
-    this.options = options != null ? options : {};
-    this.render = bind(this.render, this);
-    if ((base = this.options)["class"] == null) {
-      base["class"] = 'object-selection';
-    }
-  }
-
-  ObjectSelection.prototype.setObject = function(object) {
-    var old;
-    this._unbindObject(this.object);
-    old = object;
-    this.object = object;
-    this._bindObject(this.object);
-    if (this.trackingObject) {
-      this.trackingObject.remove();
-    }
-    this.trackingObject = null;
-    if (this.object) {
-      this.trackingObject = this.object.cloneElement(this.svgDocument).back();
-      this.trackingObject.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
-      this.render();
-    }
-    return this.emit('change:object', {
-      objectSelection: this,
-      object: this.object,
-      old: old
-    });
-  };
-
-  ObjectSelection.prototype.render = function() {
-    return this.object.render(this.trackingObject);
-  };
-
-  ObjectSelection.prototype._bindObject = function(object) {
-    if (!object) {
-      return;
-    }
-    return object.on('change', this.render);
-  };
-
-  ObjectSelection.prototype._unbindObject = function(object) {
-    if (!object) {
-      return;
-    }
-    return object.removeListener('change', this.render);
-  };
-
-  return ObjectSelection;
-
-})(EventEmitter);
-
-
-},{"events":1}],12:[function(require,module,exports){
-var NodeEditor, PathEditor,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-NodeEditor = require('./node-editor.coffee');
-
-module.exports = PathEditor = (function() {
-  function PathEditor(svgDocument) {
-    this.svgDocument = svgDocument;
-    this.onInsertNode = bind(this.onInsertNode, this);
-    this.path = null;
-    this.node = null;
-    this.nodeEditors = [];
-    this._nodeEditorPool = [];
-  }
-
-  PathEditor.prototype.isActive = function() {
-    return !!this.path;
-  };
-
-  PathEditor.prototype.getActiveObject = function() {
-    return this.path;
-  };
-
-  PathEditor.prototype.activateObject = function(object) {
-    this.deactivate();
-    if (object != null) {
-      this.path = object;
-      this._bindToObject(this.path);
-      return this._createNodeEditors(this.path);
-    }
-  };
-
-  PathEditor.prototype.deactivate = function() {
-    this.deactivateNode();
-    if (this.path != null) {
-      this._unbindFromObject(this.path);
-    }
-    this._removeNodeEditors();
-    return this.path = null;
-  };
-
-  PathEditor.prototype.activateNode = function(node) {
-    var nodeEditor;
-    this.deactivateNode();
-    if (node != null) {
-      this.selectedNode = node;
-      nodeEditor = this._findNodeEditorForNode(node);
-      if (nodeEditor != null) {
-        return nodeEditor.setEnableHandles(true);
-      }
-    }
-  };
-
-  PathEditor.prototype.deactivateNode = function() {
-    var nodeEditor;
-    if (this.selectedNode != null) {
-      nodeEditor = this._findNodeEditorForNode(this.selectedNode);
-      if (nodeEditor != null) {
-        nodeEditor.setEnableHandles(false);
-      }
-    }
-    return this.selectedNode = null;
-  };
-
-  PathEditor.prototype.onInsertNode = function(object, arg) {
-    var index, node, ref;
-    ref = arg != null ? arg : {}, node = ref.node, index = ref.index;
-    this._addNodeEditor(node);
-    return null;
-  };
-
-  PathEditor.prototype._bindToObject = function(object) {
-    if (!object) {
-      return;
-    }
-    return object.on('insert:node', this.onInsertNode);
-  };
-
-  PathEditor.prototype._unbindFromObject = function(object) {
-    if (!object) {
-      return;
-    }
-    return object.removeListener('insert:node', this.onInsertNode);
-  };
-
-  PathEditor.prototype._removeNodeEditors = function() {
-    var i, len, nodeEditor, ref;
-    this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
-    this.nodeEditors = [];
-    ref = this._nodeEditorPool;
-    for (i = 0, len = ref.length; i < len; i++) {
-      nodeEditor = ref[i];
-      nodeEditor.setNode(null);
-    }
-  };
-
-  PathEditor.prototype._createNodeEditors = function(object) {
-    var i, len, node, nodes;
-    this._removeNodeEditors();
-    if ((object != null ? object.getNodes : void 0) != null) {
-      nodes = object.getNodes();
-      for (i = 0, len = nodes.length; i < len; i++) {
-        node = nodes[i];
-        this._addNodeEditor(node);
-      }
-    }
-  };
-
-  PathEditor.prototype._addNodeEditor = function(node) {
-    var nodeEditor;
-    if (!node) {
-      return false;
-    }
-    nodeEditor = this._nodeEditorPool.length ? this._nodeEditorPool.pop() : new NodeEditor(this.svgDocument, this);
-    nodeEditor.setNode(node);
-    this.nodeEditors.push(nodeEditor);
-    return true;
-  };
-
-  PathEditor.prototype._findNodeEditorForNode = function(node) {
-    var i, len, nodeEditor, ref;
-    ref = this.nodeEditors;
-    for (i = 0, len = ref.length; i < len; i++) {
-      nodeEditor = ref[i];
-      if (nodeEditor.node === node) {
-        return nodeEditor;
-      }
-    }
-    return null;
-  };
-
-  return PathEditor;
-
-})();
-
-
-},{"./node-editor.coffee":8}],13:[function(require,module,exports){
-var COMMAND, NUMBER, Node, groupCommands, lexPath, parsePath, parseTokens, ref;
-
-Node = require("./node.coffee");
-
-ref = ['COMMAND', 'NUMBER'], COMMAND = ref[0], NUMBER = ref[1];
-
-parsePath = function(pathString) {
-  var tokens;
-  tokens = lexPath(pathString);
-  return parseTokens(groupCommands(tokens));
-};
-
-parseTokens = function(groupedCommands) {
-  var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, j, k, l, lastNode, len, len1, makeAbsolute, node, params, ref1, ref2, ref3, ref4, ref5, ref6, result, slicePoint, subpath;
-  result = {
-    subpaths: []
-  };
-  if (groupedCommands.length === 1 && ((ref1 = groupedCommands[0].type) === 'M' || ref1 === 'm')) {
-    return result;
-  }
-  currentPoint = null;
-  currentSubpath = null;
-  addNewSubpath = function(movePoint) {
-    var node;
-    node = new Node(movePoint);
-    currentSubpath = {
-      closed: false,
-      nodes: [node]
-    };
-    result.subpaths.push(currentSubpath);
-    return node;
-  };
-  slicePoint = function(array, index) {
-    return [array[index], array[index + 1]];
-  };
-  makeAbsolute = function(array) {
-    var i, j, len, results, val;
-    results = [];
-    for (i = j = 0, len = array.length; j < len; i = ++j) {
-      val = array[i];
-      results.push(val + currentPoint[i % 2]);
-    }
-    return results;
-  };
-  createNode = function(point, commandIndex) {
-    var firstNode, nextCommand, node, ref2;
-    currentPoint = point;
-    node = null;
-    firstNode = currentSubpath.nodes[0];
-    nextCommand = groupedCommands[commandIndex + 1];
-    if (!(nextCommand && ((ref2 = nextCommand.type) === 'z' || ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint))) {
-      node = new Node(currentPoint);
-      currentSubpath.nodes.push(node);
-    }
-    return node;
-  };
-  for (i = j = 0, ref2 = groupedCommands.length; 0 <= ref2 ? j < ref2 : j > ref2; i = 0 <= ref2 ? ++j : --j) {
-    command = groupedCommands[i];
-    switch (command.type) {
-      case 'M':
-        currentPoint = command.parameters;
-        addNewSubpath(currentPoint);
-        break;
-      case 'L':
-      case 'l':
-        params = command.parameters;
-        if (command.type === 'l') {
-          params = makeAbsolute(params);
-        }
-        createNode(slicePoint(params, 0), i);
-        break;
-      case 'H':
-      case 'h':
-        params = command.parameters;
-        if (command.type === 'h') {
-          params = makeAbsolute(params);
-        }
-        createNode([params[0], currentPoint[1]], i);
-        break;
-      case 'V':
-      case 'v':
-        params = command.parameters;
-        if (command.type === 'v') {
-          params = makeAbsolute([0, params[0]]);
-          params = params.slice(1);
-        }
-        createNode([currentPoint[0], params[0]], i);
-        break;
-      case 'C':
-      case 'c':
-      case 'Q':
-      case 'q':
-        params = command.parameters;
-        if ((ref3 = command.type) === 'c' || ref3 === 'q') {
-          params = makeAbsolute(params);
-        }
-        if ((ref4 = command.type) === 'C' || ref4 === 'c') {
-          currentPoint = slicePoint(params, 4);
-          handleIn = slicePoint(params, 2);
-          handleOut = slicePoint(params, 0);
-        } else {
-          currentPoint = slicePoint(params, 2);
-          handleIn = handleOut = slicePoint(params, 0);
-        }
-        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
-        lastNode.setAbsoluteHandleOut(handleOut);
-        if (node = createNode(currentPoint, i)) {
-          node.setAbsoluteHandleIn(handleIn);
-        } else {
-          firstNode = currentSubpath.nodes[0];
-          firstNode.setAbsoluteHandleIn(handleIn);
-        }
-        break;
-      case 'S':
-      case 's':
-        params = command.parameters;
-        if (command.type === 's') {
-          params = makeAbsolute(params);
-        }
-        currentPoint = slicePoint(params, 2);
-        handleIn = slicePoint(params, 0);
-        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
-        lastNode.join('handleIn');
-        if (node = createNode(currentPoint, i)) {
-          node.setAbsoluteHandleIn(handleIn);
-        } else {
-          firstNode = currentSubpath.nodes[0];
-          firstNode.setAbsoluteHandleIn(handleIn);
-        }
-        break;
-      case 'T':
-      case 't':
-        params = command.parameters;
-        if (command.type === 't') {
-          params = makeAbsolute(params);
-        }
-        currentPoint = slicePoint(params, 0);
-        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
-        lastNode.join('handleIn');
-        handleIn = lastNode.getAbsoluteHandleOut();
-        if (node = createNode(currentPoint, i)) {
-          node.setAbsoluteHandleIn(handleIn);
-        } else {
-          firstNode = currentSubpath.nodes[0];
-          firstNode.setAbsoluteHandleIn(handleIn);
-        }
-        break;
-      case 'Z':
-      case 'z':
-        currentSubpath.closed = true;
-    }
-  }
-  ref5 = result.subpaths;
-  for (k = 0, len = ref5.length; k < len; k++) {
-    subpath = ref5[k];
-    ref6 = subpath.nodes;
-    for (l = 0, len1 = ref6.length; l < len1; l++) {
-      node = ref6[l];
-      node.computeIsjoined();
-    }
-  }
-  return result;
-};
-
-groupCommands = function(pathTokens) {
-  var command, commands, i, j, nextToken, ref1, token;
-  commands = [];
-  for (i = j = 0, ref1 = pathTokens.length; 0 <= ref1 ? j < ref1 : j > ref1; i = 0 <= ref1 ? ++j : --j) {
-    token = pathTokens[i];
-    if (token.type !== COMMAND) {
-      continue;
-    }
-    command = {
-      type: token.string,
-      parameters: []
-    };
-    while (nextToken = pathTokens[i + 1]) {
-      if (nextToken.type === NUMBER) {
-        command.parameters.push(parseFloat(nextToken.string));
-        i++;
-      } else {
-        break;
-      }
-    }
-    commands.push(command);
-  }
-  return commands;
-};
-
-lexPath = function(pathString) {
-  var ch, currentToken, j, len, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens;
-  numberMatch = '-0123456789.';
-  separatorMatch = ' ,\n\t';
-  tokens = [];
-  currentToken = null;
-  saveCurrentTokenWhenDifferentThan = function(command) {
-    if (currentToken && currentToken.type !== command) {
-      return saveCurrentToken();
-    }
-  };
-  saveCurrentToken = function() {
-    if (!currentToken) {
-      return;
-    }
-    if (currentToken.string.join) {
-      currentToken.string = currentToken.string.join('');
-    }
-    tokens.push(currentToken);
-    return currentToken = null;
-  };
-  for (j = 0, len = pathString.length; j < len; j++) {
-    ch = pathString[j];
-    if (numberMatch.indexOf(ch) > -1) {
-      saveCurrentTokenWhenDifferentThan(NUMBER);
-      if (ch === '-') {
-        saveCurrentToken();
-      }
-      if (!currentToken) {
-        currentToken = {
-          type: NUMBER,
-          string: []
-        };
-      }
-      currentToken.string.push(ch);
-    } else if (separatorMatch.indexOf(ch) > -1) {
-      saveCurrentToken();
-    } else {
-      saveCurrentToken();
-      tokens.push({
-        type: COMMAND,
-        string: ch
-      });
-    }
-  }
-  saveCurrentToken();
-  return tokens;
-};
-
-module.exports = {
-  lexPath: lexPath,
-  parsePath: parsePath,
-  groupCommands: groupCommands,
-  parseTokens: parseTokens
-};
-
-
-},{"./node.coffee":9}],14:[function(require,module,exports){
-var DefaultAttrs, EventEmitter, IDS, Path, PathModel, PathParser, Point, Subpath, Transform, Utils, flatten,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-EventEmitter = require('events').EventEmitter;
-
-Utils = require('./utils.coffee');
-
-PathParser = require('./path-parser.coffee');
-
-Transform = require('./transform.coffee');
-
-Subpath = require('./subpath.coffee');
-
-Point = require('./point.coffee');
-
-DefaultAttrs = {
-  fill: '#eee',
-  stroke: 'none'
-};
-
-IDS = 0;
-
-PathModel = (function(superClass) {
-  extend(PathModel, superClass);
-
-  function PathModel() {
-    this.onSubpathChange = bind(this.onSubpathChange, this);
-    this.subpaths = [];
-    this.pathString = '';
-    this.transform = new Transform;
-  }
-
-
-  /*
-  Section: Public Methods
-   */
-
-  PathModel.prototype.getNodes = function() {
-    var nodes, subpath;
-    nodes = (function() {
-      var i, len, ref, results;
-      ref = this.subpaths;
-      results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        subpath = ref[i];
-        results.push(subpath.getNodes());
-      }
-      return results;
-    }).call(this);
-    return flatten(nodes);
-  };
-
-  PathModel.prototype.getTransform = function() {
-    return this.transform;
-  };
-
-  PathModel.prototype.getTransformString = function() {
-    return this.transform.toString();
-  };
-
-  PathModel.prototype.setTransformString = function(transformString) {
-    if (this.transform.setTransformString(transformString)) {
-      return this._emitChangeEvent();
-    }
-  };
-
-  PathModel.prototype.getPathString = function() {
-    return this.pathString;
-  };
-
-  PathModel.prototype.setPathString = function(pathString) {
-    if (pathString !== this.pathString) {
-      return this._parseFromPathString(pathString);
-    }
-  };
-
-  PathModel.prototype.toString = function() {
-    return this.getPathString();
-  };
-
-  PathModel.prototype.translate = function(point) {
-    var i, len, ref, subpath;
-    point = Point.create(point);
-    ref = this.subpaths;
-    for (i = 0, len = ref.length; i < len; i++) {
-      subpath = ref[i];
-      subpath.translate(point);
-    }
-  };
-
-  PathModel.prototype.addNode = function(node) {
-    this._addCurrentSubpathIfNotPresent();
-    return this.currentSubpath.addNode(node);
-  };
-
-  PathModel.prototype.insertNode = function(node, index) {
-    this._addCurrentSubpathIfNotPresent();
-    return this.currentSubpath.insertNode(node, index);
-  };
-
-  PathModel.prototype.close = function() {
-    this._addCurrentSubpathIfNotPresent();
-    return this.currentSubpath.close();
-  };
-
-  PathModel.prototype._addCurrentSubpathIfNotPresent = function() {
-    if (!this.currentSubpath) {
-      return this.currentSubpath = this._createSubpath();
-    }
-  };
-
-
-  /*
-  Section: Event Handlers
-   */
-
-  PathModel.prototype.onSubpathChange = function(subpath, eventArgs) {
-    this._updatePathString();
-    return this._emitChangeEvent();
-  };
-
-
-  /*
-  Section: Private Methods
-   */
-
-  PathModel.prototype._createSubpath = function(args) {
-    if (args == null) {
-      args = {};
-    }
-    args.path = this;
-    return this._addSubpath(new Subpath(args));
-  };
-
-  PathModel.prototype._addSubpath = function(subpath) {
-    this.subpaths.push(subpath);
-    this._bindSubpath(subpath);
-    this._updatePathString();
-    return subpath;
-  };
-
-  PathModel.prototype._bindSubpath = function(subpath) {
-    if (!subpath) {
-      return;
-    }
-    subpath.on('change', this.onSubpathChange);
-    return subpath.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
-  };
-
-  PathModel.prototype._unbindSubpath = function(subpath) {
-    if (!subpath) {
-      return;
-    }
-    return subpath.off();
-  };
-
-  PathModel.prototype._removeAllSubpaths = function() {
-    var i, len, ref, subpath;
-    ref = this.subpaths;
-    for (i = 0, len = ref.length; i < len; i++) {
-      subpath = ref[i];
-      this._unbindSubpath(subpath);
-    }
-    return this.subpaths = [];
-  };
-
-  PathModel.prototype._updatePathString = function() {
-    var oldPathString, subpath;
-    oldPathString = this.pathString;
-    this.pathString = ((function() {
-      var i, len, ref, results;
-      ref = this.subpaths;
-      results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        subpath = ref[i];
-        results.push(subpath.toPathString());
-      }
-      return results;
-    }).call(this)).join(' ');
-    if (oldPathString !== this.pathString) {
-      return this._emitChangeEvent();
-    }
-  };
-
-  PathModel.prototype._parseFromPathString = function(pathString) {
-    var i, len, parsedPath, parsedSubpath, ref;
-    if (!pathString) {
-      return;
-    }
-    if (pathString === this.pathString) {
-      return;
-    }
-    this._removeAllSubpaths();
-    parsedPath = PathParser.parsePath(pathString);
-    ref = parsedPath.subpaths;
-    for (i = 0, len = ref.length; i < len; i++) {
-      parsedSubpath = ref[i];
-      this._createSubpath(parsedSubpath);
-    }
-    this.currentSubpath = _.last(this.subpaths);
-    this._updatePathString();
-    return null;
-  };
-
-  PathModel.prototype._forwardEvent = function(eventName, eventObject, args) {
-    return this.emit(eventName, this, args);
-  };
-
-  PathModel.prototype._emitChangeEvent = function() {
-    return this.emit('change', this);
-  };
-
-  return PathModel;
-
-})(EventEmitter);
-
-module.exports = Path = (function(superClass) {
-  extend(Path, superClass);
-
-  function Path(svgDocument1, arg) {
-    var svgEl;
-    this.svgDocument = svgDocument1;
-    svgEl = (arg != null ? arg : {}).svgEl;
-    this.onModelChange = bind(this.onModelChange, this);
-    this.id = IDS++;
-    this.model = new PathModel;
-    this.model.on('change', this.onModelChange);
-    this.model.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
-    this._setupSVGObject(svgEl);
-  }
-
-
-  /*
-  Section: Public Methods
-   */
-
-  Path.prototype.getType = function() {
-    return 'Path';
-  };
-
-  Path.prototype.toString = function() {
-    return "Path " + this.id + " " + (this.model.toString());
-  };
-
-  Path.prototype.getPathString = function() {
-    return this.model.getPathString();
-  };
-
-  Path.prototype.getNodes = function() {
-    return this.model.getNodes();
-  };
-
-  Path.prototype.getSubpaths = function() {
-    return this.model.subpaths;
-  };
-
-  Path.prototype.addNode = function(node) {
-    return this.model.addNode(node);
-  };
-
-  Path.prototype.insertNode = function(node, index) {
-    return this.model.insertNode(node, index);
-  };
-
-  Path.prototype.close = function() {
-    return this.model.close();
-  };
-
-  Path.prototype.enableDragging = function(callbacks) {
-    var element;
-    element = this.svgEl;
-    if (element == null) {
-      return;
-    }
-    this.disableDragging();
-    element.draggable();
-    element.dragstart = function(event) {
-      return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
-    };
-    element.dragmove = (function(_this) {
-      return function(event) {
-        _this.updateFromAttributes();
-        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
-      };
-    })(this);
-    return element.dragend = (function(_this) {
-      return function(event) {
-        _this.model.setTransformString(null);
-        _this.model.translate([event.x, event.y]);
-        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
-      };
-    })(this);
-  };
-
-  Path.prototype.disableDragging = function() {
-    var element;
-    element = this.svgEl;
-    if (element == null) {
-      return;
-    }
-    if (typeof element.fixed === "function") {
-      element.fixed();
-    }
-    element.dragstart = null;
-    element.dragmove = null;
-    return element.dragend = null;
-  };
-
-  Path.prototype.updateFromAttributes = function() {
-    var pathString, transform;
-    pathString = this.svgEl.attr('d');
-    transform = this.svgEl.attr('transform');
-    this.model.setTransformString(transform);
-    return this.model.setPathString(pathString);
-  };
-
-  Path.prototype.render = function(svgEl) {
-    var pathStr;
-    if (svgEl == null) {
-      svgEl = this.svgEl;
-    }
-    pathStr = this.model.getPathString();
-    if (pathStr) {
-      svgEl.attr({
-        d: pathStr
-      });
-    }
-    return svgEl.attr({
-      transform: this.model.getTransformString() || null
-    });
-  };
-
-  Path.prototype.cloneElement = function(svgDocument) {
-    var el;
-    if (svgDocument == null) {
-      svgDocument = this.svgDocument;
-    }
-    el = svgDocument.path();
-    this.render(el);
-    return el;
-  };
-
-
-  /*
-  Section: Event Handlers
-   */
-
-  Path.prototype.onModelChange = function() {
-    this.render();
-    return this.emit('change', this);
-  };
-
-
-  /*
-  Section: Private Methods
-   */
-
-  Path.prototype._forwardEvent = function(eventName, eventObject, args) {
-    args.path = this;
-    return this.emit(eventName, this, args);
-  };
-
-  Path.prototype._setupSVGObject = function(svgEl1) {
-    this.svgEl = svgEl1;
-    if (!this.svgEl) {
-      this.svgEl = this.svgDocument.path().attr(DefaultAttrs);
-    }
-    Utils.setObjectOnNode(this.svgEl.node, this);
-    return this.model.setPathString(this.svgEl.attr('d'));
-  };
-
-  return Path;
-
-})(EventEmitter);
-
-flatten = function(array) {
-  var concat;
-  concat = function(accumulator, item) {
-    if (Array.isArray(item)) {
-      return accumulator.concat(flatten(item));
-    } else {
-      return accumulator.concat(item);
-    }
-  };
-  return array.reduce(concat, []);
-};
-
-
-},{"./path-parser.coffee":13,"./point.coffee":16,"./subpath.coffee":22,"./transform.coffee":24,"./utils.coffee":25,"events":1}],15:[function(require,module,exports){
-var Node, Path, PenTool,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-Node = require('./node.coffee');
-
-Path = require('./path.coffee');
-
-module.exports = PenTool = (function() {
-  PenTool.prototype.currentObject = null;
-
-  PenTool.prototype.currentNode = null;
-
-  function PenTool(svgDocument, arg) {
-    var ref;
-    this.svgDocument = svgDocument;
-    ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView;
-    this.onMouseUp = bind(this.onMouseUp, this);
-    this.onMouseMove = bind(this.onMouseMove, this);
-    this.onMouseDown = bind(this.onMouseDown, this);
-  }
-
-  PenTool.prototype.activate = function() {
-    this.svgDocument.on('mousedown', this.onMouseDown);
-    this.svgDocument.on('mousemove', this.onMouseMove);
-    return this.svgDocument.on('mouseup', this.onMouseUp);
-  };
-
-  PenTool.prototype.deactivate = function() {
-    this.svgDocument.off('mousedown', this.onMouseDown);
-    this.svgDocument.off('mousemove', this.onMouseMove);
-    return this.svgDocument.off('mouseup', this.onMouseUp);
-  };
-
-  PenTool.prototype.onMouseDown = function(e) {
-    var makeNode;
-    makeNode = (function(_this) {
-      return function() {
-        _this.currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0]);
-        _this.currentObject.addNode(_this.currentNode);
-        return _this.selectionModel.setSelectedNode(_this.currentNode);
-      };
-    })(this);
-    if (this.currentObject) {
-      if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement.node) {
-        this.currentObject.close();
-        return this.currentObject = null;
-      } else {
-        return makeNode();
-      }
-    } else {
-      this.currentObject = new Path(this.svgDocument);
-      this.selectionModel.setSelected(this.currentObject);
-      return makeNode();
-    }
-  };
-
-  PenTool.prototype.onMouseMove = function(e) {
-    if (this.currentNode) {
-      return this.currentNode.setAbsoluteHandleOut([e.clientX, e.clientY]);
-    }
-  };
-
-  PenTool.prototype.onMouseUp = function(e) {
-    return this.currentNode = null;
-  };
-
-  return PenTool;
-
-})();
-
-
-},{"./node.coffee":9,"./path.coffee":14}],16:[function(require,module,exports){
-var Point;
-
-module.exports = Point = (function() {
-  Point.create = function(x, y) {
-    if (x instanceof Point) {
-      return x;
-    }
-    if (Array.isArray(x)) {
-      return new Point(x[0], x[1]);
-    } else {
-      return new Point(x, y);
-    }
-  };
-
-  function Point(x, y) {
-    this.set(x, y);
-  }
-
-  Point.prototype.set = function(x1, y1) {
-    var ref;
-    this.x = x1;
-    this.y = y1;
-    if (Array.isArray(this.x)) {
-      return ref = this.x, this.x = ref[0], this.y = ref[1], ref;
-    }
-  };
-
-  Point.prototype.add = function(other) {
-    other = Point.create(other);
-    return new Point(this.x + other.x, this.y + other.y);
-  };
-
-  Point.prototype.subtract = function(other) {
-    other = Point.create(other);
-    return new Point(this.x - other.x, this.y - other.y);
-  };
-
-  Point.prototype.toArray = function() {
-    return [this.x, this.y];
-  };
-
-  Point.prototype.equals = function(other) {
-    other = Point.create(other);
-    return other.x === this.x && other.y === this.y;
-  };
-
-  Point.prototype.toString = function() {
-    return "(" + this.x + ", " + this.y + ")";
-  };
-
-  return Point;
-
-})();
-
-
-},{}],17:[function(require,module,exports){
-var ObjectEditor, PointerTool, Utils,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-ObjectEditor = require('./object-editor.coffee');
-
-Utils = require('./Utils.coffee');
-
-module.exports = PointerTool = (function() {
-  function PointerTool(svgDocument, arg) {
-    var ref;
-    this.svgDocument = svgDocument;
-    ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView, this.toolLayer = ref.toolLayer;
-    this.onMouseMove = bind(this.onMouseMove, this);
-    this.onClick = bind(this.onClick, this);
-    this.onChangedSelectedObject = bind(this.onChangedSelectedObject, this);
-    this._evrect = this.svgDocument.node.createSVGRect();
-    this._evrect.width = this._evrect.height = 1;
-    this.objectEditor = new ObjectEditor(this.toolLayer, this.selectionModel);
-  }
-
-  PointerTool.prototype.activate = function() {
-    var objectSelection;
-    this.objectEditor.activate();
-    this.svgDocument.on('click', this.onClick);
-    this.svgDocument.on('mousemove', this.onMouseMove);
-    objectSelection = this.selectionView.getObjectSelection();
-    return objectSelection.on('change:object', this.onChangedSelectedObject);
-  };
-
-  PointerTool.prototype.deactivate = function() {
-    var objectSelection;
-    this.objectEditor.deactivate();
-    this.svgDocument.off('click', this.onClick);
-    this.svgDocument.off('mousemove', this.onMouseMove);
-    objectSelection = this.selectionView.getObjectSelection();
-    return objectSelection.off('change:object', this.onChangedSelectedObject);
-  };
-
-  PointerTool.prototype.onChangedSelectedObject = function(arg) {
-    var object, old;
-    object = arg.object, old = arg.old;
-    if (object != null) {
-      return object.enableDragging();
-    } else if (old != null) {
-      return old.disableDragging();
-    }
-  };
-
-  PointerTool.prototype.onClick = function(e) {
-    var obj;
-    obj = this._hitWithTarget(e);
-    this.selectionModel.setSelected(obj);
-    if (obj) {
-      return false;
-    }
-  };
-
-  PointerTool.prototype.onMouseMove = function(e) {
-    return this.selectionModel.setPreselected(this._hitWithTarget(e));
-  };
-
-  PointerTool.prototype._hitWithTarget = function(e) {
-    var obj;
-    obj = null;
-    if (e.target !== this.svgDocument.node) {
-      obj = Utils.getObjectFromNode(e.target);
-    }
-    return obj;
-  };
-
-  PointerTool.prototype._hitWithIntersectionList = function(e) {
-    var className, i, j, left, nodes, obj, ref, top;
-    top = this.svgDocument.node.offsetTop;
-    left = this.svgDocument.node.offsetLeft;
-    this._evrect.x = e.clientX - left;
-    this._evrect.y = e.clientY - top;
-    nodes = this.svgDocument.node.getIntersectionList(this._evrect, null);
-    obj = null;
-    if (nodes.length) {
-      for (i = j = ref = nodes.length - 1; ref <= 0 ? j <= 0 : j >= 0; i = ref <= 0 ? ++j : --j) {
-        className = nodes[i].getAttribute('class');
-        if (className && className.indexOf('invisible-to-hit-test') > -1) {
-          continue;
-        }
-        obj = Utils.getObjectFromNode(nodes[i]);
-        break;
-      }
-    }
-    console.log(obj);
-    return obj;
-  };
-
-  return PointerTool;
-
-})();
-
-
-},{"./Utils.coffee":2,"./object-editor.coffee":10}],18:[function(require,module,exports){
-var DefaultAttrs, EventEmitter, IDS, Point, Rectangle, RectangleModel, Transform, Utils,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-EventEmitter = require('events').EventEmitter;
-
-Transform = require('./transform.coffee');
-
-Utils = require('./utils.coffee');
-
-Point = require('./point.coffee');
-
-DefaultAttrs = {
-  x: 0,
-  y: 0,
-  width: 10,
-  height: 10,
-  fill: '#eee',
-  stroke: 'none'
-};
-
-IDS = 0;
-
-RectangleModel = (function(superClass) {
-  extend(RectangleModel, superClass);
-
-  RectangleModel.prototype.position = null;
-
-  RectangleModel.prototype.size = null;
-
-  RectangleModel.prototype.transform = null;
-
-  function RectangleModel() {
-    this.id = IDS++;
-    this.transform = new Transform;
-  }
-
-
-  /*
-  Section: Public Methods
-   */
-
-  RectangleModel.prototype.getTransform = function() {
-    return this.transform;
-  };
-
-  RectangleModel.prototype.getTransformString = function() {
-    return this.transform.toString();
-  };
-
-  RectangleModel.prototype.setTransformString = function(transformString) {
-    if (this.transform.setTransformString(transformString)) {
-      return this._emitChangeEvent();
-    }
-  };
-
-  RectangleModel.prototype.getPosition = function() {
-    return this.position;
-  };
-
-  RectangleModel.prototype.setPosition = function(x, y) {
-    this.position = Point.create(x, y);
-    return this._emitChangeEvent();
-  };
-
-  RectangleModel.prototype.getSize = function() {
-    return this.size;
-  };
-
-  RectangleModel.prototype.setSize = function(width, height) {
-    this.size = Size.create(width, height);
-    return this._emitChangeEvent();
-  };
-
-  RectangleModel.prototype.toString = function() {
-    return "{Rect " + this.id + ": " + this.position + " " + this.size;
-  };
-
-  RectangleModel.prototype.translate = function(point) {
-    point = Point.create(point);
-    this.setPosition(this.position.add(point));
-    return this._emitChangeEvent();
-  };
-
-
-  /*
-  Section: Private Methods
-   */
-
-  RectangleModel.prototype._emitChangeEvent = function() {
-    return this.emit('change', this);
-  };
-
-  return RectangleModel;
-
-})(EventEmitter);
-
-module.exports = Rectangle = (function(superClass) {
-  extend(Rectangle, superClass);
-
-  function Rectangle(svgDocument1, arg) {
-    var svgEl;
-    this.svgDocument = svgDocument1;
-    svgEl = (arg != null ? arg : {}).svgEl;
-    this.onModelChange = bind(this.onModelChange, this);
-    this.model = new RectangleModel;
-    this._setupSVGObject(svgEl);
-    this.model.on('change', this.onModelChange);
-  }
-
-
-  /*
-  Section: Public Methods
-   */
-
-  Rectangle.prototype.getType = function() {
-    return 'Rectangle';
-  };
-
-  Rectangle.prototype.toString = function() {
-    return this.model.toString();
-  };
-
-  Rectangle.prototype.enableDragging = function(callbacks) {
-    var element;
-    element = this.svgEl;
-    if (element == null) {
-      return;
-    }
-    this.disableDragging();
-    element.draggable();
-    element.dragstart = function(event) {
-      return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
-    };
-    element.dragmove = (function(_this) {
-      return function(event) {
-        _this.updateFromAttributes();
-        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
-      };
-    })(this);
-    return element.dragend = (function(_this) {
-      return function(event) {
-        _this.model.setTransformString(null);
-        _this.model.translate([event.x, event.y]);
-        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
-      };
-    })(this);
-  };
-
-  Rectangle.prototype.disableDragging = function() {
-    var element;
-    element = this.svgEl;
-    if (element == null) {
-      return;
-    }
-    if (typeof element.fixed === "function") {
-      element.fixed();
-    }
-    element.dragstart = null;
-    element.dragmove = null;
-    return element.dragend = null;
-  };
-
-  Rectangle.prototype.updateFromAttributes = function() {
-    var height, transform, width, x, y;
-    x = this.svgEl.attr('x');
-    y = this.svgEl.attr('y');
-    width = this.svgEl.attr('width');
-    height = this.svgEl.attr('height');
-    transform = this.svgEl.attr('transform');
-    this.model.setPosition(x, y);
-    this.model.setSize(width, height);
-    return this.model.setTransformString(transform);
-  };
-
-  Rectangle.prototype.render = function(svgEl) {
-    var position, size;
-    if (svgEl == null) {
-      svgEl = this.svgEl;
-    }
-    position = this.model.getPosition();
-    size = this.model.getSize();
-    svgEl.attr({
-      x: position.x
-    });
-    svgEl.attr({
-      y: position.y
-    });
-    svgEl.attr({
-      width: size.width
-    });
-    svgEl.attr({
-      height: size.height
-    });
-    return svgEl.attr({
-      transform: this.model.getTransformString() || null
-    });
-  };
-
-  Rectangle.prototype.cloneElement = function(svgDocument) {
-    var el;
-    if (svgDocument == null) {
-      svgDocument = this.svgDocument;
-    }
-    el = svgDocument.rect();
-    this.render(el);
-    return el;
-  };
-
-
-  /*
-  Section: Event Handlers
-   */
-
-  Rectangle.prototype.onModelChange = function() {
-    this.render();
-    return this.emit('change', this);
-  };
-
-
-  /*
-  Section: Private Methods
-   */
-
-  Rectangle.prototype._setupSVGObject = function(svgEl1) {
-    this.svgEl = svgEl1;
-    if (!this.svgEl) {
-      this.svgEl = this.svgDocument.rect().attr(DefaultAttrs);
-    }
-    Utils.setObjectOnNode(this.svgEl.node, this);
-    return this.updateFromAttributes();
-  };
-
-  return Rectangle;
-
-})(EventEmitter);
-
-
-},{"./point.coffee":16,"./transform.coffee":24,"./utils.coffee":25,"events":1}],19:[function(require,module,exports){
-var EventEmitter, SelectionModel,
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-EventEmitter = require('events').EventEmitter;
-
-module.exports = SelectionModel = (function(superClass) {
-  extend(SelectionModel, superClass);
-
-  function SelectionModel() {
-    this.preselected = null;
-    this.selected = null;
-    this.selectedNode = null;
-  }
-
-  SelectionModel.prototype.setPreselected = function(preselected) {
-    var old;
-    if (preselected === this.preselected) {
-      return;
-    }
-    if (preselected && preselected === this.selected) {
-      return;
-    }
-    old = this.preselected;
-    this.preselected = preselected;
-    return this.emit('change:preselected', {
-      object: this.preselected,
-      old: old
-    });
-  };
-
-  SelectionModel.prototype.setSelected = function(selected) {
-    var old;
-    if (selected === this.selected) {
-      return;
-    }
-    old = this.selected;
-    this.selected = selected;
-    if (this.preselected === selected) {
-      this.setPreselected(null);
-    }
-    return this.emit('change:selected', {
-      object: this.selected,
-      old: old
-    });
-  };
-
-  SelectionModel.prototype.setSelectedNode = function(selectedNode) {
-    var old;
-    if (selectedNode === this.selectedNode) {
-      return;
-    }
-    old = this.selectedNode;
-    this.selectedNode = selectedNode;
-    return this.emit('change:selectedNode', {
-      node: this.selectedNode,
-      old: old
-    });
-  };
-
-  SelectionModel.prototype.clearSelected = function() {
-    return this.setSelected(null);
-  };
-
-  SelectionModel.prototype.clearPreselected = function() {
-    return this.setPreselected(null);
-  };
-
-  SelectionModel.prototype.clearSelectedNode = function() {
-    return this.setSelectedNode(null);
-  };
-
-  return SelectionModel;
-
-})(EventEmitter);
-
-
-},{"events":1}],20:[function(require,module,exports){
-var ObjectSelection, SelectionView,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-ObjectSelection = require("./object-selection.coffee");
-
-module.exports = SelectionView = (function() {
-  function SelectionView(svgDocument, model) {
-    this.svgDocument = svgDocument;
-    this.model = model;
-    this.onChangePreselected = bind(this.onChangePreselected, this);
-    this.onChangeSelected = bind(this.onChangeSelected, this);
-    this.objectSelection = new ObjectSelection(this.svgDocument);
-    this.objectPreselection = new ObjectSelection(this.svgDocument, {
-      "class": 'object-preselection'
-    });
-    this.model.on('change:selected', this.onChangeSelected);
-    this.model.on('change:preselected', this.onChangePreselected);
-  }
-
-  SelectionView.prototype.getObjectSelection = function() {
-    return this.objectSelection;
-  };
-
-  SelectionView.prototype.onChangeSelected = function(arg) {
-    var object, old;
-    object = arg.object, old = arg.old;
-    return this.objectSelection.setObject(object);
-  };
-
-  SelectionView.prototype.onChangePreselected = function(arg) {
-    var object;
-    object = arg.object;
-    return this.objectPreselection.setObject(object);
-  };
-
-  return SelectionView;
-
-})();
-
-
-},{"./object-selection.coffee":11}],21:[function(require,module,exports){
-var Size;
-
-module.exports = Size = (function() {
-  Size.create = function(width, height) {
-    if (width instanceof Size) {
-      return width;
-    }
-    if (Array.isArray(width)) {
-      return new Size(width[0], width[1]);
-    } else {
-      return new Size(width, height);
-    }
-  };
-
-  function Size(width, height) {
-    this.set(width, height);
-  }
-
-  Size.prototype.set = function(width1, height1) {
-    var ref;
-    this.width = width1;
-    this.height = height1;
-    if (Array.isArray(this.width)) {
-      return ref = this.width, this.width = ref[0], this.height = ref[1], ref;
-    }
-  };
-
-  Size.prototype.toArray = function() {
-    return [this.width, this.height];
-  };
-
-  Size.prototype.equals = function(other) {
-    other = Size.create(other);
-    return other.width === this.width && other.height === this.height;
-  };
-
-  Size.prototype.toString = function() {
-    return "(" + this.width + ", " + this.height + ")";
-  };
-
-  return Size;
-
-})();
-
-
-},{}],22:[function(require,module,exports){
-var EventEmitter, Point, Subpath,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-EventEmitter = require('events').EventEmitter;
-
-Point = require('./point.coffee');
-
-module.exports = Subpath = (function(superClass) {
-  extend(Subpath, superClass);
-
-  function Subpath(arg) {
-    var nodes, ref;
-    ref = arg != null ? arg : {}, this.path = ref.path, this.closed = ref.closed, nodes = ref.nodes;
-    this.onNodeChange = bind(this.onNodeChange, this);
-    this.nodes = [];
-    this.setNodes(nodes);
-    this.closed = !!this.closed;
-  }
-
-  Subpath.prototype.toString = function() {
-    return "Subpath " + (this.toPathString());
-  };
-
-  Subpath.prototype.toPathString = function() {
-    var closePath, j, lastNode, lastPoint, len, makeCurve, node, path, ref;
-    path = '';
-    lastPoint = null;
-    makeCurve = function(fromNode, toNode) {
-      var curve;
-      curve = '';
-      if (fromNode.handleOut || toNode.handleIn) {
-        curve = [];
-        curve = curve.concat(fromNode.getAbsoluteHandleOut().toArray());
-        curve = curve.concat(toNode.getAbsoluteHandleIn().toArray());
-        curve = curve.concat(toNode.point.toArray());
-        curve = "C" + (curve.join(','));
-      } else if (fromNode.point.x === toNode.point.x) {
-        curve = "V" + toNode.point.y;
-      } else if (fromNode.point.y === toNode.point.y) {
-        curve = "H" + toNode.point.x;
-      } else {
-        curve = "L" + (toNode.point.toArray().join(','));
-      }
-      return curve;
-    };
-    closePath = function(firstNode, lastNode) {
-      var closingPath;
-      if (!(firstNode && lastNode)) {
-        return '';
-      }
-      closingPath = '';
-      if (lastNode.handleOut || firstNode.handleIn) {
-        closingPath += makeCurve(lastNode, firstNode);
-      }
-      return closingPath += 'Z';
-    };
-    ref = this.nodes;
-    for (j = 0, len = ref.length; j < len; j++) {
-      node = ref[j];
-      if (path) {
-        path += makeCurve(lastNode, node);
-      } else {
-        path += 'M' + node.point.toArray().join(',');
-      }
-      lastNode = node;
-    }
-    if (this.closed) {
-      path += closePath(this.nodes[0], this.nodes[this.nodes.length - 1]);
-    }
-    return path;
-  };
-
-  Subpath.prototype.getNodes = function() {
-    return this.nodes;
-  };
-
-  Subpath.prototype.setNodes = function(nodes) {
-    var j, k, len, len1, node, ref;
-    if (!(nodes && Array.isArray(nodes))) {
-      return;
-    }
-    ref = this.nodes;
-    for (j = 0, len = ref.length; j < len; j++) {
-      node = ref[j];
-      this._unbindNode(node);
-    }
-    for (k = 0, len1 = nodes.length; k < len1; k++) {
-      node = nodes[k];
-      this._bindNode(node);
-    }
-    this.nodes = nodes;
-    return this.emit('change', this);
-  };
-
-  Subpath.prototype.addNode = function(node) {
-    return this.insertNode(node, this.nodes.length);
-  };
-
-  Subpath.prototype.insertNode = function(node, index) {
-    this._bindNode(node);
-    this.nodes.splice(index, 0, node);
-    this.emit('insert:node', this, {
-      subpath: this,
-      index: index,
-      node: node
-    });
-    return this.emit('change', this);
-  };
-
-  Subpath.prototype.close = function() {
-    this.closed = true;
-    return this.emit('change', this);
-  };
-
-  Subpath.prototype.translate = function(point) {
-    var j, len, node, ref;
-    point = Point.create(point);
-    ref = this.nodes;
-    for (j = 0, len = ref.length; j < len; j++) {
-      node = ref[j];
-      node.translate(point);
-    }
-  };
-
-  Subpath.prototype.onNodeChange = function() {
-    return this.emit('change', this);
-  };
-
-  Subpath.prototype._bindNode = function(node) {
-    node.setPath(this.path);
-    return node.on('change', this.onNodeChange);
-  };
-
-  Subpath.prototype._unbindNode = function(node) {
-    node.setPath(null);
-    return node.off('change', this.onNodeChange);
-  };
-
-  Subpath.prototype._findNodeIndex = function(node) {
-    var i, j, ref;
-    for (i = j = 0, ref = this.nodes.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
-      if (this.nodes[i] === node) {
-        return i;
-      }
-    }
-    return -1;
-  };
-
-  return Subpath;
-
-})(EventEmitter);
-
-
-},{"./point.coffee":16,"events":1}],23:[function(require,module,exports){
-var DeserializeSVG, PointerTool, SVG, SVGDocument, SelectionModel, SelectionView;
-
-SVG = require('../vendor/svg');
-
-SelectionModel = require("./selection-model.coffee");
-
-SelectionView = require("./selection-view.coffee");
-
-PointerTool = require("./pointer-tool.coffee");
-
-DeserializeSVG = require("./deserialize-svg.coffee");
-
-module.exports = SVGDocument = (function() {
-  function SVGDocument(rootNode) {
-    this.objects = [];
-    this.svgDocument = SVG(rootNode);
-    this.toolLayer = this.svgDocument.group();
-    this.toolLayer.node.setAttribute('class', 'tool-layer');
-    this.selectionModel = new SelectionModel();
-    this.selectionView = new SelectionView(this.toolLayer, this.selectionModel);
-    this.tool = new PointerTool(this.svgDocument, {
-      selectionModel: this.selectionModel,
-      selectionView: this.selectionView,
-      toolLayer: this.toolLayer
-    });
-    this.tool.activate();
-  }
-
-  SVGDocument.prototype.deserialize = function(svgString) {
-    this.objects = DeserializeSVG(this.svgDocument, svgString);
-    return this.toolLayer.front();
-  };
-
-  SVGDocument.prototype.serialize = function() {
-    var svgRoot;
-    svgRoot = this.getSvgRoot();
-    if (svgRoot) {
-      return svgRoot["export"]({
-        whitespace: true
-      });
-    } else {
-      return '';
-    }
-  };
-
-  SVGDocument.prototype.getSvgRoot = function() {
-    var svgRoot;
-    svgRoot = null;
-    this.svgDocument.each(function() {
-      if (this.node.nodeName === 'svg') {
-        return svgRoot = this;
-      }
-    });
-    return svgRoot;
-  };
-
-  return SVGDocument;
-
-})();
-
-
-},{"../vendor/svg":26,"./deserialize-svg.coffee":4,"./pointer-tool.coffee":17,"./selection-model.coffee":19,"./selection-view.coffee":20}],24:[function(require,module,exports){
-var Point, Transform, TranslateRegex;
-
-Point = require("./point.coffee");
-
-TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/;
-
-module.exports = Transform = (function() {
-  function Transform() {
-    this.translation = null;
-    this.transformString = '';
-  }
-
-  Transform.prototype.setTransformString = function(transformString) {
-    var translation, x, y;
-    if (transformString == null) {
-      transformString = '';
-    }
-    if (this.transformString === transformString) {
-      return false;
-    } else {
-      this.transformString = transformString;
-      translation = TranslateRegex.exec(transformString);
-      if (translation != null) {
-        x = parseInt(translation[1]);
-        y = parseInt(translation[2]);
-        this.translation = new Point(x, y);
-      } else {
-        this.translation = null;
-      }
-      return true;
-    }
-  };
-
-  Transform.prototype.toString = function() {
-    return this.transformString;
-  };
-
-  Transform.prototype.transformPoint = function(point) {
-    point = Point.create(point);
-    if (this.translation) {
-      point = point.add(this.translation);
-    }
-    return point;
-  };
-
-  return Transform;
-
-})();
-
-
-},{"./point.coffee":16}],25:[function(require,module,exports){
-(function (global){
-var Point, Utils, getObjectMap;
-
-Point = require("./point.coffee");
-
-getObjectMap = function() {
-  var g;
-  g = typeof global !== "undefined" && global !== null ? global : window;
-  if (g.NodeObjectMap == null) {
-    g.NodeObjectMap = {};
-  }
-  return g.NodeObjectMap;
-};
-
-Utils = {
-  getObjectFromNode: function(domNode) {
-    return getObjectMap()[domNode.id];
-  },
-  setObjectOnNode: function(domNode, object) {
-    return getObjectMap()[domNode.id] = object;
-  },
-  pointForEvent: function(svgDocument, event) {
-    var clientX, clientY, left, top;
-    clientX = event.clientX, clientY = event.clientY;
-    top = this.svgDocument.node.offsetTop;
-    left = this.svgDocument.node.offsetLeft;
-    return new Point(event.clientX - left, event.clientY - top);
-  }
-};
-
-module.exports = Utils;
-
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./point.coffee":16}],26:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /* svg.js 1.0.0-1-g04c734f - svg selector inventor polyfill regex default color array pointarray patharray number viewbox bbox rbox element parent container fx relative event defs group arrange mask clip gradient pattern doc shape symbol use rect ellipse line poly path image text textpath nested hyperlink marker sugar set data memory loader helpers - svgjs.com/license */
 ;(function(root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -6943,5 +6943,5 @@ module.exports = Utils;
   return SVG
 }));
 
-},{}]},{},[3])(3)
+},{}]},{},[2])(2)
 });

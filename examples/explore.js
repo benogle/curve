@@ -3,8 +3,8 @@ var doc
 window.main = function() {
   this.DOC = doc = new Curve.SVGDocument("canvas")
 
-  fileToLoad = localStorage.getItem('curve-file') || Curve.Examples.cloud
-  // fileToLoad = Curve.Examples.rects
+  // fileToLoad = localStorage.getItem('curve-file') || Curve.Examples.cloud
+  fileToLoad = Curve.Examples.rects
   doc.deserialize(fileToLoad)
 
   document.addEventListener('keydown', onKeyDown, false)

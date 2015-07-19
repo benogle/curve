@@ -1,5 +1,5 @@
-ObjectEditor = require './object-editor.coffee'
-Utils = require './Utils.coffee'
+ObjectEditor = require './object-editor'
+Utils = require './Utils'
 
 module.exports =
 class PointerTool

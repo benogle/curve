@@ -1,8 +1,8 @@
 .DS_Store
 
+lib/
 test/lib
 node_modules/*
-cssbelt.coffee
 .grunt
 npm-debug.log
 _SpecRunner.html

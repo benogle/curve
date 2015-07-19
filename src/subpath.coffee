@@ -1,5 +1,5 @@
 {EventEmitter} = require 'events'
-Point = require './point.coffee'
+Point = require './point'
 
 # Subpath handles a single path from move node -> close node.
 #

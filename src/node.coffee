@@ -1,5 +1,5 @@
 {EventEmitter} = require 'events'
-Point = require './point.coffee'
+Point = require './point'
 
 module.exports =
 class Node extends EventEmitter

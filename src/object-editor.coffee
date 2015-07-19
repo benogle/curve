@@ -1,4 +1,4 @@
-PathEditor = require './path-editor.coffee'
+PathEditor = require './path-editor'
 
 # Manages the editor UIs for all object types. e.g. PathEditor object for <path>
 # SVG objects.

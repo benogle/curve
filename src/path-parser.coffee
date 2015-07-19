@@ -1,4 +1,4 @@
-Node = require "./node.coffee"
+Node = require "./node"
 
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 

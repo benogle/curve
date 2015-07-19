@@ -1,7 +1,8 @@
 {EventEmitter} = require 'events'
-Transform = require './transform.coffee'
-Utils = require './utils.coffee'
-Point = require './point.coffee'
+Transform = require './transform'
+Utils = require './utils'
+Point = require './point'
+Size = require './size'
 
 DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
 IDS = 0

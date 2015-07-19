@@ -1,4 +1,4 @@
-Point = require "./point.coffee"
+Point = require "./point"
 
 TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/
 

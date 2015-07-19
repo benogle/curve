@@ -1,30 +1,30 @@
-require './ext/svg.circle.coffee'
-require './ext/svg.draggable.coffee'
-require './ext/svg.export.coffee'
+require './ext/svg-circle'
+require './ext/svg-draggable'
+require './ext/svg-export'
 
 module.exports = {
-  Point: require "./point.coffee"
-  Size: require "./size.coffee"
-  Transform: require "./transform.coffee"
-  Utils: require "./utils.coffee"
+  Point: require "./point"
+  Size: require "./size"
+  Transform: require "./transform"
+  Utils: require "./utils"
 
-  Node: require "./node.coffee"
+  Node: require "./node"
 
-  Path: require "./path.coffee"
-  Subpath: require "./subpath.coffee"
-  Rectangle: require "./rectangle.coffee"
+  Path: require "./path"
+  Subpath: require "./subpath"
+  Rectangle: require "./rectangle"
 
-  NodeEditor: require "./node-editor.coffee"
-  ObjectEditor: require "./object-editor.coffee"
-  ObjectSelection: require "./object-selection.coffee"
-  PathEditor: require "./path-editor.coffee"
-  PathParser: require "./path-parser.coffee"
+  NodeEditor: require "./node-editor"
+  ObjectEditor: require "./object-editor"
+  ObjectSelection: require "./object-selection"
+  PathEditor: require "./path-editor"
+  PathParser: require "./path-parser"
 
-  SelectionModel: require "./selection-model.coffee"
-  SelectionView: require "./selection-view.coffee"
+  SelectionModel: require "./selection-model"
+  SelectionView: require "./selection-view"
 
-  PenTool: require "./pen-tool.coffee"
-  PointerTool: require "./pointer-tool.coffee"
+  PenTool: require "./pen-tool"
+  PointerTool: require "./pointer-tool"
 
-  SVGDocument: require "./svg-document.coffee"
+  SVGDocument: require "./svg-document"
 }

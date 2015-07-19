@@ -1,9 +1,9 @@
 SVG = require '../vendor/svg'
 
-SelectionModel = require "./selection-model.coffee"
-SelectionView = require "./selection-view.coffee"
-PointerTool = require "./pointer-tool.coffee"
-DeserializeSVG = require "./deserialize-svg.coffee"
+SelectionModel = require "./selection-model"
+SelectionView = require "./selection-view"
+PointerTool = require "./pointer-tool"
+DeserializeSVG = require "./deserialize-svg"
 
 module.exports =
 class SVGDocument

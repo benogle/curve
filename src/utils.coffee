@@ -1,4 +1,4 @@
-Point = require "./point.coffee"
+Point = require "./point"
 
 # Browserify loads this module twice :/
 getObjectMap = ->

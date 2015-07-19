@@ -1,4 +1,4 @@
-ObjectSelection = require "./object-selection.coffee"
+ObjectSelection = require "./object-selection"
 
 # Handles showing / hiding the red and blue outlines when an object is selected /
 # preselected.

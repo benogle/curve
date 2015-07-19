@@ -3,6 +3,13 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
 
     coffee: {
+      build: {
+        expand: true,
+        cwd: 'src/',
+        src: ['**/*.coffee'],
+        dest: 'lib/',
+        ext: '.js'
+      },
       test: {
         expand: true,
         cwd: 'test/src/',
@@ -18,14 +25,12 @@ module.exports = function(grunt) {
           standalone: 'Curve'
         },
         debug: true,
-        transform: ['coffeeify'],
-        extensions: ['.coffee'],
       },
       production: {
         options: {
           debug: false
         },
-        src: ['src/curve.coffee'],
+        src: ['lib/curve.js'],
         dest: 'curve.js'
       }
     },
@@ -41,7 +46,7 @@ module.exports = function(grunt) {
     watch: {
       build: {
         files: ['src/**/*.coffee'],
-        tasks: ['browserify', 'jasmine']
+        tasks: ['coffee:build', 'browserify']
       },
       test: {
         files: ['test/src/**/*.coffee'],
@@ -85,5 +90,5 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
 
   grunt.registerTask('test', ['coffee', 'browserify', 'jasmine']);
-  grunt.registerTask('default', ['browserify', 'uglify']);
+  grunt.registerTask('default', ['coffee', 'browserify', 'uglify']);
 };

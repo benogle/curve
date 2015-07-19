@@ -1,4 +1,4 @@
-NodeEditor = require './node-editor.coffee'
+NodeEditor = require './node-editor'
 
 # Handles the UI for free-form path editing. Manages NodeEditor objects based on
 # a Path's nodes.

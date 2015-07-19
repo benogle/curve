@@ -1,5 +1,5 @@
-Node = require './node.coffee'
-Path = require './path.coffee'
+Node = require './node'
+Path = require './path'
 
 #
 module.exports =

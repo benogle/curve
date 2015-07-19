@@ -1,5 +1,5 @@
-Path = require "./path.coffee"
-Rectangle = require "./rectangle.coffee"
+Path = require "./path"
+Rectangle = require "./rectangle"
 
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #

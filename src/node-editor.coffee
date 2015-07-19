@@ -1,4 +1,4 @@
-Point = require './point.coffee'
+Point = require './point'
 
 # A node UI in the interface allowing for user interaction (moving the node,
 # moving the handles). Draws the node, and draws the handles.
