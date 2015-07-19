@@ -2,13 +2,12 @@
 
 * Will load any svg file
 * Will serialize (save!) the loaded svg file
-* Only can select and modify paths
+* Only can select and modify paths and rectangles
 
 ## TODO
 
 * Use browserify
 * Support other non-path object types. At least selecting / moving!
-  * rect
   * circle
   * ellipse
   * text
