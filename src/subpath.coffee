@@ -1,6 +1,5 @@
-_ = window._ or require 'underscore'
-
-EventEmitter = window.EventEmitter or require('events').EventEmitter
+{EventEmitter} = require 'events'
+Point = require './point.coffee'
 
 # Subpath handles a single path from move node -> close node.
 #
@@ -9,6 +8,7 @@ EventEmitter = window.EventEmitter or require('events').EventEmitter
 #   M50,50L20,30Z  M4,5L2,3Z
 #
 # Each one of these will be represented by this Subpath class.
+module.exports =
 class Subpath extends EventEmitter
   constructor: ({@path, @closed, nodes}={}) ->
     @nodes = []
@@ -63,7 +63,7 @@ class Subpath extends EventEmitter
   getNodes: -> @nodes
 
   setNodes: (nodes) ->
-    return unless nodes and _.isArray(nodes)
+    return unless nodes and Array.isArray(nodes)
 
     @_unbindNode(node) for node in @nodes
     @_bindNode(node) for node in nodes
@@ -104,5 +104,3 @@ class Subpath extends EventEmitter
     for i in [0...@nodes.length]
       return i if @nodes[i] == node
     -1
-
-Curve.Subpath = Subpath

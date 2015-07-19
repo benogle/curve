@@ -1,9 +1,9 @@
-_ = window._ or require 'underscore'
-$ = window.jQuery or require 'jquery'
+Point = require './point.coffee'
 
 # A node UI in the interface allowing for user interaction (moving the node,
 # moving the handles). Draws the node, and draws the handles.
 # Managed by a PathEditor object.
+module.exports =
 class NodeEditor
   nodeSize: 5
   handleSize: 3
@@ -83,8 +83,9 @@ class NodeEditor
 
   pointForEvent: (event) ->
     {clientX, clientY} = event
-    {top, left} = $(@svgDocument.node).offset()
-    new Curve.Point(event.clientX - left, event.clientY - top)
+    top = @svgDocument.node.offsetTop
+    left = @svgDocument.node.offsetLeft
+    new Point(event.clientX - left, event.clientY - top)
 
   _bindNode: (node) ->
     return unless node
@@ -154,5 +155,3 @@ class NodeEditor
       this.attr('r': self.handleSize+2)
     @handleElements.on 'mouseout', ->
       this.attr('r': self.handleSize)
-
-Curve.NodeEditor = NodeEditor

@@ -1,6 +1,9 @@
+NodeEditor = require './node-editor.coffee'
+
 # Handles the UI for free-form path editing. Manages NodeEditor objects based on
 # a Path's nodes.
-class Curve.PathEditor
+module.exports =
+class PathEditor
   constructor: (@svgDocument) ->
     @path = null
     @node = null
@@ -70,7 +73,7 @@ class Curve.PathEditor
     nodeEditor = if @_nodeEditorPool.length
       @_nodeEditorPool.pop()
     else
-      new Curve.NodeEditor(@svgDocument, this)
+      new NodeEditor(@svgDocument, this)
 
     nodeEditor.setNode(node)
     @nodeEditors.push(nodeEditor)

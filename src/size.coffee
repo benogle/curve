@@ -1,6 +1,6 @@
-_ = window._ or require 'underscore'
 
 #
+module.exports =
 class Size
   @create: (width, height) ->
     return width if width instanceof Size
@@ -13,7 +13,7 @@ class Size
     @set(width, height)
 
   set: (@width, @height) ->
-    [@width, @height] = @width if _.isArray(@width)
+    [@width, @height] = @width if Array.isArray(@width)
 
   toArray: ->
     [@width, @height]
@@ -24,5 +24,3 @@ class Size
 
   toString: ->
     "(#{@width}, #{@height})"
-
-Curve.Size = Size

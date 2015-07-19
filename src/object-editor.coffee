@@ -1,14 +1,17 @@
+PathEditor = require './path-editor.coffee'
+
 # Manages the editor UIs for all object types. e.g. PathEditor object for <path>
 # SVG objects.
 #
 # The goal for this arch is flexibility. Any tool can make one of these and
 # activate it when it wants UIs for object editing.
-class Curve.ObjectEditor
+module.exports =
+class ObjectEditor
   constructor: (@svgDocument, @selectionModel) ->
     @active = false
     @activeEditor = null
     @editors =
-      Path: new Curve.PathEditor(@svgDocument)
+      Path: new PathEditor(@svgDocument)
 
   isActive: ->
     @active

@@ -5,6 +5,8 @@
 # * It's now using translations for moves, rather than the move() method
 # * I removed a bunch of features I didnt need
 
+SVG = require '../../vendor/svg'
+
 TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/
 
 SVG.extend SVG.Element, draggable: ->

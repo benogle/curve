@@ -1,3 +1,6 @@
+Path = require "./path.coffee"
+Rectangle = require "./rectangle.coffee"
+
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
 # Converted to coffeescript and modified by benogle
@@ -9,10 +12,10 @@
 # * `svgString` {String} with the svg markup
 #
 # Returns an array of objects selectable and editable by Curve tools.
-Curve.import = (svgDocument, svgString) ->
+module.exports = (svgDocument, svgString) ->
   IMPORT_FNS =
-    path: (el) -> [new Curve.Path(svgDocument, svgEl: el)]
-    rect: (el) -> [new Curve.Rectangle(svgDocument, svgEl: el)]
+    path: (el) -> [new Path(svgDocument, svgEl: el)]
+    rect: (el) -> [new Rectangle(svgDocument, svgEl: el)]
 
   # create temporary div to receive svg content
   parentNode = document.createElement('div')

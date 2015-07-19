@@ -2,19 +2,7 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
-    concat: {
-      dist: {
-        src: ['src/**/*.coffee'],
-        dest: '<%= pkg.name %>.coffee'
-      }
-    },
-
     coffee: {
-      build: {
-        files: {
-          '<%= pkg.name %>.js': '<%= pkg.name %>.coffee',
-        }
-      },
       test: {
         expand: true,
         cwd: 'test/src/',
@@ -24,10 +12,25 @@ module.exports = function(grunt) {
       }
     },
 
-    uglify: {
+    browserify: {
       options: {
-        banner: '/*! CSSBelt.js - http://easelinc.github.io/cssbelt, built <%= grunt.template.today("mm-dd-yyyy") %> */\n'
+        browserifyOptions: {
+          standalone: 'Curve'
+        },
+        debug: true,
+        transform: ['coffeeify'],
+        extensions: ['.coffee'],
       },
+      production: {
+        options: {
+          debug: false
+        },
+        src: ['src/curve.coffee'],
+        dest: 'curve.js'
+      }
+    },
+
+    uglify: {
       dist: {
         files: {
           '<%= pkg.name %>.min.js': ['<%= pkg.name %>.js']
@@ -38,7 +41,7 @@ module.exports = function(grunt) {
     watch: {
       build: {
         files: ['src/**/*.coffee'],
-        tasks: ['concat', 'coffee:build', 'jasmine']
+        tasks: ['browserify', 'jasmine']
       },
       test: {
         files: ['test/src/**/*.coffee'],
@@ -79,7 +82,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
+  grunt.loadNpmTasks('grunt-browserify');
 
-  grunt.registerTask('test', ['concat', 'coffee', 'jasmine']);
-  grunt.registerTask('default', ['concat', 'coffee', 'uglify']);
+  grunt.registerTask('test', ['coffee', 'browserify', 'jasmine']);
+  grunt.registerTask('default', ['browserify', 'uglify']);
 };

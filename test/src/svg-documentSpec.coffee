@@ -1,8 +1,8 @@
-describe 'Curve.SvgDocument', ->
+describe 'Curve.SVGDocument', ->
   svg = null
   beforeEach ->
     loadFixtures 'canvas.html'
-    svg = new Curve.SvgDocument($('#canvas')[0])
+    svg = new Curve.SVGDocument($('#canvas')[0])
 
   it 'has a tool layer', ->
     expect($('#canvas svg>.tool-layer')).toExist()

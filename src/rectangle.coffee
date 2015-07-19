@@ -1,6 +1,8 @@
-_ = window._ or require 'underscore'
+{EventEmitter} = require 'events'
+Transform = require './transform.coffee'
+Utils = require './utils.coffee'
+Point = require './point.coffee'
 
-EventEmitter = window.EventEmitter or require('events').EventEmitter
 DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
 IDS = 0
 
@@ -11,7 +13,7 @@ class RectangleModel extends EventEmitter
 
   constructor: ->
     @id = IDS++
-    @transform = new Curve.Transform
+    @transform = new Transform
 
   ###
   Section: Public Methods
@@ -56,6 +58,7 @@ class RectangleModel extends EventEmitter
 
 # Represents a <rect> svg element. Handles interacting with the element, and
 # rendering from the {RectangleModel}.
+module.exports =
 class Rectangle extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
     @model = new RectangleModel
@@ -134,7 +137,5 @@ class Rectangle extends EventEmitter
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = @svgDocument.rect().attr(DefaultAttrs) unless @svgEl
-    Curve.Utils.setObjectOnNode(@svgEl.node, this)
+    Utils.setObjectOnNode(@svgEl.node, this)
     @updateFromAttributes()
-
-Curve.Rectangle = Rectangle

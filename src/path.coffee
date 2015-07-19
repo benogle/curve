@@ -1,6 +1,11 @@
-_ = window._ or require 'underscore'
+{EventEmitter} = require 'events'
 
-EventEmitter = window.EventEmitter or require('events').EventEmitter
+Utils = require './utils.coffee'
+PathParser = require './path-parser.coffee'
+Transform = require './transform.coffee'
+Subpath = require './subpath.coffee'
+Point = require './point.coffee'
+
 DefaultAttrs = {fill: '#eee', stroke: 'none'}
 IDS = 0
 
@@ -13,14 +18,15 @@ class PathModel extends EventEmitter
   constructor: ->
     @subpaths = []
     @pathString = ''
-    @transform = new Curve.Transform
+    @transform = new Transform
 
   ###
   Section: Public Methods
   ###
 
   getNodes: ->
-    _.flatten(subpath.getNodes() for subpath in @subpaths, true)
+    nodes = (subpath.getNodes() for subpath in @subpaths)
+    flatten(nodes)
 
   getTransform: -> @transform
 
@@ -104,7 +110,7 @@ class PathModel extends EventEmitter
     return unless pathString
     return if pathString is @pathString
     @_removeAllSubpaths()
-    parsedPath = Curve.PathParser.parsePath(pathString)
+    parsedPath = PathParser.parsePath(pathString)
     @_createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
     @currentSubpath = _.last(@subpaths)
     @_updatePathString()
@@ -121,6 +127,7 @@ class PathModel extends EventEmitter
 
 # Represents a <path> svg element. Handles interacting with the element, and
 # rendering from the {PathModel}.
+module.exports =
 class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
     @id = IDS++
@@ -210,7 +217,13 @@ class Path extends EventEmitter
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = @svgDocument.path().attr(DefaultAttrs) unless @svgEl
-    Curve.Utils.setObjectOnNode(@svgEl.node, this)
+    Utils.setObjectOnNode(@svgEl.node, this)
     @model.setPathString(@svgEl.attr('d'))
 
-Curve.Path = Path
+flatten = (array) ->
+  concat = (accumulator, item) ->
+    if Array.isArray(item)
+      accumulator.concat(flatten(item));
+    else
+      accumulator.concat(item);
+  array.reduce(concat, [])

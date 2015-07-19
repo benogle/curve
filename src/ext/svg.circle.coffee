@@ -1,4 +1,4 @@
-SVG = window.SVG or require('./vendor/svg').SVG
+SVG = require '../../vendor/svg.js'
 
 #
 class SVG.Circle extends SVG.Shape

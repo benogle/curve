@@ -1,6 +1,12 @@
-SVG = window.SVG or require('./vendor/svg').SVG
+SVG = require '../vendor/svg'
 
-class SvgDocument
+SelectionModel = require "./selection-model.coffee"
+SelectionView = require "./selection-view.coffee"
+PointerTool = require "./pointer-tool.coffee"
+DeserializeSVG = require "./deserialize-svg.coffee"
+
+module.exports =
+class SVGDocument
   constructor: (rootNode) ->
     @objects = []
     @svgDocument = SVG(rootNode)
@@ -8,15 +14,14 @@ class SvgDocument
     @toolLayer = @svgDocument.group()
     @toolLayer.node.setAttribute('class', 'tool-layer')
 
-    @selectionModel = new Curve.SelectionModel()
-    @selectionView = new Curve.SelectionView(@toolLayer, @selectionModel)
+    @selectionModel = new SelectionModel()
+    @selectionView = new SelectionView(@toolLayer, @selectionModel)
 
-    @tool = new Curve.PointerTool(@svgDocument, {@selectionModel, @selectionView, @toolLayer})
+    @tool = new PointerTool(@svgDocument, {@selectionModel, @selectionView, @toolLayer})
     @tool.activate()
 
   deserialize: (svgString) ->
-    # See `ext/svg.import.coffee` for import implementation
-    @objects = Curve.import(@svgDocument, svgString)
+    @objects = DeserializeSVG(@svgDocument, svgString)
     @toolLayer.front()
 
   serialize: ->
@@ -30,5 +35,3 @@ class SvgDocument
     svgRoot = null
     @svgDocument.each -> svgRoot = this if this.node.nodeName == 'svg'
     svgRoot
-
-Curve.SvgDocument = SvgDocument

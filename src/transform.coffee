@@ -1,3 +1,5 @@
+Point = require "./point.coffee"
+
 TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/
 
 # Transform class parses the string from an SVG transform attribute, and running
@@ -8,6 +10,7 @@ TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/
 # * Add support for all other transformations. Currently this only supports
 #   translations because I didnt need anything else.
 #
+module.exports =
 class Transform
   constructor: ->
     @translation = null
@@ -22,7 +25,7 @@ class Transform
       if translation?
         x = parseInt(translation[1])
         y = parseInt(translation[2])
-        @translation = new Curve.Point(x, y)
+        @translation = new Point(x, y)
       else
         @translation = null
       true
@@ -31,8 +34,6 @@ class Transform
     @transformString
 
   transformPoint: (point) ->
-    point = Curve.Point.create(point)
+    point = Point.create(point)
     point = point.add(@translation) if @translation
     point
-
-Curve.Transform = Transform

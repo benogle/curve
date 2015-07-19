@@ -1,5 +1,9 @@
+Node = require './node.coffee'
+Path = require './path.coffee'
+
 #
-class Curve.PenTool
+module.exports =
+class PenTool
   currentObject: null
   currentNode: null
 
@@ -17,7 +21,7 @@ class Curve.PenTool
 
   onMouseDown: (e) =>
     makeNode = =>
-      @currentNode = new Curve.Node([e.clientX, e.clientY], [0, 0], [0, 0])
+      @currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0])
       @currentObject.addNode(@currentNode)
       @selectionModel.setSelectedNode(@currentNode)
 
@@ -28,7 +32,7 @@ class Curve.PenTool
       else
         makeNode()
     else
-      @currentObject = new Curve.Path(@svgDocument)
+      @currentObject = new Path(@svgDocument)
       @selectionModel.setSelected(@currentObject)
       makeNode()
 

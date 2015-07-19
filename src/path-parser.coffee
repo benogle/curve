@@ -1,4 +1,4 @@
-_ = window._ or require 'underscore'
+Node = require "./node.coffee"
 
 [COMMAND, NUMBER] = ['COMMAND', 'NUMBER']
 
@@ -30,8 +30,7 @@ parseTokens = (groupedCommands) ->
 
   # make relative points absolute based on currentPoint
   makeAbsolute = (array) ->
-    _.map array, (val, i) ->
-      val + currentPoint[i % 2]
+    (val + currentPoint[i % 2] for val, i in array)
 
   # Create a node and add it to the list. When the last node is the same as the
   # first, and the path is closed, we do not create the node.
@@ -210,4 +209,4 @@ lexPath = (pathString) ->
   saveCurrentToken()
   tokens
 
-Curve.PathParser = {lexPath, parsePath, groupCommands, parseTokens}
+module.exports = {lexPath, parsePath, groupCommands, parseTokens}

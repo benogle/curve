@@ -1,7 +1,7 @@
 var doc
 
 window.main = function() {
-  this.DOC = doc = new Curve.SvgDocument("canvas")
+  this.DOC = doc = new Curve.SVGDocument("canvas")
 
   fileToLoad = localStorage.getItem('curve-file') || Curve.Examples.cloud
   // fileToLoad = Curve.Examples.rects
@@ -56,10 +56,10 @@ window._main = function() {
   })
   tool.activate()
 
-  pen = new Curve.PenTool(svg, {
-    selectionModel: this.selectionModel,
-    selectionView: this.selectionView
-  })
+  // pen = new Curve.PenTool(svg, {
+  //   selectionModel: this.selectionModel,
+  //   selectionView: this.selectionView
+  // })
   // @pen.activate()
 }
 
