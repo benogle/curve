@@ -9,13 +9,6 @@ module.exports = function(grunt) {
         src: ['**/*.coffee'],
         dest: 'lib/',
         ext: '.js'
-      },
-      test: {
-        expand: true,
-        cwd: 'test/src/',
-        src: ['**/*.coffee'],
-        dest: 'test/lib/',
-        ext: '.js'
       }
     },
 
@@ -70,7 +63,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-jasmine');
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-shell');
 

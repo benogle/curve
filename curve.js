@@ -110,8 +110,8 @@
   };
 
   convertNodes = function(nodes, context, level, store, block) {
-    var attr, child, clips, element, grandchild, i, j, transform, type, _i, _j, _ref, _ref1, _ref2;
-    for (i = _i = 0, _ref = nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    var attr, child, clips, element, grandchild, i, j, k, l, ref, ref1, ref2, transform, type;
+    for (i = k = 0, ref = nodes.length; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
       child = nodes[i];
       attr = {};
       clips = [];
@@ -144,7 +144,7 @@
             element = context[type](child.textContent);
           } else {
             element = null;
-            for (j = _j = 0, _ref1 = child.childNodes.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
+            for (j = l = 0, ref1 = child.childNodes.length; 0 <= ref1 ? l < ref1 : l > ref1; j = 0 <= ref1 ? ++l : --l) {
               grandchild = child.childNodes[j];
               if (grandchild.nodeName.toLowerCase() === 'tspan') {
                 if (element === null) {
@@ -172,7 +172,7 @@
           break;
         case 'clippath':
         case 'mask':
-          element = context[(_ref2 = type === 'mask') != null ? _ref2 : {
+          element = context[(ref2 = type === 'mask') != null ? ref2 : {
             'mask': 'clip'
           }]();
           convertNodes(child.childNodes, element, level + 1, store, block);
@@ -180,12 +180,12 @@
         case 'lineargradient':
         case 'radialgradient':
           element = context.defs().gradient(type.split('gradient')[0], function(stop) {
-            var _k, _ref3, _results;
-            _results = [];
-            for (j = _k = 0, _ref3 = child.childNodes.length; 0 <= _ref3 ? _k < _ref3 : _k > _ref3; j = 0 <= _ref3 ? ++_k : --_k) {
-              _results.push(stop.at(objectifyAttributes(child.childNodes[j])).style(child.childNodes[j].getAttribute('style')));
+            var m, ref3, results;
+            results = [];
+            for (j = m = 0, ref3 = child.childNodes.length; 0 <= ref3 ? m < ref3 : m > ref3; j = 0 <= ref3 ? ++m : --m) {
+              results.push(stop.at(objectifyAttributes(child.childNodes[j])).style(child.childNodes[j].getAttribute('style')));
             }
-            return _results;
+            return results;
           });
           break;
         case '#comment':
@@ -215,11 +215,11 @@
   };
 
   objectifyAttributes = function(child) {
-    var attr, attrs, i, _i, _ref;
+    var attr, attrs, i, k, ref;
     attrs = child.attributes || [];
     attr = {};
     if (attrs.length) {
-      for (i = _i = _ref = attrs.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+      for (i = k = ref = attrs.length - 1; ref <= 0 ? k <= 0 : k >= 0; i = ref <= 0 ? ++k : --k) {
         attr[attrs[i].nodeName] = attrs[i].nodeValue;
       }
     }
@@ -227,12 +227,12 @@
   };
 
   objectifyTransformations = function(transform) {
-    var def, i, list, t, trans, v, _i, _ref;
+    var def, i, k, list, ref, t, trans, v;
     trans = {};
     list = (transform || '').match(/[A-Za-z]+\([^\)]+\)/g) || [];
     def = SVG.defaults.trans();
     if (list.length) {
-      for (i = _i = _ref = list.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+      for (i = k = ref = list.length - 1; ref <= 0 ? k <= 0 : k >= 0; i = ref <= 0 ? ++k : --k) {
         t = list[i].match(/([A-Za-z]+)\(([^\)]+)\)/);
         v = (t[2] || '').replace(/^\s+/, '').replace(/,/g, ' ').replace(/\s+/g, ' ').split(' ');
         switch (t[1]) {
@@ -273,13 +273,13 @@
 },{"./path":13,"./rectangle":17}],4:[function(require,module,exports){
 (function() {
   var SVG,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   SVG = require('../../vendor/svg.js');
 
-  SVG.Circle = (function(_super) {
-    __extends(Circle, _super);
+  SVG.Circle = (function(superClass) {
+    extend(Circle, superClass);
 
     function Circle() {
       Circle.__super__.constructor.call(this, SVG.create('circle'));
@@ -394,8 +394,8 @@
         zoom: zoom
       }, event);
     }
-    /* prevent selection dragging*/
 
+    /* prevent selection dragging */
     if (event.preventDefault) {
       return event.preventDefault();
     } else {
@@ -415,8 +415,8 @@
         y: event.pageY - element.startEvent.pageY,
         zoom: element.startPosition.zoom
       };
-      /* caculate new position [with rotation correction]*/
 
+      /* caculate new position [with rotation correction] */
       x = element.startPosition.x + (delta.x * Math.cos(rotation) + delta.y * Math.sin(rotation)) / element.startPosition.zoom;
       y = element.startPosition.y + (delta.y * Math.cos(rotation) + delta.x * Math.sin(-rotation)) / element.startPosition.zoom;
       element.transform({
@@ -452,7 +452,7 @@
 
   SVG.extend(SVG.Element, {
     "export": function(options, level) {
-      var height, i, isRootSvgElement, name, node, width, _i, _j, _k, _ref, _ref1, _ref2;
+      var height, i, isRootSvgElement, j, k, l, name, node, ref, ref1, ref2, width;
       name = this.node.nodeName;
       node = '';
       isRootSvgElement = name === 'svg' && !level;
@@ -480,18 +480,18 @@
           node += this._whitespaced('<desc>Created with Curve</desc>', options.whitespace, level + 1);
           if (this._defs) {
             node += this._whitespaced('<defs>', options.whitespace, level + 1);
-            for (i = _i = 0, _ref = this._defs.children().length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+            for (i = j = 0, ref = this._defs.children().length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
               node += this._defs.children()[i]["export"](options, level + 2);
             }
             node += this._whitespaced('</defs>', options.whitespace, level + 1);
           }
         }
         if (this instanceof SVG.Container) {
-          for (i = _j = 0, _ref1 = this.children().length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+          for (i = k = 0, ref1 = this.children().length; 0 <= ref1 ? k < ref1 : k > ref1; i = 0 <= ref1 ? ++k : --k) {
             node += this.children()[i]["export"](options, level + 1);
           }
         } else if (this instanceof SVG.Text) {
-          for (i = _k = 0, _ref2 = this.lines.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; i = 0 <= _ref2 ? ++_k : --_k) {
+          for (i = l = 0, ref2 = this.lines.length; 0 <= ref2 ? l < ref2 : l > ref2; i = 0 <= ref2 ? ++l : --l) {
             node += this.lines[i]["export"](options, level + 1);
           }
         }
@@ -537,12 +537,12 @@
       }
     },
     _whitespaced: function(value, add, level) {
-      var i, space, whitespace, _i, _ref;
+      var i, j, ref, space, whitespace;
       if (add) {
         whitespace = '';
         space = add === true ? '  ' : add || '';
         if (level) {
-          for (i = _i = _ref = level - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+          for (i = j = ref = level - 1; ref <= 0 ? j <= 0 : j >= 0; i = ref <= 0 ? ++j : --j) {
             whitespace += space;
           }
         }
@@ -557,7 +557,7 @@
 },{"../../vendor/svg":26}],7:[function(require,module,exports){
 (function() {
   var NodeEditor, Point,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   Point = require('./point');
 
@@ -579,10 +579,10 @@
     function NodeEditor(svgToolParent, pathEditor) {
       this.svgToolParent = svgToolParent;
       this.pathEditor = pathEditor;
-      this.onDraggingHandleOut = __bind(this.onDraggingHandleOut, this);
-      this.onDraggingHandleIn = __bind(this.onDraggingHandleIn, this);
-      this.onDraggingNode = __bind(this.onDraggingNode, this);
-      this.render = __bind(this.render, this);
+      this.onDraggingHandleOut = bind(this.onDraggingHandleOut, this);
+      this.onDraggingHandleIn = bind(this.onDraggingHandleIn, this);
+      this.onDraggingNode = bind(this.onDraggingNode, this);
+      this.render = bind(this.render, this);
       this.svgDocument = this.svgToolParent.parent;
       this._setupNodeElement();
       this._setupLineElement();
@@ -691,49 +691,56 @@
     };
 
     NodeEditor.prototype._bindNode = function(node) {
-      var _ref;
+      var ref;
       if (!node) {
         return;
       }
       node.addListener('change', this.render);
-      return (_ref = node.getPath()) != null ? _ref.addListener('change', this.render) : void 0;
+      return (ref = node.getPath()) != null ? ref.addListener('change', this.render) : void 0;
     };
 
     NodeEditor.prototype._unbindNode = function(node) {
-      var _ref;
+      var ref;
       if (!node) {
         return;
       }
       node.removeListener('change', this.render);
-      return (_ref = node.getPath()) != null ? _ref.addListener('change', this.render) : void 0;
+      return (ref = node.getPath()) != null ? ref.addListener('change', this.render) : void 0;
     };
 
     NodeEditor.prototype._setupNodeElement = function() {
-      var _this = this;
       this.nodeElement = this.svgToolParent.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
-      this.nodeElement.click(function(e) {
-        e.stopPropagation();
-        _this.setEnableHandles(true);
-        _this.pathEditor.activateNode(_this.node);
-        return false;
-      });
+      this.nodeElement.click((function(_this) {
+        return function(e) {
+          e.stopPropagation();
+          _this.setEnableHandles(true);
+          _this.pathEditor.activateNode(_this.node);
+          return false;
+        };
+      })(this));
       this.nodeElement.draggable();
-      this.nodeElement.dragstart = function() {
-        return _this.pathEditor.activateNode(_this.node);
-      };
+      this.nodeElement.dragstart = (function(_this) {
+        return function() {
+          return _this.pathEditor.activateNode(_this.node);
+        };
+      })(this);
       this.nodeElement.dragmove = this.onDraggingNode;
-      this.nodeElement.on('mouseover', function() {
-        _this.nodeElement.front();
-        return _this.nodeElement.attr({
-          'r': _this.nodeSize + 2
-        });
-      });
-      return this.nodeElement.on('mouseout', function() {
-        return _this.nodeElement.attr({
-          'r': _this.nodeSize
-        });
-      });
+      this.nodeElement.on('mouseover', (function(_this) {
+        return function() {
+          _this.nodeElement.front();
+          return _this.nodeElement.attr({
+            'r': _this.nodeSize + 2
+          });
+        };
+      })(this));
+      return this.nodeElement.on('mouseout', (function(_this) {
+        return function() {
+          return _this.nodeElement.attr({
+            'r': _this.nodeSize
+          });
+        };
+      })(this));
     };
 
     NodeEditor.prototype._setupLineElement = function() {
@@ -742,17 +749,18 @@
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
-      var onStartDraggingHandle, onStopDraggingHandle, self,
-        _this = this;
+      var onStartDraggingHandle, onStopDraggingHandle, self;
       self = this;
       this.handleElements = this.svgToolParent.set();
       this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
       this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
-      this.handleElements.click(function(e) {
-        e.stopPropagation();
-        return false;
-      });
+      this.handleElements.click((function(_this) {
+        return function(e) {
+          e.stopPropagation();
+          return false;
+        };
+      })(this));
       onStartDraggingHandle = function() {
         return self._draggingHandle = this;
       };
@@ -789,15 +797,15 @@
 },{"./point":15}],8:[function(require,module,exports){
 (function() {
   var EventEmitter, Node, Point,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   EventEmitter = require('events').EventEmitter;
 
   Point = require('./point');
 
-  module.exports = Node = (function(_super) {
-    __extends(Node, _super);
+  module.exports = Node = (function(superClass) {
+    extend(Node, superClass);
 
     function Node(point, handleIn, handleOut, isJoined) {
       this.isJoined = isJoined != null ? isJoined : false;
@@ -910,8 +918,8 @@
     };
 
     Node.prototype._transformPoint = function(point) {
-      var transform, _ref;
-      transform = (_ref = this.path) != null ? _ref.getTransform() : void 0;
+      var ref, transform;
+      transform = (ref = this.path) != null ? ref.getTransform() : void 0;
       if (transform != null) {
         point = transform.transformPoint(point);
       }
@@ -927,7 +935,7 @@
 },{"./point":15,"events":25}],9:[function(require,module,exports){
 (function() {
   var ObjectEditor, PathEditor,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   PathEditor = require('./path-editor');
 
@@ -935,7 +943,7 @@
     function ObjectEditor(svgDocument, selectionModel) {
       this.svgDocument = svgDocument;
       this.selectionModel = selectionModel;
-      this.onChangeSelected = __bind(this.onChangeSelected, this);
+      this.onChangeSelected = bind(this.onChangeSelected, this);
       this.active = false;
       this.activeEditor = null;
       this.editors = {
@@ -948,8 +956,8 @@
     };
 
     ObjectEditor.prototype.getActiveObject = function() {
-      var _ref, _ref1;
-      return (_ref = (_ref1 = this.activeEditor) != null ? _ref1.getActiveObject() : void 0) != null ? _ref : null;
+      var ref, ref1;
+      return (ref = (ref1 = this.activeEditor) != null ? ref1.getActiveObject() : void 0) != null ? ref : null;
     };
 
     ObjectEditor.prototype.activate = function() {
@@ -963,20 +971,20 @@
       return this.active = false;
     };
 
-    ObjectEditor.prototype.onChangeSelected = function(_arg) {
-      var object, old, _ref;
-      object = _arg.object, old = _arg.old;
+    ObjectEditor.prototype.onChangeSelected = function(arg) {
+      var object, old, ref;
+      object = arg.object, old = arg.old;
       this._deactivateActiveEditor();
       if (object != null) {
         this.activeEditor = this.editors[object.getType()];
-        return (_ref = this.activeEditor) != null ? _ref.activateObject(object) : void 0;
+        return (ref = this.activeEditor) != null ? ref.activateObject(object) : void 0;
       }
     };
 
     ObjectEditor.prototype._deactivateActiveEditor = function() {
-      var _ref;
-      if ((_ref = this.activeEditor) != null) {
-        _ref.deactivate();
+      var ref;
+      if ((ref = this.activeEditor) != null) {
+        ref.deactivate();
       }
       return this.activeEditor = null;
     };
@@ -990,22 +998,22 @@
 },{"./path-editor":11}],10:[function(require,module,exports){
 (function() {
   var EventEmitter, ObjectSelection,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   EventEmitter = require('events').EventEmitter;
 
-  module.exports = ObjectSelection = (function(_super) {
-    __extends(ObjectSelection, _super);
+  module.exports = ObjectSelection = (function(superClass) {
+    extend(ObjectSelection, superClass);
 
     function ObjectSelection(svgDocument, options) {
-      var _base;
+      var base;
       this.svgDocument = svgDocument;
       this.options = options != null ? options : {};
-      this.render = __bind(this.render, this);
-      if ((_base = this.options)["class"] == null) {
-        _base["class"] = 'object-selection';
+      this.render = bind(this.render, this);
+      if ((base = this.options)["class"] == null) {
+        base["class"] = 'object-selection';
       }
     }
 
@@ -1058,14 +1066,14 @@
 },{"events":25}],11:[function(require,module,exports){
 (function() {
   var NodeEditor, PathEditor,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   NodeEditor = require('./node-editor');
 
   module.exports = PathEditor = (function() {
     function PathEditor(svgDocument) {
       this.svgDocument = svgDocument;
-      this.onInsertNode = __bind(this.onInsertNode, this);
+      this.onInsertNode = bind(this.onInsertNode, this);
       this.path = null;
       this.node = null;
       this.nodeEditors = [];
@@ -1121,9 +1129,9 @@
       return this.selectedNode = null;
     };
 
-    PathEditor.prototype.onInsertNode = function(object, _arg) {
-      var index, node, _ref;
-      _ref = _arg != null ? _arg : {}, node = _ref.node, index = _ref.index;
+    PathEditor.prototype.onInsertNode = function(object, arg) {
+      var index, node, ref;
+      ref = arg != null ? arg : {}, node = ref.node, index = ref.index;
       this._addNodeEditor(node);
       return null;
     };
@@ -1143,23 +1151,23 @@
     };
 
     PathEditor.prototype._removeNodeEditors = function() {
-      var nodeEditor, _i, _len, _ref;
+      var i, len, nodeEditor, ref;
       this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
       this.nodeEditors = [];
-      _ref = this._nodeEditorPool;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        nodeEditor = _ref[_i];
+      ref = this._nodeEditorPool;
+      for (i = 0, len = ref.length; i < len; i++) {
+        nodeEditor = ref[i];
         nodeEditor.setNode(null);
       }
     };
 
     PathEditor.prototype._createNodeEditors = function(object) {
-      var node, nodes, _i, _len;
+      var i, len, node, nodes;
       this._removeNodeEditors();
       if ((object != null ? object.getNodes : void 0) != null) {
         nodes = object.getNodes();
-        for (_i = 0, _len = nodes.length; _i < _len; _i++) {
-          node = nodes[_i];
+        for (i = 0, len = nodes.length; i < len; i++) {
+          node = nodes[i];
           this._addNodeEditor(node);
         }
       }
@@ -1177,10 +1185,10 @@
     };
 
     PathEditor.prototype._findNodeEditorForNode = function(node) {
-      var nodeEditor, _i, _len, _ref;
-      _ref = this.nodeEditors;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        nodeEditor = _ref[_i];
+      var i, len, nodeEditor, ref;
+      ref = this.nodeEditors;
+      for (i = 0, len = ref.length; i < len; i++) {
+        nodeEditor = ref[i];
         if (nodeEditor.node === node) {
           return nodeEditor;
         }
@@ -1196,11 +1204,11 @@
 
 },{"./node-editor":7}],12:[function(require,module,exports){
 (function() {
-  var COMMAND, NUMBER, Node, groupCommands, lexPath, parsePath, parseTokens, _ref;
+  var COMMAND, NUMBER, Node, groupCommands, lexPath, parsePath, parseTokens, ref;
 
   Node = require("./node");
 
-  _ref = ['COMMAND', 'NUMBER'], COMMAND = _ref[0], NUMBER = _ref[1];
+  ref = ['COMMAND', 'NUMBER'], COMMAND = ref[0], NUMBER = ref[1];
 
   parsePath = function(pathString) {
     var tokens;
@@ -1209,11 +1217,11 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, lastNode, makeAbsolute, node, params, result, slicePoint, subpath, _i, _j, _k, _len, _len1, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
+    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, j, k, l, lastNode, len, len1, makeAbsolute, node, params, ref1, ref2, ref3, ref4, ref5, ref6, result, slicePoint, subpath;
     result = {
       subpaths: []
     };
-    if (groupedCommands.length === 1 && ((_ref1 = groupedCommands[0].type) === 'M' || _ref1 === 'm')) {
+    if (groupedCommands.length === 1 && ((ref1 = groupedCommands[0].type) === 'M' || ref1 === 'm')) {
       return result;
     }
     currentPoint = null;
@@ -1232,27 +1240,27 @@
       return [array[index], array[index + 1]];
     };
     makeAbsolute = function(array) {
-      var i, val, _i, _len, _results;
-      _results = [];
-      for (i = _i = 0, _len = array.length; _i < _len; i = ++_i) {
+      var i, j, len, results, val;
+      results = [];
+      for (i = j = 0, len = array.length; j < len; i = ++j) {
         val = array[i];
-        _results.push(val + currentPoint[i % 2]);
+        results.push(val + currentPoint[i % 2]);
       }
-      return _results;
+      return results;
     };
     createNode = function(point, commandIndex) {
-      var firstNode, nextCommand, node, _ref2;
+      var firstNode, nextCommand, node, ref2;
       currentPoint = point;
       node = null;
       firstNode = currentSubpath.nodes[0];
       nextCommand = groupedCommands[commandIndex + 1];
-      if (!(nextCommand && ((_ref2 = nextCommand.type) === 'z' || _ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint))) {
+      if (!(nextCommand && ((ref2 = nextCommand.type) === 'z' || ref2 === 'Z') && firstNode && firstNode.point.equals(currentPoint))) {
         node = new Node(currentPoint);
         currentSubpath.nodes.push(node);
       }
       return node;
     };
-    for (i = _i = 0, _ref2 = groupedCommands.length; 0 <= _ref2 ? _i < _ref2 : _i > _ref2; i = 0 <= _ref2 ? ++_i : --_i) {
+    for (i = j = 0, ref2 = groupedCommands.length; 0 <= ref2 ? j < ref2 : j > ref2; i = 0 <= ref2 ? ++j : --j) {
       command = groupedCommands[i];
       switch (command.type) {
         case 'M':
@@ -1289,10 +1297,10 @@
         case 'Q':
         case 'q':
           params = command.parameters;
-          if ((_ref3 = command.type) === 'c' || _ref3 === 'q') {
+          if ((ref3 = command.type) === 'c' || ref3 === 'q') {
             params = makeAbsolute(params);
           }
-          if ((_ref4 = command.type) === 'C' || _ref4 === 'c') {
+          if ((ref4 = command.type) === 'C' || ref4 === 'c') {
             currentPoint = slicePoint(params, 4);
             handleIn = slicePoint(params, 2);
             handleOut = slicePoint(params, 0);
@@ -1348,12 +1356,12 @@
           currentSubpath.closed = true;
       }
     }
-    _ref5 = result.subpaths;
-    for (_j = 0, _len = _ref5.length; _j < _len; _j++) {
-      subpath = _ref5[_j];
-      _ref6 = subpath.nodes;
-      for (_k = 0, _len1 = _ref6.length; _k < _len1; _k++) {
-        node = _ref6[_k];
+    ref5 = result.subpaths;
+    for (k = 0, len = ref5.length; k < len; k++) {
+      subpath = ref5[k];
+      ref6 = subpath.nodes;
+      for (l = 0, len1 = ref6.length; l < len1; l++) {
+        node = ref6[l];
         node.computeIsjoined();
       }
     }
@@ -1361,9 +1369,9 @@
   };
 
   groupCommands = function(pathTokens) {
-    var command, commands, i, nextToken, token, _i, _ref1;
+    var command, commands, i, j, nextToken, ref1, token;
     commands = [];
-    for (i = _i = 0, _ref1 = pathTokens.length; 0 <= _ref1 ? _i < _ref1 : _i > _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
+    for (i = j = 0, ref1 = pathTokens.length; 0 <= ref1 ? j < ref1 : j > ref1; i = 0 <= ref1 ? ++j : --j) {
       token = pathTokens[i];
       if (token.type !== COMMAND) {
         continue;
@@ -1386,7 +1394,7 @@
   };
 
   lexPath = function(pathString) {
-    var ch, currentToken, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens, _i, _len;
+    var ch, currentToken, j, len, numberMatch, saveCurrentToken, saveCurrentTokenWhenDifferentThan, separatorMatch, tokens;
     numberMatch = '-0123456789.';
     separatorMatch = ' ,\n\t';
     tokens = [];
@@ -1406,8 +1414,8 @@
       tokens.push(currentToken);
       return currentToken = null;
     };
-    for (_i = 0, _len = pathString.length; _i < _len; _i++) {
-      ch = pathString[_i];
+    for (j = 0, len = pathString.length; j < len; j++) {
+      ch = pathString[j];
       if (numberMatch.indexOf(ch) > -1) {
         saveCurrentTokenWhenDifferentThan(NUMBER);
         if (ch === '-') {
@@ -1446,9 +1454,9 @@
 },{"./node":8}],13:[function(require,module,exports){
 (function() {
   var DefaultAttrs, EventEmitter, IDS, Path, PathModel, PathParser, Point, Subpath, Transform, Utils, flatten,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   EventEmitter = require('events').EventEmitter;
 
@@ -1469,32 +1477,32 @@
 
   IDS = 0;
 
-  PathModel = (function(_super) {
-    __extends(PathModel, _super);
+  PathModel = (function(superClass) {
+    extend(PathModel, superClass);
 
     function PathModel() {
-      this.onSubpathChange = __bind(this.onSubpathChange, this);
+      this.onSubpathChange = bind(this.onSubpathChange, this);
       this.subpaths = [];
       this.pathString = '';
       this.transform = new Transform;
     }
 
+
     /*
     Section: Public Methods
-    */
-
+     */
 
     PathModel.prototype.getNodes = function() {
       var nodes, subpath;
       nodes = (function() {
-        var _i, _len, _ref, _results;
-        _ref = this.subpaths;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          subpath = _ref[_i];
-          _results.push(subpath.getNodes());
+        var i, len, ref, results;
+        ref = this.subpaths;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          subpath = ref[i];
+          results.push(subpath.getNodes());
         }
-        return _results;
+        return results;
       }).call(this);
       return flatten(nodes);
     };
@@ -1528,11 +1536,11 @@
     };
 
     PathModel.prototype.translate = function(point) {
-      var subpath, _i, _len, _ref;
+      var i, len, ref, subpath;
       point = Point.create(point);
-      _ref = this.subpaths;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        subpath = _ref[_i];
+      ref = this.subpaths;
+      for (i = 0, len = ref.length; i < len; i++) {
+        subpath = ref[i];
         subpath.translate(point);
       }
     };
@@ -1558,20 +1566,20 @@
       }
     };
 
+
     /*
     Section: Event Handlers
-    */
-
+     */
 
     PathModel.prototype.onSubpathChange = function(subpath, eventArgs) {
       this._updatePathString();
       return this._emitChangeEvent();
     };
 
+
     /*
     Section: Private Methods
-    */
-
+     */
 
     PathModel.prototype._createSubpath = function(args) {
       if (args == null) {
@@ -1604,10 +1612,10 @@
     };
 
     PathModel.prototype._removeAllSubpaths = function() {
-      var subpath, _i, _len, _ref;
-      _ref = this.subpaths;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        subpath = _ref[_i];
+      var i, len, ref, subpath;
+      ref = this.subpaths;
+      for (i = 0, len = ref.length; i < len; i++) {
+        subpath = ref[i];
         this._unbindSubpath(subpath);
       }
       return this.subpaths = [];
@@ -1617,14 +1625,14 @@
       var oldPathString, subpath;
       oldPathString = this.pathString;
       this.pathString = ((function() {
-        var _i, _len, _ref, _results;
-        _ref = this.subpaths;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          subpath = _ref[_i];
-          _results.push(subpath.toPathString());
+        var i, len, ref, results;
+        ref = this.subpaths;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          subpath = ref[i];
+          results.push(subpath.toPathString());
         }
-        return _results;
+        return results;
       }).call(this)).join(' ');
       if (oldPathString !== this.pathString) {
         return this._emitChangeEvent();
@@ -1632,7 +1640,7 @@
     };
 
     PathModel.prototype._parseFromPathString = function(pathString) {
-      var parsedPath, parsedSubpath, _i, _len, _ref;
+      var i, len, parsedPath, parsedSubpath, ref;
       if (!pathString) {
         return;
       }
@@ -1641,9 +1649,9 @@
       }
       this._removeAllSubpaths();
       parsedPath = PathParser.parsePath(pathString);
-      _ref = parsedPath.subpaths;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        parsedSubpath = _ref[_i];
+      ref = parsedPath.subpaths;
+      for (i = 0, len = ref.length; i < len; i++) {
+        parsedSubpath = ref[i];
         this._createSubpath(parsedSubpath);
       }
       this.currentSubpath = this.subpaths[this.subpaths.length - 1];
@@ -1663,14 +1671,14 @@
 
   })(EventEmitter);
 
-  module.exports = Path = (function(_super) {
-    __extends(Path, _super);
+  module.exports = Path = (function(superClass) {
+    extend(Path, superClass);
 
-    function Path(svgDocument, _arg) {
+    function Path(svgDocument1, arg) {
       var svgEl;
-      this.svgDocument = svgDocument;
-      svgEl = (_arg != null ? _arg : {}).svgEl;
-      this.onModelChange = __bind(this.onModelChange, this);
+      this.svgDocument = svgDocument1;
+      svgEl = (arg != null ? arg : {}).svgEl;
+      this.onModelChange = bind(this.onModelChange, this);
       this.id = IDS++;
       this.model = new PathModel;
       this.model.on('change', this.onModelChange);
@@ -1678,10 +1686,10 @@
       this._setupSVGObject(svgEl);
     }
 
+
     /*
     Section: Public Methods
-    */
-
+     */
 
     Path.prototype.getType = function() {
       return 'Path';
@@ -1716,8 +1724,7 @@
     };
 
     Path.prototype.enableDragging = function(callbacks) {
-      var element,
-        _this = this;
+      var element;
       element = this.svgEl;
       if (element == null) {
         return;
@@ -1727,15 +1734,19 @@
       element.dragstart = function(event) {
         return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
       };
-      element.dragmove = function(event) {
-        _this.updateFromAttributes();
-        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
-      };
-      return element.dragend = function(event) {
-        _this.model.setTransformString(null);
-        _this.model.translate([event.x, event.y]);
-        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
-      };
+      element.dragmove = (function(_this) {
+        return function(event) {
+          _this.updateFromAttributes();
+          return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+        };
+      })(this);
+      return element.dragend = (function(_this) {
+        return function(event) {
+          _this.model.setTransformString(null);
+          _this.model.translate([event.x, event.y]);
+          return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+        };
+      })(this);
     };
 
     Path.prototype.disableDragging = function() {
@@ -1786,28 +1797,28 @@
       return el;
     };
 
+
     /*
     Section: Event Handlers
-    */
-
+     */
 
     Path.prototype.onModelChange = function() {
       this.render();
       return this.emit('change', this);
     };
 
+
     /*
     Section: Private Methods
-    */
-
+     */
 
     Path.prototype._forwardEvent = function(eventName, eventObject, args) {
       args.path = this;
       return this.emit(eventName, this, args);
     };
 
-    Path.prototype._setupSVGObject = function(svgEl) {
-      this.svgEl = svgEl;
+    Path.prototype._setupSVGObject = function(svgEl1) {
+      this.svgEl = svgEl1;
       if (!this.svgEl) {
         this.svgEl = this.svgDocument.path().attr(DefaultAttrs);
       }
@@ -1836,7 +1847,7 @@
 },{"./path-parser":12,"./point":15,"./subpath":21,"./transform":23,"./utils":24,"events":25}],14:[function(require,module,exports){
 (function() {
   var Node, Path, PenTool,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   Node = require('./node');
 
@@ -1847,13 +1858,13 @@
 
     PenTool.prototype.currentNode = null;
 
-    function PenTool(svgDocument, _arg) {
-      var _ref;
+    function PenTool(svgDocument, arg) {
+      var ref;
       this.svgDocument = svgDocument;
-      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView;
-      this.onMouseUp = __bind(this.onMouseUp, this);
-      this.onMouseMove = __bind(this.onMouseMove, this);
-      this.onMouseDown = __bind(this.onMouseDown, this);
+      ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView;
+      this.onMouseUp = bind(this.onMouseUp, this);
+      this.onMouseMove = bind(this.onMouseMove, this);
+      this.onMouseDown = bind(this.onMouseDown, this);
     }
 
     PenTool.prototype.activate = function() {
@@ -1869,13 +1880,14 @@
     };
 
     PenTool.prototype.onMouseDown = function(e) {
-      var makeNode,
-        _this = this;
-      makeNode = function() {
-        _this.currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0]);
-        _this.currentObject.addNode(_this.currentNode);
-        return _this.selectionModel.setSelectedNode(_this.currentNode);
-      };
+      var makeNode;
+      makeNode = (function(_this) {
+        return function() {
+          _this.currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0]);
+          _this.currentObject.addNode(_this.currentNode);
+          return _this.selectionModel.setSelectedNode(_this.currentNode);
+        };
+      })(this);
       if (this.currentObject) {
         if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement.node) {
           this.currentObject.close();
@@ -1926,12 +1938,12 @@
       this.set(x, y);
     }
 
-    Point.prototype.set = function(x, y) {
-      var _ref;
-      this.x = x;
-      this.y = y;
+    Point.prototype.set = function(x1, y1) {
+      var ref;
+      this.x = x1;
+      this.y = y1;
       if (Array.isArray(this.x)) {
-        return _ref = this.x, this.x = _ref[0], this.y = _ref[1], _ref;
+        return ref = this.x, this.x = ref[0], this.y = ref[1], ref;
       }
     };
 
@@ -1967,20 +1979,20 @@
 },{}],16:[function(require,module,exports){
 (function() {
   var ObjectEditor, PointerTool, Utils,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   ObjectEditor = require('./object-editor');
 
   Utils = require('./Utils');
 
   module.exports = PointerTool = (function() {
-    function PointerTool(svgDocument, _arg) {
-      var _ref;
+    function PointerTool(svgDocument, arg) {
+      var ref;
       this.svgDocument = svgDocument;
-      _ref = _arg != null ? _arg : {}, this.selectionModel = _ref.selectionModel, this.selectionView = _ref.selectionView, this.toolLayer = _ref.toolLayer;
-      this.onMouseMove = __bind(this.onMouseMove, this);
-      this.onClick = __bind(this.onClick, this);
-      this.onChangedSelectedObject = __bind(this.onChangedSelectedObject, this);
+      ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView, this.toolLayer = ref.toolLayer;
+      this.onMouseMove = bind(this.onMouseMove, this);
+      this.onClick = bind(this.onClick, this);
+      this.onChangedSelectedObject = bind(this.onChangedSelectedObject, this);
       this._evrect = this.svgDocument.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
       this.objectEditor = new ObjectEditor(this.toolLayer, this.selectionModel);
@@ -2004,9 +2016,9 @@
       return objectSelection.removeListener('change:object', this.onChangedSelectedObject);
     };
 
-    PointerTool.prototype.onChangedSelectedObject = function(_arg) {
+    PointerTool.prototype.onChangedSelectedObject = function(arg) {
       var object, old;
-      object = _arg.object, old = _arg.old;
+      object = arg.object, old = arg.old;
       if (object != null) {
         return object.enableDragging();
       } else if (old != null) {
@@ -2037,7 +2049,7 @@
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var className, i, left, nodes, obj, top, _i, _ref;
+      var className, i, j, left, nodes, obj, ref, top;
       top = this.svgDocument.node.offsetTop;
       left = this.svgDocument.node.offsetLeft;
       this._evrect.x = e.clientX - left;
@@ -2045,7 +2057,7 @@
       nodes = this.svgDocument.node.getIntersectionList(this._evrect, null);
       obj = null;
       if (nodes.length) {
-        for (i = _i = _ref = nodes.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
+        for (i = j = ref = nodes.length - 1; ref <= 0 ? j <= 0 : j >= 0; i = ref <= 0 ? ++j : --j) {
           className = nodes[i].getAttribute('class');
           if (className && className.indexOf('invisible-to-hit-test') > -1) {
             continue;
@@ -2067,9 +2079,9 @@
 },{"./Utils":1,"./object-editor":9}],17:[function(require,module,exports){
 (function() {
   var DefaultAttrs, EventEmitter, IDS, Point, Rectangle, RectangleModel, Size, Transform, Utils,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   EventEmitter = require('events').EventEmitter;
 
@@ -2092,8 +2104,8 @@
 
   IDS = 0;
 
-  RectangleModel = (function(_super) {
-    __extends(RectangleModel, _super);
+  RectangleModel = (function(superClass) {
+    extend(RectangleModel, superClass);
 
     RectangleModel.prototype.position = null;
 
@@ -2106,10 +2118,10 @@
       this.transform = new Transform;
     }
 
+
     /*
     Section: Public Methods
-    */
-
+     */
 
     RectangleModel.prototype.getTransform = function() {
       return this.transform;
@@ -2153,10 +2165,10 @@
       return this._emitChangeEvent();
     };
 
+
     /*
     Section: Private Methods
-    */
-
+     */
 
     RectangleModel.prototype._emitChangeEvent = function() {
       return this.emit('change', this);
@@ -2166,23 +2178,23 @@
 
   })(EventEmitter);
 
-  module.exports = Rectangle = (function(_super) {
-    __extends(Rectangle, _super);
+  module.exports = Rectangle = (function(superClass) {
+    extend(Rectangle, superClass);
 
-    function Rectangle(svgDocument, _arg) {
+    function Rectangle(svgDocument1, arg) {
       var svgEl;
-      this.svgDocument = svgDocument;
-      svgEl = (_arg != null ? _arg : {}).svgEl;
-      this.onModelChange = __bind(this.onModelChange, this);
+      this.svgDocument = svgDocument1;
+      svgEl = (arg != null ? arg : {}).svgEl;
+      this.onModelChange = bind(this.onModelChange, this);
       this.model = new RectangleModel;
       this._setupSVGObject(svgEl);
       this.model.on('change', this.onModelChange);
     }
 
+
     /*
     Section: Public Methods
-    */
-
+     */
 
     Rectangle.prototype.getType = function() {
       return 'Rectangle';
@@ -2193,8 +2205,7 @@
     };
 
     Rectangle.prototype.enableDragging = function(callbacks) {
-      var element,
-        _this = this;
+      var element;
       element = this.svgEl;
       if (element == null) {
         return;
@@ -2204,15 +2215,19 @@
       element.dragstart = function(event) {
         return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
       };
-      element.dragmove = function(event) {
-        _this.updateFromAttributes();
-        return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
-      };
-      return element.dragend = function(event) {
-        _this.model.setTransformString(null);
-        _this.model.translate([event.x, event.y]);
-        return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
-      };
+      element.dragmove = (function(_this) {
+        return function(event) {
+          _this.updateFromAttributes();
+          return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+        };
+      })(this);
+      return element.dragend = (function(_this) {
+        return function(event) {
+          _this.model.setTransformString(null);
+          _this.model.translate([event.x, event.y]);
+          return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+        };
+      })(this);
     };
 
     Rectangle.prototype.disableDragging = function() {
@@ -2275,23 +2290,23 @@
       return el;
     };
 
+
     /*
     Section: Event Handlers
-    */
-
+     */
 
     Rectangle.prototype.onModelChange = function() {
       this.render();
       return this.emit('change', this);
     };
 
+
     /*
     Section: Private Methods
-    */
+     */
 
-
-    Rectangle.prototype._setupSVGObject = function(svgEl) {
-      this.svgEl = svgEl;
+    Rectangle.prototype._setupSVGObject = function(svgEl1) {
+      this.svgEl = svgEl1;
       if (!this.svgEl) {
         this.svgEl = this.svgDocument.rect().attr(DefaultAttrs);
       }
@@ -2308,13 +2323,13 @@
 },{"./point":15,"./size":20,"./transform":23,"./utils":24,"events":25}],18:[function(require,module,exports){
 (function() {
   var EventEmitter, SelectionModel,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   EventEmitter = require('events').EventEmitter;
 
-  module.exports = SelectionModel = (function(_super) {
-    __extends(SelectionModel, _super);
+  module.exports = SelectionModel = (function(superClass) {
+    extend(SelectionModel, superClass);
 
     function SelectionModel() {
       this.preselected = null;
@@ -2388,7 +2403,7 @@
 },{"events":25}],19:[function(require,module,exports){
 (function() {
   var ObjectSelection, SelectionView,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   ObjectSelection = require("./object-selection");
 
@@ -2396,8 +2411,8 @@
     function SelectionView(svgDocument, model) {
       this.svgDocument = svgDocument;
       this.model = model;
-      this.onChangePreselected = __bind(this.onChangePreselected, this);
-      this.onChangeSelected = __bind(this.onChangeSelected, this);
+      this.onChangePreselected = bind(this.onChangePreselected, this);
+      this.onChangeSelected = bind(this.onChangeSelected, this);
       this.objectSelection = new ObjectSelection(this.svgDocument);
       this.objectPreselection = new ObjectSelection(this.svgDocument, {
         "class": 'object-preselection'
@@ -2410,15 +2425,15 @@
       return this.objectSelection;
     };
 
-    SelectionView.prototype.onChangeSelected = function(_arg) {
+    SelectionView.prototype.onChangeSelected = function(arg) {
       var object, old;
-      object = _arg.object, old = _arg.old;
+      object = arg.object, old = arg.old;
       return this.objectSelection.setObject(object);
     };
 
-    SelectionView.prototype.onChangePreselected = function(_arg) {
+    SelectionView.prototype.onChangePreselected = function(arg) {
       var object;
-      object = _arg.object;
+      object = arg.object;
       return this.objectPreselection.setObject(object);
     };
 
@@ -2448,12 +2463,12 @@
       this.set(width, height);
     }
 
-    Size.prototype.set = function(width, height) {
-      var _ref;
-      this.width = width;
-      this.height = height;
+    Size.prototype.set = function(width1, height1) {
+      var ref;
+      this.width = width1;
+      this.height = height1;
       if (Array.isArray(this.width)) {
-        return _ref = this.width, this.width = _ref[0], this.height = _ref[1], _ref;
+        return ref = this.width, this.width = ref[0], this.height = ref[1], ref;
       }
     };
 
@@ -2479,21 +2494,21 @@
 },{}],21:[function(require,module,exports){
 (function() {
   var EventEmitter, Point, Subpath,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   EventEmitter = require('events').EventEmitter;
 
   Point = require('./point');
 
-  module.exports = Subpath = (function(_super) {
-    __extends(Subpath, _super);
+  module.exports = Subpath = (function(superClass) {
+    extend(Subpath, superClass);
 
-    function Subpath(_arg) {
-      var nodes, _ref;
-      _ref = _arg != null ? _arg : {}, this.path = _ref.path, this.closed = _ref.closed, nodes = _ref.nodes;
-      this.onNodeChange = __bind(this.onNodeChange, this);
+    function Subpath(arg) {
+      var nodes, ref;
+      ref = arg != null ? arg : {}, this.path = ref.path, this.closed = ref.closed, nodes = ref.nodes;
+      this.onNodeChange = bind(this.onNodeChange, this);
       this.nodes = [];
       this.setNodes(nodes);
       this.closed = !!this.closed;
@@ -2504,7 +2519,7 @@
     };
 
     Subpath.prototype.toPathString = function() {
-      var closePath, lastNode, lastPoint, makeCurve, node, path, _i, _len, _ref;
+      var closePath, j, lastNode, lastPoint, len, makeCurve, node, path, ref;
       path = '';
       lastPoint = null;
       makeCurve = function(fromNode, toNode) {
@@ -2536,9 +2551,9 @@
         }
         return closingPath += 'Z';
       };
-      _ref = this.nodes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];
+      ref = this.nodes;
+      for (j = 0, len = ref.length; j < len; j++) {
+        node = ref[j];
         if (path) {
           path += makeCurve(lastNode, node);
         } else {
@@ -2557,17 +2572,17 @@
     };
 
     Subpath.prototype.setNodes = function(nodes) {
-      var node, _i, _j, _len, _len1, _ref;
+      var j, k, len, len1, node, ref;
       if (!(nodes && Array.isArray(nodes))) {
         return;
       }
-      _ref = this.nodes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];
+      ref = this.nodes;
+      for (j = 0, len = ref.length; j < len; j++) {
+        node = ref[j];
         this._unbindNode(node);
       }
-      for (_j = 0, _len1 = nodes.length; _j < _len1; _j++) {
-        node = nodes[_j];
+      for (k = 0, len1 = nodes.length; k < len1; k++) {
+        node = nodes[k];
         this._bindNode(node);
       }
       this.nodes = nodes;
@@ -2595,11 +2610,11 @@
     };
 
     Subpath.prototype.translate = function(point) {
-      var node, _i, _len, _ref;
+      var j, len, node, ref;
       point = Point.create(point);
-      _ref = this.nodes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        node = _ref[_i];
+      ref = this.nodes;
+      for (j = 0, len = ref.length; j < len; j++) {
+        node = ref[j];
         node.translate(point);
       }
     };
@@ -2619,8 +2634,8 @@
     };
 
     Subpath.prototype._findNodeIndex = function(node) {
-      var i, _i, _ref;
-      for (i = _i = 0, _ref = this.nodes.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+      var i, j, ref;
+      for (i = j = 0, ref = this.nodes.length; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
         if (this.nodes[i] === node) {
           return i;
         }
