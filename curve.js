@@ -347,7 +347,7 @@
       };
       element.on('mousedown', startHandler);
       element.fixed = function() {
-        element.off('mousedown', startHandler);
+        element.removeListener('mousedown', startHandler);
         detachDragEvents();
         startHandler = dragHandler = endHandler = null;
         return element;
@@ -362,8 +362,8 @@
   };
 
   detachDragEvents = function(dragHandler, endHandler) {
-    SVG.off(window, 'mousemove', dragHandler);
-    return SVG.off(window, 'mouseup', endHandler);
+    SVG.removeListener(window, 'mousemove', dragHandler);
+    return SVG.removeListener(window, 'mouseup', endHandler);
   };
 
   onStart = function(element, event) {
@@ -677,9 +677,17 @@
     NodeEditor.prototype.pointForEvent = function(event) {
       var clientX, clientY, left, top;
       clientX = event.clientX, clientY = event.clientY;
-      top = this.svgDocument.node.offsetTop;
-      left = this.svgDocument.node.offsetLeft;
+      top = this._getOffsetTop();
+      left = this._getOffsetLeft();
       return new Point(event.clientX - left, event.clientY - top);
+    };
+
+    NodeEditor.prototype._getOffsetTop = function() {
+      return this.svgDocument.node.offsetTop;
+    };
+
+    NodeEditor.prototype._getOffsetLeft = function() {
+      return this.svgDocument.node.offsetLeft;
     };
 
     NodeEditor.prototype._bindNode = function(node) {
@@ -1592,7 +1600,7 @@
       if (!subpath) {
         return;
       }
-      return subpath.off();
+      return subpath.removeAllListeners();
     };
 
     PathModel.prototype._removeAllSubpaths = function() {
@@ -1855,9 +1863,9 @@
     };
 
     PenTool.prototype.deactivate = function() {
-      this.svgDocument.off('mousedown', this.onMouseDown);
-      this.svgDocument.off('mousemove', this.onMouseMove);
-      return this.svgDocument.off('mouseup', this.onMouseUp);
+      this.svgDocument.removeListener('mousedown', this.onMouseDown);
+      this.svgDocument.removeListener('mousemove', this.onMouseMove);
+      return this.svgDocument.removeListener('mouseup', this.onMouseUp);
     };
 
     PenTool.prototype.onMouseDown = function(e) {
@@ -1990,10 +1998,10 @@
     PointerTool.prototype.deactivate = function() {
       var objectSelection;
       this.objectEditor.deactivate();
-      this.svgDocument.off('click', this.onClick);
-      this.svgDocument.off('mousemove', this.onMouseMove);
+      this.svgDocument.removeListener('click', this.onClick);
+      this.svgDocument.removeListener('mousemove', this.onMouseMove);
       objectSelection = this.selectionView.getObjectSelection();
-      return objectSelection.off('change:object', this.onChangedSelectedObject);
+      return objectSelection.removeListener('change:object', this.onChangedSelectedObject);
     };
 
     PointerTool.prototype.onChangedSelectedObject = function(_arg) {
@@ -2607,7 +2615,7 @@
 
     Subpath.prototype._unbindNode = function(node) {
       node.setPath(null);
-      return node.off('change', this.onNodeChange);
+      return node.removeListener('change', this.onNodeChange);
     };
 
     Subpath.prototype._findNodeIndex = function(node) {
