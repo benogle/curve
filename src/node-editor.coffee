@@ -83,9 +83,15 @@ class NodeEditor
 
   pointForEvent: (event) ->
     {clientX, clientY} = event
-    top = @svgDocument.node.offsetTop
-    left = @svgDocument.node.offsetLeft
+    top = @_getOffsetTop()
+    left = @_getOffsetLeft()
     new Point(event.clientX - left, event.clientY - top)
+
+  _getOffsetTop: ->
+    @svgDocument.node.offsetTop
+
+  _getOffsetLeft: ->
+    @svgDocument.node.offsetLeft
 
   _bindNode: (node) ->
     return unless node
