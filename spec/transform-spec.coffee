@@ -20,3 +20,13 @@ describe 'Curve.Transform', ->
       expect(trans.setTransformString(null)).toBe true
       expect(trans.transformPoint(point)).toEqual point
       expect(trans.setTransformString(null)).toBe false
+
+  describe "when the transform has a matrix", ->
+    beforeEach ->
+      expect(trans.setTransformString('matrix(1, 0, 0, 1, -5, 6)')).toBe true
+
+    it 'translates the point', ->
+      expect(trans.transformPoint(point)).toEqual new Point(15, 36)
+      expect(trans.setTransformString(null)).toBe true
+      expect(trans.transformPoint(point)).toEqual point
+      expect(trans.setTransformString(null)).toBe false
