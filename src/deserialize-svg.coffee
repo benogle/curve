@@ -34,7 +34,6 @@ module.exports = (svgDocument, svgString) ->
 
   parentNode = null
   window.objs = objects
-  # console.log window.objs
   objects
 
 # Convert nodes to svg.js elements
