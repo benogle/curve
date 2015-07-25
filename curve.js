@@ -106,7 +106,6 @@
     });
     parentNode = null;
     window.objs = objects;
-    console.log(window.objs);
     return objects;
   };
 
@@ -1639,7 +1638,7 @@
         parsedSubpath = _ref[_i];
         this._createSubpath(parsedSubpath);
       }
-      this.currentSubpath = _.last(this.subpaths);
+      this.currentSubpath = this.subpaths[this.subpaths.length - 1];
       this._updatePathString();
       return null;
     };
