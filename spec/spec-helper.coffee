@@ -1,6 +1,8 @@
+require '../vendor/svg'
 require '../src/ext/svg-circle'
 require '../src/ext/svg-draggable'
-require '../src/ext/svg-export'
+require "../vendor/svg.parser"
+require "../vendor/svg.export"
 
 util = require 'util'
 

@@ -1,3 +1,6 @@
+SVG = require "../vendor/svg"
+require "../vendor/svg.parser"
+
 Path = require "./path"
 Rectangle = require "./rectangle"
 
@@ -47,7 +50,7 @@ convertNodes = (nodes, context, level, store, block) ->
     type = child.nodeName.toLowerCase()
 
     #  objectify attributes
-    attr = objectifyAttributes(child)
+    attr = SVG.parse.attr(child)
 
     # create elements
     switch type
@@ -78,7 +81,7 @@ convertNodes = (nodes, context, level, store, block) ->
                 # for the remaining times create additional tspans
                 element
                   .tspan(grandchild.textContent)
-                  .attr(objectifyAttributes(grandchild))
+                  .attr(SVG.parse.attr(grandchild))
 
       when 'image' then element = context.image(attr['xlink:href'])
 
@@ -100,7 +103,8 @@ convertNodes = (nodes, context, level, store, block) ->
         element = context.defs().gradient type.split('gradient')[0], (stop) ->
           for j in [0...child.childNodes.length]
             stop
-              .at(objectifyAttributes(child.childNodes[j]))
+              .at(offset: 0)
+              .attr(SVG.parse.attr(child.childNodes[j]))
               .style(child.childNodes[j].getAttribute('style'))
 
       when '#comment', '#text', 'metadata', 'desc'
@@ -110,7 +114,7 @@ convertNodes = (nodes, context, level, store, block) ->
 
     if element
       # parse transform attribute
-      transform = objectifyTransformations(attr.transform)
+      transform = SVG.parse.transform(attr.transform)
       delete attr.transform
 
       # set attributes and transformations
@@ -128,59 +132,3 @@ convertNodes = (nodes, context, level, store, block) ->
       block.call(element) if typeof block == 'function'
 
   context
-
-# Convert attributes to an object
-objectifyAttributes = (child) ->
-  attrs = child.attributes or []
-  attr  = {}
-
-  # gather attributes
-  if attrs.length
-    for i in [attrs.length-1..0]
-      attr[attrs[i].nodeName] = attrs[i].nodeValue
-
-  attr
-
-# Convert transformations to an object
-objectifyTransformations = (transform) ->
-  trans = {}
-  list  = (transform or '').match(/[A-Za-z]+\([^\)]+\)/g) || []
-  def   = SVG.defaults.trans()
-
-  # gather transformations
-  if list.length
-    for i in [list.length-1..0]
-      # parse transformation
-      t = list[i].match(/([A-Za-z]+)\(([^\)]+)\)/)
-      v = (t[2] || '').replace(/^\s+/,'').replace(/,/g, ' ').replace(/\s+/g, ' ').split(' ')
-
-      # objectify transformation
-      switch t[1]
-        when 'matrix'
-          trans.a         = parseFloat(v[0]) || def.a
-          trans.b         = parseFloat(v[1]) || def.b
-          trans.c         = parseFloat(v[2]) || def.c
-          trans.d         = parseFloat(v[3]) || def.d
-          trans.e         = parseFloat(v[4]) || def.e
-          trans.f         = parseFloat(v[5]) || def.f
-
-        when 'rotate'
-          trans.rotation  = parseFloat(v[0]) || def.rotation
-          trans.cx        = parseFloat(v[1]) || def.cx
-          trans.cy        = parseFloat(v[2]) || def.cy
-
-        when 'scale'
-          trans.scaleX    = parseFloat(v[0]) || def.scaleX
-          trans.scaleY    = parseFloat(v[1]) || def.scaleY
-
-        when 'skewX'
-          trans.skewX     = parseFloat(v[0]) || def.skewX
-
-        when 'skewY'
-          trans.skewY     = parseFloat(v[0]) || def.skewY
-
-        when 'translate'
-          trans.x         = parseFloat(v[0]) || def.x
-          trans.y         = parseFloat(v[1]) || def.y
-
-  trans

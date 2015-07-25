@@ -15,9 +15,9 @@ class PenTool
     @svgDocument.on 'mouseup', @onMouseUp
 
   deactivate: ->
-    @svgDocument.removeListener 'mousedown', @onMouseDown
-    @svgDocument.removeListener 'mousemove', @onMouseMove
-    @svgDocument.removeListener 'mouseup', @onMouseUp
+    @svgDocument.off 'mousedown', @onMouseDown
+    @svgDocument.off 'mousemove', @onMouseMove
+    @svgDocument.off 'mouseup', @onMouseUp
 
   onMouseDown: (e) =>
     makeNode = =>

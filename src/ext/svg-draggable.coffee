@@ -26,7 +26,7 @@ SVG.extend SVG.Element, draggable: ->
 
   # Disable dragging on this event.
   element.fixed = ->
-    element.removeListener 'mousedown', startHandler
+    element.off 'mousedown', startHandler
     detachDragEvents()
     startHandler = dragHandler = endHandler = null
     element
@@ -37,11 +37,11 @@ attachDragEvents = (dragHandler, endHandler) ->
   SVG.on window, 'mouseup', endHandler
 
 detachDragEvents = (dragHandler, endHandler) ->
-  SVG.removeListener window, 'mousemove', dragHandler
-  SVG.removeListener window, 'mouseup', endHandler
+  SVG.off window, 'mousemove', dragHandler
+  SVG.off window, 'mouseup', endHandler
 
 onStart = (element, event=window.event) ->
-  parent = element.parent._parent(SVG.Nested) or element._parent(SVG.Doc)
+  parent = element.parent(SVG.Nested) or element(SVG.Doc)
   element.startEvent = event
 
   x = y = 0

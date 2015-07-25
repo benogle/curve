@@ -1,6 +1,7 @@
 require './ext/svg-circle'
 require './ext/svg-draggable'
-require './ext/svg-export'
+require "../vendor/svg.parser"
+require "../vendor/svg.export"
 
 module.exports = {
   Point: require "./point"

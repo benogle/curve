@@ -3,6 +3,7 @@ SVG = require '../vendor/svg'
 SelectionModel = require "./selection-model"
 SelectionView = require "./selection-view"
 PointerTool = require "./pointer-tool"
+SerializeSVG = require "./serialize-svg"
 DeserializeSVG = require "./deserialize-svg"
 
 module.exports =
@@ -27,7 +28,7 @@ class SVGDocument
   serialize: ->
     svgRoot = @getSvgRoot()
     if svgRoot
-      svgRoot.export(whitespace: true)
+      SerializeSVG(svgRoot, whitespace: true)
     else
       ''
 
