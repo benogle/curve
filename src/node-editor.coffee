@@ -14,7 +14,7 @@ class NodeEditor
   lineElement = null
 
   constructor: (@svgToolParent, @pathEditor) ->
-    @svgDocument = @svgToolParent.parent
+    @svgDocument = @svgToolParent.parent()
     @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
