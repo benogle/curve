@@ -7,6 +7,8 @@
     "test": "grunt test"
   },
   "devDependencies": {
+    "electron-jasmine": "^0.1.1",
+    "events": "^1.0.2",
     "grunt": "~0.4.1",
     "grunt-browserify": "^3.8.0",
     "grunt-cli": "~0.1",
@@ -16,10 +18,7 @@
     "grunt-contrib-uglify": "~0.2.1",
     "grunt-contrib-watch": "~0.4.3",
     "grunt-shell": "^1.1.2",
-    "jasmine-focused": "^1.0.7",
-    "electron-jasmine": "^0.1.1"
+    "jasmine-focused": "^1.0.7"
   },
-  "dependencies": {
-    "events": "^1.0.2"
-  }
+  "dependencies": {}
 }
