@@ -2575,20 +2575,24 @@
 
 },{"../vendor/svg":27,"./deserialize-svg":3,"./pointer-tool":15,"./selection-model":17,"./selection-view":18,"./serialize-svg":19}],23:[function(require,module,exports){
 (function() {
-  var Point, Transform, TranslateRegex;
+  var MatrixRegex, Point, SVG, Transform, TranslateRegex;
+
+  SVG = require('../vendor/svg');
 
   Point = require("./point");
 
   TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/;
 
+  MatrixRegex = /matrix\(([-0-9]+),\s*([-0-9]+),\s*([-0-9]+),\s*([-0-9]+),\s*([-0-9]+),\s*([-0-9]+)\)/;
+
   module.exports = Transform = (function() {
     function Transform() {
-      this.translation = null;
+      this.matrix = null;
       this.transformString = '';
     }
 
     Transform.prototype.setTransformString = function(transformString) {
-      var translation, x, y;
+      var k, transform, v;
       if (transformString == null) {
         transformString = '';
       }
@@ -2596,13 +2600,20 @@
         return false;
       } else {
         this.transformString = transformString;
-        translation = TranslateRegex.exec(transformString);
-        if (translation != null) {
-          x = parseInt(translation[1]);
-          y = parseInt(translation[2]);
-          this.translation = new Point(x, y);
-        } else {
-          this.translation = null;
+        transform = SVG.parse.transform(transformString);
+        this.matrix = null;
+        if (transform) {
+          this.matrix = SVG.parser.draw.node.createSVGMatrix();
+          if (transform.x != null) {
+            this.matrix = this.matrix.translate(transform.x, transform.y);
+          } else if (transform.a != null) {
+            for (k in transform) {
+              v = transform[k];
+              this.matrix[k] = transform[k];
+            }
+          } else {
+            this.matrix = null;
+          }
         }
         return true;
       }
@@ -2613,11 +2624,17 @@
     };
 
     Transform.prototype.transformPoint = function(point) {
+      var svgPoint;
       point = Point.create(point);
-      if (this.translation) {
-        point = point.add(this.translation);
+      if (this.matrix) {
+        svgPoint = SVG.parser.draw.node.createSVGPoint();
+        svgPoint.x = point.x;
+        svgPoint.y = point.y;
+        svgPoint = svgPoint.matrixTransform(this.matrix);
+        return Point.create(svgPoint.x, svgPoint.y);
+      } else {
+        return point;
       }
-      return point;
     };
 
     return Transform;
@@ -2626,7 +2643,7 @@
 
 }).call(this);
 
-},{"./point":14}],24:[function(require,module,exports){
+},{"../vendor/svg":27,"./point":14}],24:[function(require,module,exports){
 arguments[4][1][0].apply(exports,arguments)
 },{"./point":14,"dup":1}],25:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
