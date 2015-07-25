@@ -1,0 +1,9 @@
+src/
+spec/
+.DS_Store
+.npmignore
+.grunt
+.travis.yml
+_SpecRunner.html
+npm-debug.log
+TODO.md

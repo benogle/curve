@@ -1,4 +1,4 @@
-SVG = window.SVG or require('./vendor/svg').SVG
+SVG = require '../../vendor/svg'
 
 # svg.export.js 0.8 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #

@@ -2,13 +2,14 @@
 
 * Will load any svg file
 * Will serialize (save!) the loaded svg file
-* Only can select and modify paths
+* Only can select and modify paths and rectangles
 
 ## TODO
 
-* Use browserify
+* Make export consistent with import
+* Upgrade to latest svg.js
+* Upgrade to latest node modules
 * Support other non-path object types. At least selecting / moving!
-  * rect
   * circle
   * ellipse
   * text

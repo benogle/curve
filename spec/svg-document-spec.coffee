@@ -1,11 +1,14 @@
-describe 'Curve.SvgDocument', ->
-  svg = null
+SVGDocument = require '../src/svg-document'
+
+describe 'Curve.SVGDocument', ->
+  [svg, canvas] = []
   beforeEach ->
-    loadFixtures 'canvas.html'
-    svg = new Curve.SvgDocument($('#canvas')[0])
+    canvas = document.createElement('canvas')
+    jasmine.attachToDOM(canvas)
+    svg = new SVGDocument(canvas)
 
   it 'has a tool layer', ->
-    expect($('#canvas svg>.tool-layer')).toExist()
+    expect(canvas.querySelector('svg>.tool-layer')).toBeDefined()
 
   describe 'reading svg', ->
     beforeEach ->
@@ -13,8 +16,8 @@ describe 'Curve.SvgDocument', ->
     it 'will deserialize an svg document', ->
       svg.deserialize(DOCUMENT)
 
-      expect($('#canvas svg>svg')).toExist()
-      expect($('#canvas svg>svg #arrow')).toExist()
+      expect(canvas.querySelector('svg>svg')).toBeDefined()
+      expect(canvas.querySelector('svg>svg #arrow')).toBeDefined()
 
     it 'places tool things in the tool layer', ->
       svg.deserialize(DOCUMENT)
@@ -23,8 +26,8 @@ describe 'Curve.SvgDocument', ->
       svg.selectionModel.setSelected(svg.objects[0])
       svg.selectionModel.setSelectedNode(svg.objects[0].getSubpaths()[0].nodes[0])
 
-      expect($('#canvas .tool-layer .node-editor-node')).toExist()
-      expect($('#canvas .tool-layer .object-selection')).toExist()
+      expect(canvas.querySelector('.tool-layer .node-editor-node')).toBeDefined()
+      expect(canvas.querySelector('.tool-layer .object-selection')).toBeDefined()
 
   describe 'exporting svg', ->
     beforeEach ->
@@ -45,7 +48,7 @@ DOCUMENT = '''
 
 DOCUMENT_WITH_XML_DOCTYPE = '''
   <?xml version="1.0" encoding="UTF-8"?>
-  <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg" style="overflow-x: visible; overflow-y: visible; ">
+  <svg style="overflow: visible;" height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">
     <desc>Created with Curve</desc>
     <path d="M512,384L320,576H448V896H576V576H704Z" id="arrow">
     </path>

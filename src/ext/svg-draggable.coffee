@@ -5,6 +5,8 @@
 # * It's now using translations for moves, rather than the move() method
 # * I removed a bunch of features I didnt need
 
+SVG = require '../../vendor/svg'
+
 TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/
 
 SVG.extend SVG.Element, draggable: ->
@@ -24,7 +26,7 @@ SVG.extend SVG.Element, draggable: ->
 
   # Disable dragging on this event.
   element.fixed = ->
-    element.off 'mousedown', startHandler
+    element.removeListener 'mousedown', startHandler
     detachDragEvents()
     startHandler = dragHandler = endHandler = null
     element
@@ -35,8 +37,8 @@ attachDragEvents = (dragHandler, endHandler) ->
   SVG.on window, 'mouseup', endHandler
 
 detachDragEvents = (dragHandler, endHandler) ->
-  SVG.off window, 'mousemove', dragHandler
-  SVG.off window, 'mouseup', endHandler
+  SVG.removeListener window, 'mousemove', dragHandler
+  SVG.removeListener window, 'mouseup', endHandler
 
 onStart = (element, event=window.event) ->
   parent = element.parent._parent(SVG.Nested) or element._parent(SVG.Doc)

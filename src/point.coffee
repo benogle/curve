@@ -1,6 +1,4 @@
-_ = window._ or require 'underscore'
-
-#
+module.exports =
 class Point
   @create: (x, y) ->
     return x if x instanceof Point
@@ -13,7 +11,7 @@ class Point
     @set(x, y)
 
   set: (@x, @y) ->
-    [@x, @y] = @x if _.isArray(@x)
+    [@x, @y] = @x if Array.isArray(@x)
 
   add: (other) ->
     other = Point.create(other)
@@ -32,5 +30,3 @@ class Point
 
   toString: ->
     "(#{@x}, #{@y})"
-
-Curve.Point = Point

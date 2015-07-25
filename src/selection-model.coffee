@@ -1,8 +1,9 @@
-EventEmitter = window.EventEmitter or require('events').EventEmitter
+{EventEmitter} = require 'events'
 
 # Models what is selected and preselected. Preselection is shown as a red
 # outline when the user hovers over the object.
-class Curve.SelectionModel extends EventEmitter
+module.exports =
+class SelectionModel extends EventEmitter
   constructor: ->
     @preselected = null
     @selected = null

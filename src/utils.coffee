@@ -1,12 +1,22 @@
-_ = window._ or require 'underscore'
-$ = window.jQuery or require 'jquery'
+Point = require "./point"
 
-Curve.Utils =
+# Browserify loads this module twice :/
+getObjectMap = ->
+  g = (global ? window)
+  g.NodeObjectMap ?= {}
+  g.NodeObjectMap
+
+Utils =
   getObjectFromNode: (domNode) ->
-    $.data(domNode, 'curve.object')
+    getObjectMap()[domNode.id]
+
   setObjectOnNode: (domNode, object) ->
-    $.data(domNode, 'curve.object', object)
+    getObjectMap()[domNode.id] = object
+
   pointForEvent: (svgDocument, event) ->
     {clientX, clientY} = event
-    {top, left} = $(svgDocument.node).offset()
-    new Curve.Point(event.clientX - left, event.clientY - top)
+    top = @svgDocument.node.offsetTop
+    left = @svgDocument.node.offsetLeft
+    new Point(event.clientX - left, event.clientY - top)
+
+module.exports = Utils

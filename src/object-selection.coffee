@@ -1,10 +1,11 @@
-EventEmitter = window.EventEmitter or require('events').EventEmitter
+{EventEmitter} = require 'events'
 
 # The display for a selected object. i.e. the red or blue outline around the
 # selected object.
 #
 # It basically cops the underlying object's attributes (path definition, etc.)
-class Curve.ObjectSelection extends EventEmitter
+module.exports =
+class ObjectSelection extends EventEmitter
   constructor: (@svgDocument, @options={}) ->
     @options.class ?= 'object-selection'
 

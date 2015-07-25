@@ -1,10 +1,12 @@
-$ = window.jQuery or require 'jquery'
+ObjectEditor = require './object-editor'
+Utils = require './Utils'
 
-class Curve.PointerTool
+module.exports =
+class PointerTool
   constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->
     @_evrect = @svgDocument.node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
-    @objectEditor = new Curve.ObjectEditor(@toolLayer, @selectionModel)
+    @objectEditor = new ObjectEditor(@toolLayer, @selectionModel)
 
   activate: ->
     @objectEditor.activate()
@@ -16,11 +18,11 @@ class Curve.PointerTool
 
   deactivate: ->
     @objectEditor.deactivate()
-    @svgDocument.off 'click', @onClick
-    @svgDocument.off 'mousemove', @onMouseMove
+    @svgDocument.removeListener 'click', @onClick
+    @svgDocument.removeListener 'mousemove', @onMouseMove
 
     objectSelection = @selectionView.getObjectSelection()
-    objectSelection.off 'change:object', @onChangedSelectedObject
+    objectSelection.removeListener 'change:object', @onChangedSelectedObject
 
   onChangedSelectedObject: ({object, old}) =>
     if object?
@@ -40,12 +42,13 @@ class Curve.PointerTool
 
   _hitWithTarget: (e) ->
     obj = null
-    obj = Curve.Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
+    obj = Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
     obj
 
   # This seems slower and more complicated than _hitWithTarget
   _hitWithIntersectionList: (e) ->
-    {left, top} = $(@svgDocument.node).offset()
+    top = @svgDocument.node.offsetTop
+    left = @svgDocument.node.offsetLeft
     @_evrect.x = e.clientX - left
     @_evrect.y = e.clientY - top
     nodes = @svgDocument.node.getIntersectionList(@_evrect, null)
@@ -55,7 +58,7 @@ class Curve.PointerTool
       for i in [nodes.length-1..0]
         className = nodes[i].getAttribute('class')
         continue if className and className.indexOf('invisible-to-hit-test') > -1
-        obj = Curve.Utils.getObjectFromNode(nodes[i])
+        obj = Utils.getObjectFromNode(nodes[i])
         break
 
     console.log obj

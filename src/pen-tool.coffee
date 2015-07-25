@@ -1,5 +1,9 @@
+Node = require './node'
+Path = require './path'
+
 #
-class Curve.PenTool
+module.exports =
+class PenTool
   currentObject: null
   currentNode: null
 
@@ -11,13 +15,13 @@ class Curve.PenTool
     @svgDocument.on 'mouseup', @onMouseUp
 
   deactivate: ->
-    @svgDocument.off 'mousedown', @onMouseDown
-    @svgDocument.off 'mousemove', @onMouseMove
-    @svgDocument.off 'mouseup', @onMouseUp
+    @svgDocument.removeListener 'mousedown', @onMouseDown
+    @svgDocument.removeListener 'mousemove', @onMouseMove
+    @svgDocument.removeListener 'mouseup', @onMouseUp
 
   onMouseDown: (e) =>
     makeNode = =>
-      @currentNode = new Curve.Node([e.clientX, e.clientY], [0, 0], [0, 0])
+      @currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0])
       @currentObject.addNode(@currentNode)
       @selectionModel.setSelectedNode(@currentNode)
 
@@ -28,7 +32,7 @@ class Curve.PenTool
       else
         makeNode()
     else
-      @currentObject = new Curve.Path(@svgDocument)
+      @currentObject = new Path(@svgDocument)
       @selectionModel.setSelected(@currentObject)
       makeNode()
 

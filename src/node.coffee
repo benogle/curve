@@ -1,8 +1,7 @@
-_ = window._ or require 'underscore'
+{EventEmitter} = require 'events'
+Point = require './point'
 
-EventEmitter = window.EventEmitter or require('events').EventEmitter
-
-#
+module.exports =
 class Node extends EventEmitter
   constructor: (point, handleIn, handleOut, @isJoined=false) ->
     @setPoint(point)
@@ -45,11 +44,11 @@ class Node extends EventEmitter
   setHandleIn: (point) ->
     point = Point.create(point) if point
     @set('handleIn', point)
-    @set('handleOut', if point then new Curve.Point(0,0).subtract(point) else point) if @isJoined
+    @set('handleOut', if point then new Point(0,0).subtract(point) else point) if @isJoined
   setHandleOut: (point) ->
     point = Point.create(point) if point
     @set('handleOut', point)
-    @set('handleIn', if point then new Curve.Point(0,0).subtract(point) else point) if @isJoined
+    @set('handleIn', if point then new Point(0,0).subtract(point) else point) if @isJoined
 
   computeIsjoined: ->
     @isJoined = (not @handleIn and not @handleOut) or (@handleIn and @handleOut and Math.round(@handleIn.x) == Math.round(-@handleOut.x) and Math.round(@handleIn.y) == Math.round(-@handleOut.y))
@@ -72,5 +71,3 @@ class Node extends EventEmitter
     transform = @path?.getTransform()
     point = transform.transformPoint(point) if transform?
     point
-
-Curve.Node = Node
