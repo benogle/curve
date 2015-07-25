@@ -112,7 +112,7 @@ class PathModel extends EventEmitter
     @_removeAllSubpaths()
     parsedPath = PathParser.parsePath(pathString)
     @_createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
-    @currentSubpath = _.last(@subpaths)
+    @currentSubpath = @subpaths[@subpaths.length - 1]
     @_updatePathString()
     null
 
