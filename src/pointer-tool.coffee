@@ -18,11 +18,11 @@ class PointerTool
 
   deactivate: ->
     @objectEditor.deactivate()
-    @svgDocument.off 'click', @onClick
-    @svgDocument.off 'mousemove', @onMouseMove
+    @svgDocument.removeListener 'click', @onClick
+    @svgDocument.removeListener 'mousemove', @onMouseMove
 
     objectSelection = @selectionView.getObjectSelection()
-    objectSelection.off 'change:object', @onChangedSelectedObject
+    objectSelection.removeListener 'change:object', @onChangedSelectedObject
 
   onChangedSelectedObject: ({object, old}) =>
     if object?

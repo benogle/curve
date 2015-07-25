@@ -94,7 +94,7 @@ class PathModel extends EventEmitter
 
   _unbindSubpath: (subpath) ->
     return unless subpath
-    subpath.off() # scary!
+    subpath.removeAllListeners() # scary!
 
   _removeAllSubpaths: ->
     for subpath in @subpaths
