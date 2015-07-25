@@ -6,10 +6,9 @@
 
 ## TODO
 
-* Use browserify
-  * fix specs
 * Make export consistent with import
 * Upgrade to latest svg.js
+* Upgrade to latest node modules
 * Support other non-path object types. At least selecting / moving!
   * circle
   * ellipse
