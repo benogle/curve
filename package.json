@@ -14,10 +14,12 @@
     "grunt-contrib-concat": "~0.3.0",
     "grunt-contrib-jasmine": "~0.4.2",
     "grunt-contrib-uglify": "~0.2.1",
-    "grunt-contrib-watch": "~0.4.3"
+    "grunt-contrib-watch": "~0.4.3",
+    "grunt-shell": "^1.1.2",
+    "jasmine-focused": "^1.0.7",
+    "electron-jasmine": "^0.1.1"
   },
   "dependencies": {
-    "events": "^1.0.2",
-    "underscore": "^1.8.3"
+    "events": "^1.0.2"
   }
 }

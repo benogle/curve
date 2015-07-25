@@ -54,30 +54,14 @@ module.exports = function(grunt) {
       }
     },
 
-    jasmine: {
-      src: '<%= pkg.name %>.js',
-      options: {
-        specs: [
-          'test/lib/nodeSpec.js',
-          'test/lib/node-editorSpec.js',
-          'test/lib/object-editorSpec.js',
-          'test/lib/pathSpec.js',
-          'test/lib/path-editorSpec.js',
-          'test/lib/path-parserSpec.js',
-          'test/lib/selection-modelSpec.js',
-          'test/lib/selection-viewSpec.js',
-          'test/lib/subpathSpec.js',
-          'test/lib/svg-documentSpec.js',
-          'test/lib/transformSpec.js'
-        ],
-        helpers: 'test/lib/**/*Helper.js',
-        vendor: [
-          'vendor/event-emitter.js',
-          'vendor/svg.js',
-          'vendor/jquery-2.0.3.js',
-          'vendor/underscore.js',
-          'vendor/jasmine-jquery.js'
-        ]
+    shell: {
+      test: {
+        command: 'node_modules/.bin/electron-jasmine ./spec',
+        options: {
+          stdout: true,
+          stderr: true,
+          failOnError: true
+        }
       }
     }
   });
@@ -88,7 +72,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
   grunt.loadNpmTasks('grunt-browserify');
+  grunt.loadNpmTasks('grunt-shell');
 
-  grunt.registerTask('test', ['coffee', 'browserify', 'jasmine']);
+  // grunt.registerTask('test', ['coffee', 'browserify', 'jasmine']);
+  grunt.registerTask('test', ['coffee', 'browserify', 'shell:test']);
   grunt.registerTask('default', ['coffee', 'browserify', 'uglify']);
 };
