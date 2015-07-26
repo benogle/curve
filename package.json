@@ -11,7 +11,7 @@
     "test": "grunt test"
   },
   "devDependencies": {
-    "electron-jasmine": "^0.1.7",
+    "electron-jasmine": "^0.1.8",
     "events": "^1.0.2",
     "grunt": "^0.4.5",
     "grunt-browserify": "^3.8.0",
