@@ -2575,15 +2575,11 @@
 
 },{"../vendor/svg":27,"./deserialize-svg":3,"./pointer-tool":15,"./selection-model":17,"./selection-view":18,"./serialize-svg":19}],23:[function(require,module,exports){
 (function() {
-  var MatrixRegex, Point, SVG, Transform, TranslateRegex;
+  var Point, SVG, Transform;
 
   SVG = require('../vendor/svg');
 
   Point = require("./point");
-
-  TranslateRegex = /translate\(([-0-9]+)[ ]+([-0-9]+)\)/;
-
-  MatrixRegex = /matrix\(([-0-9]+),\s*([-0-9]+),\s*([-0-9]+),\s*([-0-9]+),\s*([-0-9]+),\s*([-0-9]+)\)/;
 
   module.exports = Transform = (function() {
     function Transform() {
