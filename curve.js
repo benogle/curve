@@ -111,7 +111,6 @@
       return null;
     });
     parentNode = null;
-    window.objs = objects;
     return objects;
   };
 
@@ -2509,7 +2508,13 @@
 
 },{"./point":14,"events":25}],22:[function(require,module,exports){
 (function() {
-  var DeserializeSVG, PointerTool, SVG, SVGDocument, SelectionModel, SelectionView, SerializeSVG;
+  var DeserializeSVG, EventEmitter, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, Size,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
+    slice = [].slice;
+
+  EventEmitter = require('events').EventEmitter;
 
   SVG = require('../vendor/svg');
 
@@ -2523,24 +2528,76 @@
 
   DeserializeSVG = require("./deserialize-svg");
 
+  Size = require("./size");
+
+  SVGDocumentModel = (function(superClass) {
+    extend(SVGDocumentModel, superClass);
+
+    function SVGDocumentModel() {
+      this.onChangedObject = bind(this.onChangedObject, this);
+      this.objects = [];
+    }
+
+    SVGDocumentModel.prototype.setObjects = function(objects) {
+      var i, len, object, ref;
+      this.objects = objects;
+      ref = this.objects;
+      for (i = 0, len = ref.length; i < len; i++) {
+        object = ref[i];
+        object.on('change', this.onChangedObject);
+      }
+    };
+
+    SVGDocumentModel.prototype.getObjects = function() {
+      return this.objects;
+    };
+
+    SVGDocumentModel.prototype.setSize = function(size) {
+      size = Size.create(size);
+      if (size.equals(this.size)) {
+        return;
+      }
+      this.size = size;
+      return this.emit('change:size', {
+        size: size
+      });
+    };
+
+    SVGDocumentModel.prototype.getSize = function() {
+      return this.size;
+    };
+
+    SVGDocumentModel.prototype.onChangedObject = function(event) {
+      return this.emit('change', event);
+    };
+
+    return SVGDocumentModel;
+
+  })(EventEmitter);
+
   module.exports = SVGDocument = (function() {
     function SVGDocument(rootNode) {
-      this.objects = [];
-      this.svgDocument = SVG(rootNode);
-      this.toolLayer = this.svgDocument.group();
+      this.onChangedSize = bind(this.onChangedSize, this);
+      this.model = new SVGDocumentModel;
+      this.svg = SVG(rootNode);
+      this.toolLayer = this.svg.group();
       this.toolLayer.node.setAttribute('class', 'tool-layer');
       this.selectionModel = new SelectionModel();
       this.selectionView = new SelectionView(this.toolLayer, this.selectionModel);
-      this.tool = new PointerTool(this.svgDocument, {
+      this.tool = new PointerTool(this.svg, {
         selectionModel: this.selectionModel,
         selectionView: this.selectionView,
         toolLayer: this.toolLayer
       });
       this.tool.activate();
+      this.model.on('change:size', this.onChangedSize);
     }
 
     SVGDocument.prototype.deserialize = function(svgString) {
-      this.objects = DeserializeSVG(this.svgDocument, svgString);
+      var root;
+      this.model.setObjects(DeserializeSVG(this.svg, svgString));
+      root = this.getSvgRoot();
+      this.model.setSize(new Size(root.width(), root.height()));
       return this.toolLayer.front();
     };
 
@@ -2559,12 +2616,60 @@
     SVGDocument.prototype.getSvgRoot = function() {
       var svgRoot;
       svgRoot = null;
-      this.svgDocument.each(function() {
+      this.svg.each(function() {
         if (this.node.nodeName === 'svg') {
           return svgRoot = this;
         }
       });
       return svgRoot;
+    };
+
+
+    /*
+    Section: Model Delegates
+     */
+
+    SVGDocument.prototype.setSize = function(size) {
+      return this.model.setSize(size);
+    };
+
+    SVGDocument.prototype.getSize = function() {
+      return this.model.getSize();
+    };
+
+    SVGDocument.prototype.getObjects = function() {
+      return this.model.getObjects();
+    };
+
+    SVGDocument.prototype.on = function() {
+      var args, ref;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (ref = this.model).on.apply(ref, args);
+    };
+
+    SVGDocument.prototype.addListener = function() {
+      var args, ref;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (ref = this.model).addListener.apply(ref, args);
+    };
+
+    SVGDocument.prototype.removeListener = function() {
+      var args, ref;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (ref = this.model).removeListener.apply(ref, args);
+    };
+
+
+    /*
+    Section: Event Handlers
+     */
+
+    SVGDocument.prototype.onChangedSize = function(arg) {
+      var root, size;
+      size = arg.size;
+      root = this.getSvgRoot();
+      root.width(size.width);
+      return root.height(size.height);
     };
 
     return SVGDocument;
@@ -2573,7 +2678,7 @@
 
 }).call(this);
 
-},{"../vendor/svg":27,"./deserialize-svg":3,"./pointer-tool":15,"./selection-model":17,"./selection-view":18,"./serialize-svg":19}],23:[function(require,module,exports){
+},{"../vendor/svg":27,"./deserialize-svg":3,"./pointer-tool":15,"./selection-model":17,"./selection-view":18,"./serialize-svg":19,"./size":20,"events":25}],23:[function(require,module,exports){
 (function() {
   var Point, SVG, Transform;
 
