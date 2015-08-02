@@ -1,5 +1,6 @@
 SVGDocument = require '../src/svg-document'
 Size = require '../src/size'
+Point = require '../src/point'
 
 describe 'Curve.SVGDocument', ->
   [svg, canvas] = []
@@ -31,8 +32,6 @@ describe 'Curve.SVGDocument', ->
       expect(canvas.querySelector('.tool-layer .object-selection')).toBeDefined()
 
   describe 'exporting svg', ->
-    beforeEach ->
-
     it 'will export an svg document', ->
       svg.deserialize(DOCUMENT)
       expect(svg.serialize().trim()).toEqual DOCUMENT_WITH_XML_DOCTYPE
@@ -60,6 +59,19 @@ describe 'Curve.SVGDocument', ->
 
       size = sizeChangeSpy.calls.mostRecent().args[0].size
       expect(svg.getSize()).toEqual new Size(1000, 1050)
+
+  describe "changes in the document", ->
+    beforeEach ->
+      svg.deserialize(DOCUMENT)
+
+    it "emits a change event when anything in the document changes", ->
+      svg.on 'change', documentChangeSpy = jasmine.createSpy()
+
+      object = svg.getObjects()[0]
+      node = object.getSubpaths()[0].nodes[0]
+      node.setPoint(new Point(200, 250))
+
+      expect(documentChangeSpy).toHaveBeenCalled()
 
 DOCUMENT = '''
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">

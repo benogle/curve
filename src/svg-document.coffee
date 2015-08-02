@@ -13,6 +13,9 @@ class SVGDocumentModel extends EventEmitter
     @objects = []
 
   setObjects: (@objects) ->
+    for object in @objects
+      object.on 'change', @onChangedObject
+    return
 
   getObjects: -> @objects
 
@@ -23,6 +26,9 @@ class SVGDocumentModel extends EventEmitter
     @emit 'change:size', {size}
 
   getSize: -> @size
+
+  onChangedObject: (event) =>
+    @emit 'change', event
 
 module.exports =
 class SVGDocument
