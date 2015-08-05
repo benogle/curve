@@ -75,23 +75,11 @@ class NodeEditor
     @_draggingHandle.front() if @_draggingHandle
 
   onDraggingNode: (delta, event) =>
-    @node.setPoint(@pointForEvent(event))
+    @node.setPoint(@_startPosition.add(delta))
   onDraggingHandleIn: (delta, event) =>
-    @node.setAbsoluteHandleIn(@pointForEvent(event))
+    @node.setAbsoluteHandleIn(@_startPosition.add(delta))
   onDraggingHandleOut: (delta, event) =>
-    @node.setAbsoluteHandleOut(@pointForEvent(event))
-
-  pointForEvent: (event) ->
-    {clientX, clientY} = event
-    top = @_getOffsetTop()
-    left = @_getOffsetLeft()
-    new Point(event.clientX - left, event.clientY - top)
-
-  _getOffsetTop: ->
-    @svgDocument.node.offsetTop
-
-  _getOffsetLeft: ->
-    @svgDocument.node.offsetLeft
+    @node.setAbsoluteHandleOut(@_startPosition.add(delta))
 
   _bindNode: (node) ->
     return unless node
@@ -114,8 +102,13 @@ class NodeEditor
       false
 
     @nodeElement.draggable()
-    @nodeElement.dragstart = => @pathEditor.activateNode(@node)
     @nodeElement.dragmove = @onDraggingNode
+    @nodeElement.dragstart = =>
+      @pathEditor.activateNode(@node)
+      @_startPosition = @node.getPoint()
+    @nodeElement.dragend = =>
+      @_startPosition = null
+
     @nodeElement.on 'mouseover', =>
       @nodeElement.front()
       @nodeElement.attr('r': @nodeSize+2)
@@ -141,20 +134,25 @@ class NodeEditor
       e.stopPropagation()
       false
 
-    onStartDraggingHandle = ->
-      self._draggingHandle = this
-    onStopDraggingHandle = ->
-      self._draggingHandle = null
+    onStopDraggingHandle = =>
+      @_draggingHandle = null
+      @_startPosition = null
 
     @handleElements.members[0].draggable()
     @handleElements.members[0].dragmove = @onDraggingHandleIn
-    @handleElements.members[0].dragstart = onStartDraggingHandle
     @handleElements.members[0].dragend = onStopDraggingHandle
+    @handleElements.members[0].dragstart = ->
+      # Use self here as `this` is the SVG element
+      self._draggingHandle = this
+      self._startPosition = self.node.getAbsoluteHandleIn()
 
     @handleElements.members[1].draggable()
     @handleElements.members[1].dragmove = @onDraggingHandleOut
-    @handleElements.members[1].dragstart = onStartDraggingHandle
     @handleElements.members[1].dragend = onStopDraggingHandle
+    @handleElements.members[1].dragstart = ->
+      # Use self here as `this` is the SVG element
+      self._draggingHandle = this
+      self._startPosition = self.node.getAbsoluteHandleOut()
 
     @handleElements.on 'mouseover', ->
       this.front()

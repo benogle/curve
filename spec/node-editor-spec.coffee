@@ -25,9 +25,8 @@ describe 'NodeEditor', ->
       nodeEditor.setNode(path.getSubpaths()[0].nodes[0])
 
     it 'dragging a handle updates the path and the node editor', ->
-      spyOn(nodeEditor, '_getOffsetTop').and.returnValue 0
-      spyOn(nodeEditor, '_getOffsetLeft').and.returnValue 0
-      nodeEditor.onDraggingHandleOut({x: 10, y: 10}, {clientX: 70, clientY: 60})
+      nodeEditor._startPosition = path.getSubpaths()[0].nodes[0].getPoint()
+      nodeEditor.onDraggingHandleOut({x: 20, y: 10}, {clientX: 70, clientY: 60})
 
       expect(path.getSubpaths()[0].nodes[0].handleOut).toEqual new Point([20, 10])
       expect(nodeEditor.handleElements.members[1].node).toHaveAttr 'cx', '70'
