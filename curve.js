@@ -506,31 +506,15 @@
     };
 
     NodeEditor.prototype.onDraggingNode = function(delta, event) {
-      return this.node.setPoint(this.pointForEvent(event));
+      return this.node.setPoint(this._startPosition.add(delta));
     };
 
     NodeEditor.prototype.onDraggingHandleIn = function(delta, event) {
-      return this.node.setAbsoluteHandleIn(this.pointForEvent(event));
+      return this.node.setAbsoluteHandleIn(this._startPosition.add(delta));
     };
 
     NodeEditor.prototype.onDraggingHandleOut = function(delta, event) {
-      return this.node.setAbsoluteHandleOut(this.pointForEvent(event));
-    };
-
-    NodeEditor.prototype.pointForEvent = function(event) {
-      var clientX, clientY, left, top;
-      clientX = event.clientX, clientY = event.clientY;
-      top = this._getOffsetTop();
-      left = this._getOffsetLeft();
-      return new Point(event.clientX - left, event.clientY - top);
-    };
-
-    NodeEditor.prototype._getOffsetTop = function() {
-      return this.svgDocument.node.offsetTop;
-    };
-
-    NodeEditor.prototype._getOffsetLeft = function() {
-      return this.svgDocument.node.offsetLeft;
+      return this.node.setAbsoluteHandleOut(this._startPosition.add(delta));
     };
 
     NodeEditor.prototype._bindNode = function(node) {
@@ -563,12 +547,18 @@
         };
       })(this));
       this.nodeElement.draggable();
+      this.nodeElement.dragmove = this.onDraggingNode;
       this.nodeElement.dragstart = (function(_this) {
         return function() {
-          return _this.pathEditor.activateNode(_this.node);
+          _this.pathEditor.activateNode(_this.node);
+          return _this._startPosition = _this.node.getPoint();
         };
       })(this);
-      this.nodeElement.dragmove = this.onDraggingNode;
+      this.nodeElement.dragend = (function(_this) {
+        return function() {
+          return _this._startPosition = null;
+        };
+      })(this);
       this.nodeElement.on('mouseover', (function(_this) {
         return function() {
           _this.nodeElement.front();
@@ -592,7 +582,7 @@
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
-      var onStartDraggingHandle, onStopDraggingHandle, self;
+      var onStopDraggingHandle, self;
       self = this;
       this.handleElements = this.svgToolParent.set();
       this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
@@ -604,20 +594,26 @@
           return false;
         };
       })(this));
-      onStartDraggingHandle = function() {
-        return self._draggingHandle = this;
-      };
-      onStopDraggingHandle = function() {
-        return self._draggingHandle = null;
-      };
+      onStopDraggingHandle = (function(_this) {
+        return function() {
+          _this._draggingHandle = null;
+          return _this._startPosition = null;
+        };
+      })(this);
       this.handleElements.members[0].draggable();
       this.handleElements.members[0].dragmove = this.onDraggingHandleIn;
-      this.handleElements.members[0].dragstart = onStartDraggingHandle;
       this.handleElements.members[0].dragend = onStopDraggingHandle;
+      this.handleElements.members[0].dragstart = function() {
+        self._draggingHandle = this;
+        return self._startPosition = self.node.getAbsoluteHandleIn();
+      };
       this.handleElements.members[1].draggable();
       this.handleElements.members[1].dragmove = this.onDraggingHandleOut;
-      this.handleElements.members[1].dragstart = onStartDraggingHandle;
       this.handleElements.members[1].dragend = onStopDraggingHandle;
+      this.handleElements.members[1].dragstart = function() {
+        self._draggingHandle = this;
+        return self._startPosition = self.node.getAbsoluteHandleOut();
+      };
       this.handleElements.on('mouseover', function() {
         this.front();
         return this.attr({
@@ -1770,7 +1766,9 @@
       if (x instanceof Point) {
         return x;
       }
-      if (Array.isArray(x)) {
+      if (((x != null ? x.x : void 0) != null) && ((x != null ? x.y : void 0) != null)) {
+        return new Point(x.x, x.y);
+      } else if (Array.isArray(x)) {
         return new Point(x[0], x[1]);
       } else {
         return new Point(x, y);
