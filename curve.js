@@ -606,7 +606,7 @@
     NodeEditor.prototype._setupNodeElement = function() {
       this.nodeElement = this.svgToolParent.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
-      this.nodeElement.click((function(_this) {
+      this.nodeElement.mousedown((function(_this) {
         return function(e) {
           e.stopPropagation();
           _this.setEnableHandles(true);
@@ -656,7 +656,7 @@
       this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
       this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
-      this.handleElements.click((function(_this) {
+      this.handleElements.mousedown((function(_this) {
         return function(e) {
           e.stopPropagation();
           return false;
@@ -815,12 +815,13 @@
       this[attribute] = value;
       event = "change:" + attribute;
       eventArgs = {
+        node: this,
         event: event,
         value: value,
         old: old
       };
-      this.emitter.emit(event, this, eventArgs);
-      return this.emitter.emit('change', this, eventArgs);
+      this.emitter.emit(event, eventArgs);
+      return this.emitter.emit('change', eventArgs);
     };
 
     Node.prototype.translate = function(point) {
@@ -1957,24 +1958,22 @@
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var className, i, j, left, nodes, obj, ref, top;
+      var className, i, j, left, nodes, ref, top;
       top = this.svgDocument.node.offsetTop;
       left = this.svgDocument.node.offsetLeft;
       this._evrect.x = e.clientX - left;
       this._evrect.y = e.clientY - top;
       nodes = this.svgDocument.node.getIntersectionList(this._evrect, null);
-      obj = null;
       if (nodes.length) {
         for (i = j = ref = nodes.length - 1; ref <= 0 ? j <= 0 : j >= 0; i = ref <= 0 ? ++j : --j) {
           className = nodes[i].getAttribute('class');
           if (className && className.indexOf('invisible-to-hit-test') > -1) {
             continue;
           }
-          obj = Utils.getObjectFromNode(nodes[i]);
-          break;
+          return Utils.getObjectFromNode(nodes[i]);
         }
       }
-      return obj;
+      return null;
     };
 
     return PointerTool;
