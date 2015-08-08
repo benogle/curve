@@ -281,7 +281,7 @@
   TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/;
 
   SVG.extend(SVG.Element, {
-    draggable: function() {
+    draggable: function(startEvent) {
       var dragHandler, element, endHandler, startHandler;
       element = this;
       if (typeof this.fixed === "function") {
@@ -305,6 +305,9 @@
         startHandler = dragHandler = endHandler = null;
         return element;
       };
+      if (startEvent != null) {
+        startHandler(startEvent);
+      }
       return this;
     }
   });
@@ -1518,6 +1521,7 @@
       this.svgDocument = svgDocument1;
       svgEl = (arg != null ? arg : {}).svgEl;
       this.onModelChange = bind(this.onModelChange, this);
+      this._draggingEnabled = false;
       this.id = IDS++;
       this.model = new PathModel;
       this.model.on('change', this.onModelChange);
@@ -1562,34 +1566,35 @@
       return this.model.close();
     };
 
-    Path.prototype.enableDragging = function(callbacks) {
+    Path.prototype.enableDragging = function(startEvent) {
       var element;
+      if (this._draggingEnabled) {
+        return;
+      }
       element = this.svgEl;
       if (element == null) {
         return;
       }
-      this.disableDragging();
-      element.draggable();
-      element.dragstart = function(event) {
-        return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
-      };
+      element.draggable(startEvent);
       element.dragmove = (function(_this) {
-        return function(event) {
-          _this.updateFromAttributes();
-          return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+        return function() {
+          return _this.updateFromAttributes();
         };
       })(this);
-      return element.dragend = (function(_this) {
+      element.dragend = (function(_this) {
         return function(event) {
           _this.model.setTransformString(null);
-          _this.model.translate([event.x, event.y]);
-          return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+          return _this.model.translate([event.x, event.y]);
         };
       })(this);
+      return this._draggingEnabled = true;
     };
 
     Path.prototype.disableDragging = function() {
       var element;
+      if (!this._draggingEnabled) {
+        return;
+      }
       element = this.svgEl;
       if (element == null) {
         return;
@@ -1599,7 +1604,8 @@
       }
       element.dragstart = null;
       element.dragmove = null;
-      return element.dragend = null;
+      element.dragend = null;
+      return this._draggingEnabled = false;
     };
 
     Path.prototype.updateFromAttributes = function() {
@@ -1832,7 +1838,7 @@
       this.svgDocument = svgDocument;
       ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView, this.toolLayer = ref.toolLayer;
       this.onMouseMove = bind(this.onMouseMove, this);
-      this.onClick = bind(this.onClick, this);
+      this.onMouseDown = bind(this.onMouseDown, this);
       this.onChangedSelectedObject = bind(this.onChangedSelectedObject, this);
       this._evrect = this.svgDocument.node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
@@ -1842,7 +1848,7 @@
     PointerTool.prototype.activate = function() {
       var objectSelection;
       this.objectEditor.activate();
-      this.svgDocument.on('click', this.onClick);
+      this.svgDocument.on('mousedown', this.onMouseDown);
       this.svgDocument.on('mousemove', this.onMouseMove);
       objectSelection = this.selectionView.getObjectSelection();
       return objectSelection.on('change:object', this.onChangedSelectedObject);
@@ -1851,7 +1857,7 @@
     PointerTool.prototype.deactivate = function() {
       var objectSelection;
       this.objectEditor.deactivate();
-      this.svgDocument.off('click', this.onClick);
+      this.svgDocument.off('mousedown', this.onMouseDown);
       this.svgDocument.off('mousemove', this.onMouseMove);
       objectSelection = this.selectionView.getObjectSelection();
       return objectSelection.removeListener('change:object', this.onChangedSelectedObject);
@@ -1867,13 +1873,16 @@
       }
     };
 
-    PointerTool.prototype.onClick = function(e) {
-      var obj;
-      obj = this._hitWithTarget(e);
-      this.selectionModel.setSelected(obj);
-      if (obj) {
-        return false;
+    PointerTool.prototype.onMouseDown = function(event) {
+      var object;
+      object = this._hitWithTarget(event);
+      if (object != null) {
+        if (typeof object.enableDragging === "function") {
+          object.enableDragging(event);
+        }
       }
+      this.selectionModel.setSelected(object);
+      return true;
     };
 
     PointerTool.prototype.onMouseMove = function(e) {
@@ -1907,7 +1916,6 @@
           break;
         }
       }
-      console.log(obj);
       return obj;
     };
 
