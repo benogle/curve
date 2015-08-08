@@ -62,10 +62,10 @@ class Node
     @[attribute] = value
 
     event = "change:#{attribute}"
-    eventArgs = {event, value, old}
+    eventArgs = {node: this, event, value, old}
 
-    @emitter.emit event, this, eventArgs
-    @emitter.emit 'change', this, eventArgs
+    @emitter.emit event, eventArgs
+    @emitter.emit 'change', eventArgs
 
   translate: (point) ->
     point = Point.create(point)
