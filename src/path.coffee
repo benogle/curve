@@ -5,6 +5,7 @@ PathParser = require './path-parser'
 Transform = require './transform'
 Subpath = require './subpath'
 Point = require './point'
+Draggable = require './draggable-mixin'
 
 DefaultAttrs = {fill: '#eee', stroke: 'none'}
 IDS = 0
@@ -129,6 +130,8 @@ class PathModel extends EventEmitter
 # rendering from the {PathModel}.
 module.exports =
 class Path extends EventEmitter
+  Draggable.includeInto(this)
+
   constructor: (@svgDocument, {svgEl}={}) ->
     @_draggingEnabled = false
     @id = IDS++
@@ -157,32 +160,6 @@ class Path extends EventEmitter
   insertNode: (node, index) -> @model.insertNode(node, index)
 
   close: -> @model.close()
-
-  # Allows for user dragging on the screen
-  # * `startEvent` (optional) event from a mousedown event
-  enableDragging: (startEvent) ->
-    return if @_draggingEnabled
-    element = @svgEl
-    return unless element?
-
-    element.draggable(startEvent)
-    element.dragmove = =>
-      @updateFromAttributes()
-    element.dragend = (event) =>
-      @model.setTransformString(null)
-      @model.translate([event.x, event.y])
-    @_draggingEnabled = true
-
-  disableDragging: ->
-    return unless @_draggingEnabled
-    element = @svgEl
-    return unless element?
-
-    element.fixed?()
-    element.dragstart = null
-    element.dragmove = null
-    element.dragend = null
-    @_draggingEnabled = false
 
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.

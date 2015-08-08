@@ -3,6 +3,7 @@ Transform = require './transform'
 Utils = require './utils'
 Point = require './point'
 Size = require './size'
+Draggable = require './draggable-mixin'
 
 DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
 IDS = 0
@@ -61,6 +62,8 @@ class RectangleModel extends EventEmitter
 # rendering from the {RectangleModel}.
 module.exports =
 class Rectangle extends EventEmitter
+  Draggable.includeInto(this)
+
   constructor: (@svgDocument, {svgEl}={}) ->
     @model = new RectangleModel
     @_setupSVGObject(svgEl)
@@ -73,32 +76,6 @@ class Rectangle extends EventEmitter
   getType: -> 'Rectangle'
 
   toString: -> @model.toString()
-
-  # Allows for user dragging on the screen
-  # * `startEvent` (optional) event from a mousedown event
-  enableDragging: (startEvent) ->
-    return if @_draggingEnabled
-    element = @svgEl
-    return unless element?
-
-    element.draggable(startEvent)
-    element.dragmove = =>
-      @updateFromAttributes()
-    element.dragend = (event) =>
-      @model.setTransformString(null)
-      @model.translate([event.x, event.y])
-    @_draggingEnabled = true
-
-  disableDragging: ->
-    return unless @_draggingEnabled
-    element = @svgEl
-    return unless element?
-
-    element.fixed?()
-    element.dragstart = null
-    element.dragmove = null
-    element.dragend = null
-    @_draggingEnabled = false
 
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
