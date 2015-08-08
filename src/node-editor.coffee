@@ -96,7 +96,7 @@ class NodeEditor
     @nodeElement = @svgToolParent.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
 
-    @nodeElement.click (e) =>
+    @nodeElement.mousedown (e) =>
       e.stopPropagation()
       @setEnableHandles(true)
       @pathEditor.activateNode(@node)
@@ -131,7 +131,7 @@ class NodeEditor
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')
 
-    @handleElements.click (e) =>
+    @handleElements.mousedown (e) =>
       e.stopPropagation()
       false
 
