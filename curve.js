@@ -1665,6 +1665,14 @@
       return this.model.close();
     };
 
+    Path.prototype.translate = function(delta) {
+      return this.model.translate(delta);
+    };
+
+    Path.prototype.getPosition = function() {
+      return new Point(this.svgEl.x(), this.svgEl.y());
+    };
+
     Path.prototype.updateFromAttributes = function() {
       var pathString, transform;
       pathString = this.svgEl.attr('d');
@@ -2123,6 +2131,14 @@
       return this.model.toString();
     };
 
+    Rectangle.prototype.getPosition = function() {
+      return this.model.getPosition();
+    };
+
+    Rectangle.prototype.translate = function(point) {
+      return this.model.translate(point);
+    };
+
     Rectangle.prototype.updateFromAttributes = function() {
       var height, transform, width, x, y;
       x = this.svgEl.attr('x');
@@ -2220,6 +2236,10 @@
       return (ref = this.emitter).on.apply(ref, args);
     };
 
+    SelectionModel.prototype.getPreselected = function() {
+      return this.preselected;
+    };
+
     SelectionModel.prototype.setPreselected = function(preselected) {
       var old;
       if (preselected === this.preselected) {
@@ -2234,6 +2254,10 @@
         object: this.preselected,
         old: old
       });
+    };
+
+    SelectionModel.prototype.getSelected = function() {
+      return this.selected;
     };
 
     SelectionModel.prototype.setSelected = function(selected) {
@@ -2563,7 +2587,7 @@
 
 },{"./point":15,"event-kit":29}],23:[function(require,module,exports){
 (function() {
-  var DeserializeSVG, Emitter, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, Size,
+  var DeserializeSVG, Emitter, Point, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, Size,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     slice = [].slice;
 
@@ -2582,6 +2606,8 @@
   DeserializeSVG = require("./deserialize-svg");
 
   Size = require("./size");
+
+  Point = require("./point");
 
   SVGDocumentModel = (function() {
     function SVGDocumentModel() {
@@ -2718,13 +2744,28 @@
       return root.height(size.height);
     };
 
+
+    /*
+    Section: Acting on selected elements
+     */
+
+    SVGDocument.prototype.translateSelectedObjects = function(deltaPoint) {
+      var selectedObject;
+      if (!deltaPoint) {
+        return;
+      }
+      deltaPoint = Point.create(deltaPoint);
+      selectedObject = this.selectionModel.getSelected();
+      return selectedObject != null ? typeof selectedObject.translate === "function" ? selectedObject.translate(deltaPoint) : void 0 : void 0;
+    };
+
     return SVGDocument;
 
   })();
 
 }).call(this);
 
-},{"../vendor/svg":285,"./deserialize-svg":3,"./pointer-tool":16,"./selection-model":18,"./selection-view":19,"./serialize-svg":20,"./size":21,"event-kit":29}],24:[function(require,module,exports){
+},{"../vendor/svg":285,"./deserialize-svg":3,"./point":15,"./pointer-tool":16,"./selection-model":18,"./selection-view":19,"./serialize-svg":20,"./size":21,"event-kit":29}],24:[function(require,module,exports){
 (function() {
   var Point, SVG, Transform;
 
