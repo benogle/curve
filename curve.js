@@ -2053,34 +2053,35 @@
       return this.model.toString();
     };
 
-    Rectangle.prototype.enableDragging = function(callbacks) {
+    Rectangle.prototype.enableDragging = function(startEvent) {
       var element;
+      if (this._draggingEnabled) {
+        return;
+      }
       element = this.svgEl;
       if (element == null) {
         return;
       }
-      this.disableDragging();
-      element.draggable();
-      element.dragstart = function(event) {
-        return callbacks != null ? typeof callbacks.dragstart === "function" ? callbacks.dragstart(event) : void 0 : void 0;
-      };
+      element.draggable(startEvent);
       element.dragmove = (function(_this) {
-        return function(event) {
-          _this.updateFromAttributes();
-          return callbacks != null ? typeof callbacks.dragmove === "function" ? callbacks.dragmove(event) : void 0 : void 0;
+        return function() {
+          return _this.updateFromAttributes();
         };
       })(this);
-      return element.dragend = (function(_this) {
+      element.dragend = (function(_this) {
         return function(event) {
           _this.model.setTransformString(null);
-          _this.model.translate([event.x, event.y]);
-          return callbacks != null ? typeof callbacks.dragend === "function" ? callbacks.dragend(event) : void 0 : void 0;
+          return _this.model.translate([event.x, event.y]);
         };
       })(this);
+      return this._draggingEnabled = true;
     };
 
     Rectangle.prototype.disableDragging = function() {
       var element;
+      if (!this._draggingEnabled) {
+        return;
+      }
       element = this.svgEl;
       if (element == null) {
         return;
@@ -2090,7 +2091,8 @@
       }
       element.dragstart = null;
       element.dragmove = null;
-      return element.dragend = null;
+      element.dragend = null;
+      return this._draggingEnabled = false;
     };
 
     Rectangle.prototype.updateFromAttributes = function() {
