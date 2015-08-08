@@ -1,4 +1,4 @@
-{EventEmitter} = require 'events'
+{Emitter, CompositeDisposable} = require 'event-kit'
 Point = require './point'
 
 # Subpath handles a single path from move node -> close node.
@@ -9,11 +9,14 @@ Point = require './point'
 #
 # Each one of these will be represented by this Subpath class.
 module.exports =
-class Subpath extends EventEmitter
+class Subpath
   constructor: ({@path, @closed, nodes}={}) ->
+    @emitter = new Emitter
     @nodes = []
     @setNodes(nodes)
     @closed = !!@closed
+
+  on: (args...) -> @emitter.on(args...)
 
   toString: ->
     "Subpath #{@toPathString()}"
@@ -65,11 +68,11 @@ class Subpath extends EventEmitter
   setNodes: (nodes) ->
     return unless nodes and Array.isArray(nodes)
 
-    @_unbindNode(node) for node in @nodes
-    @_bindNode(node) for node in nodes
+    @_unbindNodes()
+    @_bindNodes(nodes)
 
     @nodes = nodes
-    @emit('change', this)
+    @emitter.emit('change', this)
 
   addNode: (node) ->
     @insertNode(node, @nodes.length)
@@ -77,12 +80,12 @@ class Subpath extends EventEmitter
   insertNode: (node, index) ->
     @_bindNode(node)
     @nodes.splice(index, 0, node)
-    @emit('insert:node', this, {subpath: this, index, node})
-    @emit('change', this)
+    @emitter.emit('insert:node', {subpath: this, index, node})
+    @emitter.emit('change', this)
 
   close: ->
     @closed = true
-    @emit('change', this)
+    @emitter.emit('change', this)
 
   translate: (point) ->
     point = Point.create(point)
@@ -91,14 +94,23 @@ class Subpath extends EventEmitter
     return
 
   onNodeChange: =>
-    @emit 'change', this
+    @emitter.emit 'change', this
 
   _bindNode: (node) ->
     node.setPath(@path)
-    node.on 'change', @onNodeChange
-  _unbindNode: (node) ->
-    node.setPath(null)
-    node.removeListener 'change', @onNodeChange
+    @nodeChangeSubscriptions ?= new CompositeDisposable
+    @nodeChangeSubscriptions.add node.on('change', @onNodeChange)
+
+  _bindNodes: (nodes) ->
+    for node in nodes
+      @_bindNode(node)
+    return
+
+  _unbindNodes: ->
+    for node in @nodes
+      node.setPath(null)
+    @nodeChangeSubscriptions?.dispose()
+    @nodeChangeSubscriptions = null
 
   _findNodeIndex: (node) ->
     for i in [0...@nodes.length]

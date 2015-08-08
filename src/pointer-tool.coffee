@@ -14,15 +14,15 @@ class PointerTool
     @svgDocument.on 'mousemove', @onMouseMove
 
     objectSelection = @selectionView.getObjectSelection()
-    objectSelection.on 'change:object', @onChangedSelectedObject
+    @changeSubscriptions = objectSelection.on('change:object', @onChangedSelectedObject)
 
   deactivate: ->
     @objectEditor.deactivate()
     @svgDocument.off 'mousedown', @onMouseDown
     @svgDocument.off 'mousemove', @onMouseMove
 
-    objectSelection = @selectionView.getObjectSelection()
-    objectSelection.removeListener 'change:object', @onChangedSelectedObject
+    @changeSubscriptions?.dispose()
+    @changeSubscriptions = null
 
   onChangedSelectedObject: ({object, old}) =>
     if object?

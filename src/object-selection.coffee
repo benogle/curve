@@ -1,16 +1,19 @@
-{EventEmitter} = require 'events'
+{Emitter, CompositeDisposable} = require 'event-kit'
 
 # The display for a selected object. i.e. the red or blue outline around the
 # selected object.
 #
 # It basically cops the underlying object's attributes (path definition, etc.)
 module.exports =
-class ObjectSelection extends EventEmitter
+class ObjectSelection
   constructor: (@svgDocument, @options={}) ->
+    @emitter = new Emitter
     @options.class ?= 'object-selection'
 
+  on: (args...) -> @emitter.on(args...)
+
   setObject: (object) ->
-    @_unbindObject(@object)
+    @_unbindObject()
     old = object
     @object = object
     @_bindObject(@object)
@@ -21,15 +24,16 @@ class ObjectSelection extends EventEmitter
       @trackingObject = @object.cloneElement(@svgDocument).back()
       @trackingObject.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
       @render()
-    @emit 'change:object', {objectSelection: this, @object, old}
+    @emitter.emit 'change:object', {objectSelection: this, @object, old}
 
   render: =>
     @object.render(@trackingObject)
 
   _bindObject: (object) ->
     return unless object
-    object.on 'change', @render
+    @selectedObjectSubscriptions = new CompositeDisposable
+    @selectedObjectSubscriptions.add object.on('change', @render)
 
-  _unbindObject: (object) ->
-    return unless object
-    object.removeListener 'change', @render
+  _unbindObject: ->
+    @selectedObjectSubscriptions?.dispose()
+    @selectedObjectSubscriptions = null

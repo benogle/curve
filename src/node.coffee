@@ -1,12 +1,16 @@
-{EventEmitter} = require 'events'
+{Emitter} = require 'event-kit'
 Point = require './point'
 
 module.exports =
-class Node extends EventEmitter
+class Node
   constructor: (point, handleIn, handleOut, @isJoined=false) ->
+    @emitter = new Emitter
+
     @setPoint(point)
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
+
+  on: (args...) -> @emitter.on(args...)
 
   join: (referenceHandle='handleIn') ->
     @isJoined = true
@@ -60,8 +64,8 @@ class Node extends EventEmitter
     event = "change:#{attribute}"
     eventArgs = {event, value, old}
 
-    @emit event, this, eventArgs
-    @emit 'change', this, eventArgs
+    @emitter.emit event, this, eventArgs
+    @emitter.emit 'change', this, eventArgs
 
   translate: (point) ->
     point = Point.create(point)

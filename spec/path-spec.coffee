@@ -159,9 +159,9 @@ describe 'Path', ->
       expect(path.getSubpaths()[0].nodes[3]).toEqual node
       expect(spy).toHaveBeenCalled()
       expect(insertSpy).toHaveBeenCalled()
-      expect(insertSpy.calls.mostRecent().args[1].index).toEqual 3
-      expect(insertSpy.calls.mostRecent().args[1].node).toEqual node
-      expect(insertSpy.calls.mostRecent().args[1].path).toEqual path
+      expect(insertSpy.calls.mostRecent().args[0].index).toEqual 3
+      expect(insertSpy.calls.mostRecent().args[0].node).toEqual node
+      expect(insertSpy.calls.mostRecent().args[0].path).toEqual path
 
     it 'node inserted inserts node in right place', ->
       node = new Node([40, 60], [0, 0], [0, 0])

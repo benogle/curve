@@ -91,7 +91,7 @@ describe 'Subpath', ->
       path.addNode(node)
 
       expect(path.nodes[3]).toEqual node
-      expect(spy.calls.mostRecent().args[1]).toEqual
+      expect(spy.calls.mostRecent().args[0]).toEqual
         subpath: path
         index: 3
         node: node
@@ -105,7 +105,7 @@ describe 'Subpath', ->
       path.insertNode(node, 0)
 
       expect(path.nodes[0]).toEqual node
-      expect(spy.calls.mostRecent().args[1]).toEqual
+      expect(spy.calls.mostRecent().args[0]).toEqual
         subpath: path
         index: 0
         node: node

@@ -1,4 +1,4 @@
-{EventEmitter} = require 'events'
+{Emitter, CompositeDisposable} = require 'event-kit'
 
 Utils = require './utils'
 PathParser = require './path-parser'
@@ -15,11 +15,14 @@ IDS = 0
 # into a list of {Curve.Subpath} objects that each contains a list of
 # {Curve.Node} objects. This model has no idea how to render SVG or anything
 # about the DOM.
-class PathModel extends EventEmitter
+class PathModel
   constructor: ->
+    @emitter = new Emitter
     @subpaths = []
     @pathString = ''
     @transform = new Transform
+
+  on: (args...) -> @emitter.on(args...)
 
   ###
   Section: Public Methods
@@ -90,16 +93,17 @@ class PathModel extends EventEmitter
 
   _bindSubpath: (subpath) ->
     return unless subpath
-    subpath.on 'change', @onSubpathChange
-    subpath.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
+    @subpathSubscriptions ?= new CompositeDisposable
+    @subpathSubscriptions.add subpath.on('change', @onSubpathChange)
+    @subpathSubscriptions.add subpath.on('insert:node', @_forwardEvent.bind(this, 'insert:node'))
 
   _unbindSubpath: (subpath) ->
     return unless subpath
     subpath.removeAllListeners() # scary!
 
   _removeAllSubpaths: ->
-    for subpath in @subpaths
-      @_unbindSubpath(subpath)
+    @subpathSubscriptions?.dispose()
+    @subpathSubscriptions = null
     @subpaths = []
 
   _updatePathString: ->
@@ -117,11 +121,11 @@ class PathModel extends EventEmitter
     @_updatePathString()
     null
 
-  _forwardEvent: (eventName, eventObject, args) ->
-    @emit(eventName, this, args)
+  _forwardEvent: (eventName, args) ->
+    @emitter.emit(eventName, args)
 
   _emitChangeEvent: ->
-    @emit 'change', this
+    @emitter.emit 'change', this
 
 
 
@@ -129,16 +133,19 @@ class PathModel extends EventEmitter
 # Represents a <path> svg element. Handles interacting with the element, and
 # rendering from the {PathModel}.
 module.exports =
-class Path extends EventEmitter
+class Path
   Draggable.includeInto(this)
 
   constructor: (@svgDocument, {svgEl}={}) ->
+    @emitter = new Emitter
     @_draggingEnabled = false
     @id = IDS++
     @model = new PathModel
     @model.on 'change', @onModelChange
     @model.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
     @_setupSVGObject(svgEl)
+
+  on: (args...) -> @emitter.on(args...)
 
   ###
   Section: Public Methods
@@ -186,15 +193,15 @@ class Path extends EventEmitter
 
   onModelChange: =>
     @render()
-    @emit 'change', this
+    @emitter.emit 'change', this
 
   ###
   Section: Private Methods
   ###
 
-  _forwardEvent: (eventName, eventObject, args) ->
+  _forwardEvent: (eventName, args) ->
     args.path = this
-    @emit(eventName, this, args)
+    @emitter.emit(eventName, args)
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = @svgDocument.path().attr(DefaultAttrs) unless @svgEl

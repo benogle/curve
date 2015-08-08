@@ -1,3 +1,4 @@
+{CompositeDisposable} = require 'event-kit'
 PathEditor = require './path-editor'
 
 # Manages the editor UIs for all object types. e.g. PathEditor object for <path>
@@ -21,10 +22,11 @@ class ObjectEditor
 
   activate: ->
     @active = true
-    @selectionModel.on 'change:selected', @onChangeSelected
+    @subscriptions = new CompositeDisposable
+    @subscriptions.add @selectionModel.on('change:selected', @onChangeSelected)
 
   deactivate: ->
-    @selectionModel.removeListener 'change:selected', @onChangeSelected
+    @subscriptions?.dispose()
     @_deactivateActiveEditor()
     @active = false
 

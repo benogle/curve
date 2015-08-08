@@ -1,4 +1,4 @@
-{EventEmitter} = require 'events'
+{Emitter} = require 'event-kit'
 SVG = require '../vendor/svg'
 
 SelectionModel = require "./selection-model"
@@ -8,9 +8,12 @@ SerializeSVG = require "./serialize-svg"
 DeserializeSVG = require "./deserialize-svg"
 Size = require "./size"
 
-class SVGDocumentModel extends EventEmitter
+class SVGDocumentModel
   constructor: ->
+    @emitter = new Emitter
     @objects = []
+
+  on: (args...) -> @emitter.on(args...)
 
   setObjects: (@objects) ->
     for object in @objects
@@ -23,12 +26,12 @@ class SVGDocumentModel extends EventEmitter
     size = Size.create(size)
     return if size.equals(@size)
     @size = size
-    @emit 'change:size', {size}
+    @emitter.emit 'change:size', {size}
 
   getSize: -> @size
 
   onChangedObject: (event) =>
-    @emit 'change', event
+    @emitter.emit 'change', event
 
 module.exports =
 class SVGDocument
@@ -76,10 +79,6 @@ class SVGDocument
   getObjects: -> @model.getObjects()
 
   on: (args...) -> @model.on(args...)
-
-  addListener: (args...) -> @model.addListener(args...)
-
-  removeListener: (args...) -> @model.removeListener(args...)
 
   ###
   Section: Event Handlers

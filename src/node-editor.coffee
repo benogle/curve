@@ -1,3 +1,4 @@
+{CompositeDisposable} = require 'event-kit'
 Point = require './point'
 
 # A node UI in the interface allowing for user interaction (moving the node,
@@ -46,7 +47,7 @@ class NodeEditor
     @show() if @visible
 
   setNode: (node) ->
-    @_unbindNode(@node)
+    @_unbindNode()
     @node = node
     @_bindNode(@node)
     @setEnableHandles(false)
@@ -83,13 +84,13 @@ class NodeEditor
 
   _bindNode: (node) ->
     return unless node
-    node.addListener 'change', @render
-    node.getPath()?.addListener 'change', @render
+    @nodeSubscriptions = new CompositeDisposable
+    @nodeSubscriptions.add node.on('change', @render)
+    @nodeSubscriptions.add node.getPath()?.on('change', @render)
 
-  _unbindNode: (node) ->
-    return unless node
-    node.removeListener 'change', @render
-    node.getPath()?.addListener 'change', @render
+  _unbindNode: ->
+    @nodeSubscriptions?.dispose()
+    @nodeSubscriptions = null
 
   _setupNodeElement: ->
     @nodeElement = @svgToolParent.circle(@nodeSize)

@@ -1,3 +1,4 @@
+{CompositeDisposable} = require 'event-kit'
 NodeEditor = require './node-editor'
 
 # Handles the UI for free-form path editing. Manages NodeEditor objects based on
@@ -23,7 +24,7 @@ class PathEditor
 
   deactivate: ->
     @deactivateNode()
-    @_unbindFromObject(@path) if @path?
+    @_unbindFromObject()
     @_removeNodeEditors()
     @path = null
 
@@ -40,17 +41,18 @@ class PathEditor
       nodeEditor.setEnableHandles(false) if nodeEditor?
     @selectedNode = null
 
-  onInsertNode: (object, {node, index}={}) =>
+  onInsertNode: ({node, index}={}) =>
     @_addNodeEditor(node)
     null # Force null. otherwise _insertNodeEditor returns true and tells event emitter 'once'. Ugh
 
   _bindToObject: (object) ->
     return unless object
-    object.on 'insert:node', @onInsertNode
+    @objectSubscriptions = new CompositeDisposable
+    @objectSubscriptions.add object.on('insert:node', @onInsertNode)
 
-  _unbindFromObject: (object) ->
-    return unless object
-    object.removeListener 'insert:node', @onInsertNode
+  _unbindFromObject: ->
+    @objectSubscriptions?.dispose()
+    @objectSubscriptions = null
 
   _removeNodeEditors: ->
     @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)

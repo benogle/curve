@@ -1,4 +1,4 @@
-{EventEmitter} = require 'events'
+{Emitter} = require 'event-kit'
 Transform = require './transform'
 Utils = require './utils'
 Point = require './point'
@@ -8,14 +8,17 @@ Draggable = require './draggable-mixin'
 DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
 IDS = 0
 
-class RectangleModel extends EventEmitter
+class RectangleModel
   position: null
   size: null
   transform: null
 
   constructor: ->
+    @emitter = new Emitter
     @id = IDS++
     @transform = new Transform
+
+  on: (args...) -> @emitter.on(args...)
 
   ###
   Section: Public Methods
@@ -53,7 +56,7 @@ class RectangleModel extends EventEmitter
   ###
 
   _emitChangeEvent: ->
-    @emit 'change', this
+    @emitter.emit 'change', this
 
 
 
@@ -61,13 +64,16 @@ class RectangleModel extends EventEmitter
 # Represents a <rect> svg element. Handles interacting with the element, and
 # rendering from the {RectangleModel}.
 module.exports =
-class Rectangle extends EventEmitter
+class Rectangle
   Draggable.includeInto(this)
 
   constructor: (@svgDocument, {svgEl}={}) ->
+    @emitter = new Emitter
     @model = new RectangleModel
     @_setupSVGObject(svgEl)
     @model.on 'change', @onModelChange
+
+  on: (args...) -> @emitter.on(args...)
 
   ###
   Section: Public Methods
@@ -110,7 +116,7 @@ class Rectangle extends EventEmitter
 
   onModelChange: =>
     @render()
-    @emit 'change', this
+    @emitter.emit 'change', this
 
   ###
   Section: Private Methods
