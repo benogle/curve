@@ -73,6 +73,22 @@ describe 'Curve.SVGDocument', ->
 
       expect(documentChangeSpy).toHaveBeenCalled()
 
+  describe '::translateSelectedObjects', ->
+    beforeEach ->
+      svg.deserialize('<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="30" width="200" height="400" fill="red"/></svg>')
+
+    it "does nothing when there is no selected object", ->
+      svg.translateSelectedObjects([10, 0])
+
+    it "translates the selected object by the point specified", ->
+      object = svg.getObjects()[0]
+      expect(object.getPosition()).toEqual new Point(20, 30)
+
+      svg.selectionModel.setSelected(object)
+      svg.translateSelectedObjects([20, 0])
+
+      expect(object.getPosition()).toEqual new Point(40, 30)
+
 DOCUMENT = '''
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">
     <path id="arrow" d="M512,384L320,576h128v320h128V576h128L512,384z"/>

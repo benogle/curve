@@ -7,6 +7,7 @@ PointerTool = require "./pointer-tool"
 SerializeSVG = require "./serialize-svg"
 DeserializeSVG = require "./deserialize-svg"
 Size = require "./size"
+Point = require "./point"
 
 class SVGDocumentModel
   constructor: ->
@@ -88,3 +89,14 @@ class SVGDocument
     root = @getSvgRoot()
     root.width(size.width)
     root.height(size.height)
+
+  ###
+  Section: Acting on selected elements
+  ###
+
+  translateSelectedObjects: (deltaPoint) ->
+    return unless deltaPoint
+    deltaPoint = Point.create(deltaPoint)
+
+    selectedObject = @selectionModel.getSelected()
+    selectedObject?.translate?(deltaPoint)

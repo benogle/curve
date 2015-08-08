@@ -168,6 +168,11 @@ class Path
 
   close: -> @model.close()
 
+  translate: (delta) -> @model.translate(delta)
+
+  getPosition: ->
+    new Point(@svgEl.x(), @svgEl.y())
+
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
   updateFromAttributes: ->

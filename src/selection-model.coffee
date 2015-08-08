@@ -12,12 +12,16 @@ class SelectionModel
 
   on: (args...) -> @emitter.on(args...)
 
+  getPreselected: -> @preselected
+
   setPreselected: (preselected) ->
     return if preselected == @preselected
     return if preselected and preselected == @selected
     old = @preselected
     @preselected = preselected
     @emitter.emit 'change:preselected', object: @preselected, old: old
+
+  getSelected: -> @selected
 
   setSelected: (selected) ->
     return if selected == @selected
