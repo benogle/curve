@@ -62,6 +62,4 @@ class PointerTool
         continue if className and className.indexOf('invisible-to-hit-test') > -1
         obj = Utils.getObjectFromNode(nodes[i])
         break
-
-    console.log obj
     obj
