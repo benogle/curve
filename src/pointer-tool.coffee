@@ -10,7 +10,7 @@ class PointerTool
 
   activate: ->
     @objectEditor.activate()
-    @svgDocument.on 'click', @onClick
+    @svgDocument.on 'mousedown', @onMouseDown
     @svgDocument.on 'mousemove', @onMouseMove
 
     objectSelection = @selectionView.getObjectSelection()
@@ -18,7 +18,7 @@ class PointerTool
 
   deactivate: ->
     @objectEditor.deactivate()
-    @svgDocument.off 'click', @onClick
+    @svgDocument.off 'mousedown', @onMouseDown
     @svgDocument.off 'mousemove', @onMouseMove
 
     objectSelection = @selectionView.getObjectSelection()
@@ -30,11 +30,13 @@ class PointerTool
     else if old?
       old.disableDragging()
 
-  onClick: (e) =>
-    # obj = @_hitWithIntersectionList(e)
-    obj = @_hitWithTarget(e)
-    @selectionModel.setSelected(obj)
-    return false if obj
+  onMouseDown: (event) =>
+    # obj = @_hitWithIntersectionList(event)
+    object = @_hitWithTarget(event)
+    object?.enableDragging?(event)
+    @selectionModel.setSelected(object)
+    # return false if obj
+    true
 
   onMouseMove: (e) =>
     # @selectionModel.setPreselected(@_hitWithIntersectionList(e))

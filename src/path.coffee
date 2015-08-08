@@ -130,6 +130,7 @@ class PathModel extends EventEmitter
 module.exports =
 class Path extends EventEmitter
   constructor: (@svgDocument, {svgEl}={}) ->
+    @_draggingEnabled = false
     @id = IDS++
     @model = new PathModel
     @model.on 'change', @onModelChange
@@ -158,27 +159,30 @@ class Path extends EventEmitter
   close: -> @model.close()
 
   # Allows for user dragging on the screen
-  enableDragging: (callbacks) ->
+  # * `startEvent` (optional) event from a mousedown event
+  enableDragging: (startEvent) ->
+    return if @_draggingEnabled
     element = @svgEl
     return unless element?
-    @disableDragging()
-    element.draggable()
-    element.dragstart = (event) -> callbacks?.dragstart?(event)
-    element.dragmove = (event) =>
+
+    element.draggable(startEvent)
+    element.dragmove = =>
       @updateFromAttributes()
-      callbacks?.dragmove?(event)
     element.dragend = (event) =>
       @model.setTransformString(null)
       @model.translate([event.x, event.y])
-      callbacks?.dragend?(event)
+    @_draggingEnabled = true
 
   disableDragging: ->
+    return unless @_draggingEnabled
     element = @svgEl
     return unless element?
+
     element.fixed?()
     element.dragstart = null
     element.dragmove = null
     element.dragend = null
+    @_draggingEnabled = false
 
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.

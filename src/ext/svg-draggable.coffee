@@ -9,7 +9,9 @@ SVG = require '../../vendor/svg'
 
 TranslateRegex = /translate\(([-0-9]+) ([-0-9]+)\)/
 
-SVG.extend SVG.Element, draggable: ->
+# * `startEvent` (optional) initial event. This could be the initial mousedown
+#   event that selects and allows the dragging to start
+SVG.extend SVG.Element, draggable: (startEvent) ->
   element = this
   @fixed?() # remove draggable if already present
 
@@ -30,6 +32,8 @@ SVG.extend SVG.Element, draggable: ->
     detachDragEvents()
     startHandler = dragHandler = endHandler = null
     element
+
+  startHandler(startEvent) if startEvent?
   this
 
 attachDragEvents = (dragHandler, endHandler) ->
