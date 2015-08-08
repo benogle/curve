@@ -55,11 +55,9 @@ class PointerTool
     @_evrect.y = e.clientY - top
     nodes = @svgDocument.node.getIntersectionList(@_evrect, null)
 
-    obj = null
     if nodes.length
       for i in [nodes.length-1..0]
         className = nodes[i].getAttribute('class')
         continue if className and className.indexOf('invisible-to-hit-test') > -1
-        obj = Utils.getObjectFromNode(nodes[i])
-        break
-    obj
+        return Utils.getObjectFromNode(nodes[i])
+    null
