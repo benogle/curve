@@ -1,4 +1,4 @@
-SVG = require '../vendor/svg'
+SVGDocument = require '../src/svg-document'
 
 Node = require '../src/node'
 Path = require '../src/path'
@@ -11,11 +11,10 @@ describe 'SelectionView', ->
   beforeEach ->
     canvas = document.createElement('canvas')
     jasmine.attachToDOM(canvas)
-    svgDocument = SVG(canvas)
+    svgDocument = new SVGDocument(canvas)
 
-  beforeEach ->
-    model = new SelectionModel()
-    selectionView = new SelectionView(svgDocument, model)
+    model = svgDocument.getSelectionModel()
+    selectionView = svgDocument.getSelectionView()
     path = new Path(svgDocument)
     path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
     path.close()

@@ -11,7 +11,7 @@ class PointerTool
     @selectionView =  @svgDocument.getSelectionView()
     @toolLayer = @svgDocument.getToolLayer()
 
-    @objectEditor = new ObjectEditor(@svgDocument, @selectionModel)
+    @objectEditor = new ObjectEditor(@svgDocument)
 
   getType: -> 'pointer'
 

@@ -37,7 +37,7 @@ class ShapeTool
 
   createShape: (params) ->
     if @shapeType is 'rectangle'
-      new Rectangle(@objectRoot, params)
+      new Rectangle(@svgDocument, params)
     else
       null
 

@@ -47,6 +47,9 @@ class SVGDocument
     @selectionModel = new SelectionModel()
     @selectionView = new SelectionView(this)
 
+    @model.on('change:size', @onChangedSize)
+
+  initializeTools: ->
     @tools = [
       new PointerTool(this)
       new ShapeTool(this)
@@ -56,8 +59,6 @@ class SVGDocument
       tool.on?('cancel', => @setActiveToolType('pointer'))
 
     @setActiveToolType('pointer')
-
-    @model.on('change:size', @onChangedSize)
 
   ###
   Section: File Serialization

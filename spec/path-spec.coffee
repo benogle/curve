@@ -1,4 +1,4 @@
-SVG = require '../vendor/svg'
+SVGDocument = require '../src/svg-document'
 
 Node = require '../src/node'
 Path = require '../src/path'
@@ -12,7 +12,7 @@ describe 'Path', ->
   beforeEach ->
     canvas = document.createElement('canvas')
     jasmine.attachToDOM(canvas)
-    svg = SVG(canvas)
+    svg = new SVGDocument(canvas)
 
   it 'has empty path string after creation', ->
     path = new Path(svg)
@@ -54,21 +54,21 @@ describe 'Path', ->
   describe 'creating from path string', ->
     it 'can be created', ->
       pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-      node = svg.path(pathString)
+      node = svg.getSVGRoot().path(pathString)
       path = new Path(svg, svgEl: node)
 
       expect(path.getPathString()).toEqual pathString
 
     it 'can be created with non-wrapped closed shapes', ->
       pathString = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
-      node = svg.path(pathString)
+      node = svg.getSVGRoot().path(pathString)
       path = new Path(svg, svgEl: node)
 
       expect(path.getPathString()).toEqual pathString
 
     it 'handles move nodes', ->
       pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80Z M10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
-      node = svg.path(pathString)
+      node = svg.getSVGRoot().path(pathString)
       path = new Path(svg, svgEl: node)
 
       expect(path.getPathString()).toEqual pathString

@@ -23,8 +23,6 @@ describe 'Curve.SVGDocument', ->
       expect(svg.getObjectLayer().width()).toBe 1024
       expect(svg.getObjectLayer().height()).toBe 1024
 
-      console.log svg.serialize()
-
   describe 'reading svg', ->
     beforeEach ->
 
@@ -89,6 +87,7 @@ describe 'Curve.SVGDocument', ->
   describe "changing tools", ->
     [pointerTool, shapeTool] = []
     beforeEach ->
+      svg.initializeTools()
       shapeTool = svg.toolForType('shape')
       pointerTool = svg.toolForType('pointer')
 

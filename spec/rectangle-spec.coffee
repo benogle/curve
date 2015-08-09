@@ -1,4 +1,4 @@
-SVG = require '../vendor/svg'
+SVGDocument = require '../src/svg-document'
 
 Rectangle = require '../src/rectangle'
 Point = require '../src/point'
@@ -9,7 +9,7 @@ describe 'Rectangle', ->
   beforeEach ->
     canvas = document.createElement('canvas')
     jasmine.attachToDOM(canvas)
-    svg = SVG(canvas)
+    svg = new SVGDocument(canvas)
 
   describe "creation", ->
     it 'can be created with no parameters', ->
