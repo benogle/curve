@@ -47,11 +47,15 @@ class SVGDocument
     @selectionModel = new SelectionModel()
     @selectionView = new SelectionView(@toolLayer, @selectionModel)
 
-    @tools =
-      pointer: new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
-      shape: new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+    @tools = [
+      new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+      new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+    ]
 
-    @tools.pointer.activate()
+    for tool in @tools
+      tool.on?('cancel', => @setActiveToolType('pointer'))
+
+    @setActiveToolType('pointer')
 
     @model.on('change:size', @onChangedSize)
 
@@ -64,7 +68,9 @@ class SVGDocument
     root = @getSvgRoot()
     @model.setSize(new Size(root.width(), root.height()))
     @toolLayer.front()
-    @tools.shape.setObjectRoot(root)
+    for tool in @tools
+      tool.setObjectRoot?(root)
+    return
 
   serialize: ->
     svgRoot = @getSvgRoot()
@@ -77,8 +83,13 @@ class SVGDocument
   Section: Tool Management
   ###
 
+  toolForType: (toolType) ->
+    for tool in @tools
+      return tool if tool.supportsType(toolType)
+    null
+
   getActiveTool: ->
-    for __, tool of @tools
+    for tool in @tools
       return tool if tool.isActive()
     null
 
@@ -88,14 +99,9 @@ class SVGDocument
   setActiveToolType: (toolType) ->
     oldActiveTool = @getActiveTool()
 
-    newTool = null
-    for toolName, tool of @tools
-      if tool.supportsType(toolType)
-        newTool = tool
-        break
-
+    newTool = @toolForType(toolType)
     if newTool? and newTool isnt oldActiveTool
-      oldActiveTool.deactivate()
+      oldActiveTool?.deactivate()
       newTool.activate(toolType)
 
   ###

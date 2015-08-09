@@ -74,35 +74,44 @@ describe 'Curve.SVGDocument', ->
       expect(documentChangeSpy).toHaveBeenCalled()
 
   describe "changing tools", ->
+    [pointerTool, shapeTool] = []
     beforeEach ->
-      spyOn(svg.tools.pointer, 'activate').and.callThrough()
-      spyOn(svg.tools.pointer, 'deactivate').and.callThrough()
-      spyOn(svg.tools.shape, 'activate').and.callThrough()
-      spyOn(svg.tools.shape, 'deactivate').and.callThrough()
+      shapeTool = svg.toolForType('shape')
+      pointerTool = svg.toolForType('pointer')
+
+      spyOn(pointerTool, 'activate').and.callThrough()
+      spyOn(pointerTool, 'deactivate').and.callThrough()
+      spyOn(shapeTool, 'activate').and.callThrough()
+      spyOn(shapeTool, 'deactivate').and.callThrough()
 
     it "can switch to different tools", ->
       expect(svg.getActiveToolType()).toBe 'pointer'
 
       svg.setActiveToolType('rectangle')
-      expect(svg.tools.pointer.activate).not.toHaveBeenCalled()
-      expect(svg.tools.pointer.deactivate).toHaveBeenCalled()
-      expect(svg.tools.shape.activate).toHaveBeenCalledWith('rectangle')
-      expect(svg.tools.shape.deactivate).not.toHaveBeenCalled()
+      expect(pointerTool.activate).not.toHaveBeenCalled()
+      expect(pointerTool.deactivate).toHaveBeenCalled()
+      expect(shapeTool.activate).toHaveBeenCalledWith('rectangle')
+      expect(shapeTool.deactivate).not.toHaveBeenCalled()
       expect(svg.getActiveToolType()).toBe 'rectangle'
 
-      svg.tools.shape.activate.calls.reset()
-      svg.tools.pointer.deactivate.calls.reset()
+      shapeTool.activate.calls.reset()
+      pointerTool.deactivate.calls.reset()
       svg.setActiveToolType('pointer')
-      expect(svg.tools.pointer.activate).toHaveBeenCalled()
-      expect(svg.tools.pointer.deactivate).not.toHaveBeenCalled()
-      expect(svg.tools.shape.activate).not.toHaveBeenCalled()
-      expect(svg.tools.shape.deactivate).toHaveBeenCalled()
+      expect(pointerTool.activate).toHaveBeenCalled()
+      expect(pointerTool.deactivate).not.toHaveBeenCalled()
+      expect(shapeTool.activate).not.toHaveBeenCalled()
+      expect(shapeTool.deactivate).toHaveBeenCalled()
       expect(svg.getActiveToolType()).toBe 'pointer'
 
     it "will not switch to non-existent tools", ->
       svg.setActiveToolType('junk')
       expect(svg.getActiveToolType()).toBe 'pointer'
-      expect(svg.tools.pointer.deactivate).not.toHaveBeenCalled()
+      expect(pointerTool.deactivate).not.toHaveBeenCalled()
+
+    it "will not call deactivate when attempting to switch to the same", ->
+      svg.setActiveToolType('pointer')
+      expect(svg.getActiveToolType()).toBe 'pointer'
+      expect(pointerTool.deactivate).not.toHaveBeenCalled()
 
   describe '::translateSelectedObjects', ->
     beforeEach ->

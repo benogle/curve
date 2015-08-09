@@ -23,19 +23,38 @@ describe 'ShapeTool', ->
     tool.deactivate()
     expect(svg.node.style.cursor).toBe ''
 
+  it "emits a `cancel` event when clicking without creating a shape", ->
+    tool.on 'cancel', cancelSpy = jasmine.createSpy()
+
+    tool.activate()
+    svg.node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 20, pageY: 30))
+    svg.node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
+
+    expect(cancelSpy).toHaveBeenCalled()
+
   describe "when activated with Rectangle", ->
     beforeEach ->
       tool.activate('rectangle')
       expect(selectionModel.getSelected()).toBe null
 
-    it "creates a rectangle when dragging", ->
+    it "does not create an object unless dragging for >= 5px", ->
       svg.node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 20, pageY: 30))
       selected = selectionModel.getSelected()
-      expect(selected instanceof Rectangle).toBe true
-      expect(selected.getPosition()).toEqual new Point(20, 30)
-      expect(selected.getSize()).toEqual new Size(0, 0)
+      expect(selected).toBe null
 
+      svg.node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 21, pageY: 34))
+      selected = selectionModel.getSelected()
+      expect(selected).toBe null
+
+      svg.node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 21, pageY: 36))
+      selected = selectionModel.getSelected()
+      expect(selected).not.toBe null
+
+    it "creates a rectangle when dragging", ->
+      svg.node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 20, pageY: 30))
       svg.node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 30, pageY: 50))
+      selected = selectionModel.getSelected()
+      expect(selected instanceof Rectangle).toBe true
       expect(selected.getPosition()).toEqual new Point(20, 30)
       expect(selected.getSize()).toEqual new Size(10, 20)
 
@@ -60,9 +79,8 @@ describe 'ShapeTool', ->
 
     it "constrains the proportion to 1:1 when shift is held down", ->
       svg.node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 0, pageY: 0))
-      selected = selectionModel.getSelected()
-
       svg.node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 30, pageY: 50, shiftKey: true))
+      selected = selectionModel.getSelected()
       expect(selected.getSize()).toEqual new Size(30, 30)
 
       svg.node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))

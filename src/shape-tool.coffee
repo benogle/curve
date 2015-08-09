@@ -1,3 +1,5 @@
+{Emitter} = require 'event-kit'
+
 Point = require './point'
 Size = require './size'
 Rectangle = require './rectangle'
@@ -6,10 +8,13 @@ module.exports =
 class ShapeTool
   constructor: (@svgDocument, {@selectionModel}={}) ->
     @objectRoot = @svgDocument
+    @emitter = new Emitter
+
+  on: (args...) -> @emitter.on(args...)
 
   getType: -> @shapeType
 
-  supportsType: (type) -> type in ['rectangle']
+  supportsType: (type) -> type in ['shape', 'rectangle']
 
   isActive: -> @active
 
@@ -38,16 +43,22 @@ class ShapeTool
 
   onMouseDown: (event) =>
     @anchor = getCanvasPosition(@svgDocument, event)
-    @shape = @createShape({x: @anchor.x, y: @anchor.y, width: 0, height: 0})
-    @selectionModel.setSelected(@shape)
     true
 
   onMouseMove: (event) =>
-    return unless @shape?
+    return unless @anchor?
     point = getCanvasPosition(@svgDocument, event)
+
+    if not @shape and (Math.abs(point.x - @anchor.x) >= 5 or Math.abs(point.y - @anchor.y) >= 5)
+      @shape = @createShape({x: @anchor.x, y: @anchor.y, width: 0, height: 0})
+      @selectionModel.setSelected(@shape)
+
+    return unless @shape
+
     {size, position} = normalizePositionAndSize(@anchor, point)
 
     if event.shiftKey
+      # constrain to 1:1 ratio when holding shift
       size = Math.min(size.width, size.height)
       size = new Size(size, size)
 
@@ -56,7 +67,10 @@ class ShapeTool
 
   onMouseUp: (event) =>
     @anchor = null
-    @shape = null
+    if @shape?
+      @shape = null
+    else
+      @emitter.emit('cancel')
 
 normalizePositionAndSize = (anchor, point) ->
   topLeft = new Point(Math.min(anchor.x, point.x), Math.min(anchor.y, point.y))
