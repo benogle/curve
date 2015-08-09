@@ -87,7 +87,13 @@ class Rectangle
 
   getPosition: -> @model.getPosition()
 
-  translate: (point) -> @model.translate(point)
+  setPosition: (x, y) -> @model.setPosition(x, y)
+
+  getSize: -> @model.getSize()
+
+  setSize: (w, h) -> @model.setSize(w, h)
+
+  translate: (x, y) -> @model.translate(x, y)
 
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
