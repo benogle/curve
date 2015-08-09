@@ -3,10 +3,10 @@ Size = require './size'
 Rectangle = require './rectangle'
 
 module.exports =
-class PointerTool
+class ShapeTool
   constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->
 
-  activate: ->
+  activate: (@shapeType) ->
     @svgDocument.on 'mousedown', @onMouseDown
     @svgDocument.on 'mousemove', @onMouseMove
     @svgDocument.on 'mouseup', @onMouseUp
@@ -16,26 +16,31 @@ class PointerTool
     @svgDocument.off 'mousemove', @onMouseMove
     @svgDocument.off 'mouseup', @onMouseUp
 
+  createShape: (params) ->
+    if @shapeType is 'Rectangle'
+      new Rectangle(@svgDocument, params)
+    else
+      null
+
   onMouseDown: (event) =>
     @anchor = getCanvasPosition(@svgDocument, event)
-    @rectangle = new Rectangle(@svgDocument, {x: @anchor.x, y: @anchor.y, width: 0, height: 0})
-    @selectionModel.setSelected(@rectangle)
+    @shape = @createShape({x: @anchor.x, y: @anchor.y, width: 0, height: 0})
+    @selectionModel.setSelected(@shape)
     true
 
   onMouseMove: (event) =>
-    return unless @rectangle?
+    return unless @shape?
     point = getCanvasPosition(@svgDocument, event)
-    {size, position} = getPositivePositionAndSize(@anchor, point)
+    {size, position} = normalizePositionAndSize(@anchor, point)
 
-    @rectangle.setPosition(position)
-    @rectangle.setSize(size)
+    @shape.setPosition(position)
+    @shape.setSize(size)
 
   onMouseUp: (event) =>
     @anchor = null
-    @rectangle = null
+    @shape = null
 
-
-getPositivePositionAndSize = (anchor, point) ->
+normalizePositionAndSize = (anchor, point) ->
   topLeft = new Point(Math.min(anchor.x, point.x), Math.min(anchor.y, point.y))
   bottomRight = new Point(Math.max(anchor.x, point.x), Math.max(anchor.y, point.y))
   diff = bottomRight.subtract(topLeft)

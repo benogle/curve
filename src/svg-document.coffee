@@ -4,6 +4,7 @@ SVG = require '../vendor/svg'
 SelectionModel = require "./selection-model"
 SelectionView = require "./selection-view"
 PointerTool = require "./pointer-tool"
+ShapeTool = require "./shape-tool"
 SerializeSVG = require "./serialize-svg"
 DeserializeSVG = require "./deserialize-svg"
 Size = require "./size"
@@ -46,8 +47,10 @@ class SVGDocument
     @selectionModel = new SelectionModel()
     @selectionView = new SelectionView(@toolLayer, @selectionModel)
 
-    @tool = new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
-    @tool.activate()
+    # @tool = new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+    # @tool.activate()
+    @tool = new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+    @tool.activate('Rectangle')
 
     @model.on('change:size', @onChangedSize)
 
