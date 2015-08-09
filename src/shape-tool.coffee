@@ -4,7 +4,8 @@ Rectangle = require './rectangle'
 
 module.exports =
 class ShapeTool
-  constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->
+  constructor: (@svgDocument, {@selectionModel}={}) ->
+    @objectRoot = @svgDocument
 
   activate: (@shapeType) ->
     @svgDocument.on 'mousedown', @onMouseDown
