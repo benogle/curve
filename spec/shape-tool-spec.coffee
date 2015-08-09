@@ -16,6 +16,13 @@ describe 'ShapeTool', ->
     selectionModel = new SelectionModel()
     tool = new ShapeTool(svg, {selectionModel})
 
+  it "has a crosshair cursor when activated", ->
+    expect(svg.node.style.cursor).toBe ''
+    tool.activate('Rectangle')
+    expect(svg.node.style.cursor).toBe 'crosshair'
+    tool.deactivate()
+    expect(svg.node.style.cursor).toBe ''
+
   describe "when activated with Rectangle", ->
     beforeEach ->
       tool.activate('Rectangle')
