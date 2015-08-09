@@ -21,11 +21,11 @@
     setObjectOnNode: function(domNode, object) {
       return getObjectMap()[domNode.id] = object;
     },
-    pointForEvent: function(svgDocument, event) {
+    pointForEvent: function(svgRoot, event) {
       var clientX, clientY, left, top;
       clientX = event.clientX, clientY = event.clientY;
-      top = this.svgDocument.node.offsetTop;
-      left = this.svgDocument.node.offsetLeft;
+      top = this.svgRoot.node.offsetTop;
+      left = this.svgRoot.node.offsetLeft;
       return new Point(event.clientX - left, event.clientY - top);
     }
   };
@@ -102,7 +102,7 @@
     store = {};
     parentNode.innerHTML = svgString.replace(/\n/, '').replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>');
     objects = [];
-    convertNodes(parentNode.childNodes, svgDocument, 0, store, function() {
+    convertNodes(parentNode.childNodes, svgDocument.getSVGRoot(), 0, store, function() {
       var nodeType;
       nodeType = this.node.nodeName;
       if (IMPORT_FNS[nodeType]) {
@@ -413,8 +413,6 @@
         zoom: zoom
       }, event);
     }
-
-    /* prevent selection dragging */
     if (event.preventDefault) {
       return event.preventDefault();
     } else {
@@ -487,14 +485,14 @@
 
     lineElement = null;
 
-    function NodeEditor(svgToolParent, pathEditor) {
-      this.svgToolParent = svgToolParent;
+    function NodeEditor(svgDocument, pathEditor) {
+      this.svgDocument = svgDocument;
       this.pathEditor = pathEditor;
       this.onDraggingHandleOut = bind(this.onDraggingHandleOut, this);
       this.onDraggingHandleIn = bind(this.onDraggingHandleIn, this);
       this.onDraggingNode = bind(this.onDraggingNode, this);
       this.render = bind(this.render, this);
-      this.svgDocument = this.svgToolParent.parent();
+      this.toolLayer = this.svgDocument.getToolLayer();
       this._setupNodeElement();
       this._setupLineElement();
       this._setupHandleElements();
@@ -604,7 +602,7 @@
     };
 
     NodeEditor.prototype._setupNodeElement = function() {
-      this.nodeElement = this.svgToolParent.circle(this.nodeSize);
+      this.nodeElement = this.toolLayer.circle(this.nodeSize);
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
       this.nodeElement.mousedown((function(_this) {
         return function(e) {
@@ -645,15 +643,15 @@
     };
 
     NodeEditor.prototype._setupLineElement = function() {
-      this.lineElement = this.svgToolParent.path('');
+      this.lineElement = this.toolLayer.path('');
       return this.lineElement.node.setAttribute('class', 'node-editor-lines');
     };
 
     NodeEditor.prototype._setupHandleElements = function() {
       var onStopDraggingHandle, self;
       self = this;
-      this.handleElements = this.svgToolParent.set();
-      this.handleElements.add(this.svgToolParent.circle(this.handleSize), this.svgToolParent.circle(this.handleSize));
+      this.handleElements = this.toolLayer.set();
+      this.handleElements.add(this.toolLayer.circle(this.handleSize), this.toolLayer.circle(this.handleSize));
       this.handleElements.members[0].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.members[1].node.setAttribute('class', 'node-editor-handle');
       this.handleElements.mousedown((function(_this) {
@@ -854,12 +852,12 @@
   PathEditor = require('./path-editor');
 
   module.exports = ObjectEditor = (function() {
-    function ObjectEditor(svgDocument, selectionModel) {
+    function ObjectEditor(svgDocument) {
       this.svgDocument = svgDocument;
-      this.selectionModel = selectionModel;
       this.onChangeSelected = bind(this.onChangeSelected, this);
       this.active = false;
       this.activeEditor = null;
+      this.selectionModel = this.svgDocument.getSelectionModel();
       this.editors = {
         Path: new PathEditor(this.svgDocument)
       };
@@ -950,8 +948,10 @@
       }
       this.trackingObject = null;
       if (this.object) {
-        this.trackingObject = this.object.cloneElement(this.svgDocument).back();
+        this.trackingObject = this.object.cloneElement(this.svgDocument);
         this.trackingObject.node.setAttribute('class', this.options["class"] + ' invisible-to-hit-test');
+        this.svgDocument.getToolLayer().add(this.trackingObject);
+        this.trackingObject.back();
         this.render();
       }
       return this.emitter.emit('change:object', {
@@ -1702,7 +1702,7 @@
       if (svgDocument == null) {
         svgDocument = this.svgDocument;
       }
-      el = svgDocument.path();
+      el = svgDocument.getObjectLayer().path();
       this.render(el);
       return el;
     };
@@ -1730,7 +1730,7 @@
     Path.prototype._setupSVGObject = function(svgEl1) {
       this.svgEl = svgEl1;
       if (!this.svgEl) {
-        this.svgEl = this.svgDocument.path().attr(DefaultAttrs);
+        this.svgEl = this.svgDocument.getObjectLayer().path().attr(DefaultAttrs);
       }
       Utils.setObjectOnNode(this.svgEl.node, this);
       return this.model.setPathString(this.svgEl.attr('d'));
@@ -1898,36 +1898,53 @@
   Utils = require('./Utils');
 
   module.exports = PointerTool = (function() {
-    function PointerTool(svgDocument, arg) {
-      var ref;
+    function PointerTool(svgDocument) {
       this.svgDocument = svgDocument;
-      ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView, this.toolLayer = ref.toolLayer;
       this.onMouseMove = bind(this.onMouseMove, this);
       this.onMouseDown = bind(this.onMouseDown, this);
       this.onChangedSelectedObject = bind(this.onChangedSelectedObject, this);
-      this._evrect = this.svgDocument.node.createSVGRect();
+      this._evrect = this.svgDocument.getSVGRoot().node.createSVGRect();
       this._evrect.width = this._evrect.height = 1;
-      this.objectEditor = new ObjectEditor(this.toolLayer, this.selectionModel);
+      this.selectionModel = this.svgDocument.getSelectionModel();
+      this.selectionView = this.svgDocument.getSelectionView();
+      this.toolLayer = this.svgDocument.getToolLayer();
+      this.objectEditor = new ObjectEditor(this.svgDocument);
     }
 
+    PointerTool.prototype.getType = function() {
+      return 'pointer';
+    };
+
+    PointerTool.prototype.supportsType = function(type) {
+      return type === 'pointer';
+    };
+
+    PointerTool.prototype.isActive = function() {
+      return this.active;
+    };
+
     PointerTool.prototype.activate = function() {
-      var objectSelection;
+      var objectSelection, svg;
       this.objectEditor.activate();
-      this.svgDocument.on('mousedown', this.onMouseDown);
-      this.svgDocument.on('mousemove', this.onMouseMove);
+      svg = this.svgDocument.getSVGRoot();
+      svg.on('mousedown', this.onMouseDown);
+      svg.on('mousemove', this.onMouseMove);
       objectSelection = this.selectionView.getObjectSelection();
-      return this.changeSubscriptions = objectSelection.on('change:object', this.onChangedSelectedObject);
+      this.changeSubscriptions = objectSelection.on('change:object', this.onChangedSelectedObject);
+      return this.active = true;
     };
 
     PointerTool.prototype.deactivate = function() {
-      var ref;
+      var ref, svg;
       this.objectEditor.deactivate();
-      this.svgDocument.off('mousedown', this.onMouseDown);
-      this.svgDocument.off('mousemove', this.onMouseMove);
+      svg = this.svgDocument.getSVGRoot();
+      svg.off('mousedown', this.onMouseDown);
+      svg.off('mousemove', this.onMouseMove);
       if ((ref = this.changeSubscriptions) != null) {
         ref.dispose();
       }
-      return this.changeSubscriptions = null;
+      this.changeSubscriptions = null;
+      return this.active = false;
     };
 
     PointerTool.prototype.onChangedSelectedObject = function(arg) {
@@ -1959,19 +1976,20 @@
     PointerTool.prototype._hitWithTarget = function(e) {
       var obj;
       obj = null;
-      if (e.target !== this.svgDocument.node) {
+      if (e.target !== this.svgDocument.getSVGRoot().node) {
         obj = Utils.getObjectFromNode(e.target);
       }
       return obj;
     };
 
     PointerTool.prototype._hitWithIntersectionList = function(e) {
-      var className, i, j, left, nodes, ref, top;
-      top = this.svgDocument.node.offsetTop;
-      left = this.svgDocument.node.offsetLeft;
+      var className, i, j, left, nodes, ref, svgNode, top;
+      svgNode = this.svgDocument.getSVGRoot().node;
+      top = svgNode.offsetTop;
+      left = svgNode.offsetLeft;
       this._evrect.x = e.clientX - left;
       this._evrect.y = e.clientY - top;
-      nodes = this.svgDocument.node.getIntersectionList(this._evrect, null);
+      nodes = svgNode.getIntersectionList(this._evrect, null);
       if (nodes.length) {
         for (i = j = ref = nodes.length - 1; ref <= 0 ? j <= 0 : j >= 0; i = ref <= 0 ? ++j : --j) {
           className = nodes[i].getAttribute('class');
@@ -2158,11 +2176,11 @@
       var height, transform, width, x, y;
       x = this.svgEl.attr('x');
       y = this.svgEl.attr('y');
-      this.model.setPosition(x, y);
       width = this.svgEl.attr('width');
       height = this.svgEl.attr('height');
-      this.model.setSize(width, height);
       transform = this.svgEl.attr('transform');
+      this.model.setPosition(x, y);
+      this.model.setSize(width, height);
       return this.model.setTransformString(transform);
     };
 
@@ -2195,7 +2213,7 @@
       if (svgDocument == null) {
         svgDocument = this.svgDocument;
       }
-      el = svgDocument.rect();
+      el = svgDocument.getObjectLayer().rect();
       this.render(el);
       return el;
     };
@@ -2218,7 +2236,7 @@
     Rectangle.prototype._setupSVGObject = function(options) {
       this.svgEl = options.svgEl;
       if (!this.svgEl) {
-        this.svgEl = this.svgDocument.rect().attr(ObjectAssign({}, DefaultAttrs, options));
+        this.svgEl = this.svgDocument.getObjectLayer().rect().attr(ObjectAssign({}, DefaultAttrs, options));
       }
       Utils.setObjectOnNode(this.svgEl.node, this);
       return this.updateFromAttributes();
@@ -2330,11 +2348,11 @@
   ObjectSelection = require("./object-selection");
 
   module.exports = SelectionView = (function() {
-    function SelectionView(svgDocument, model) {
+    function SelectionView(svgDocument) {
       this.svgDocument = svgDocument;
-      this.model = model;
       this.onChangePreselected = bind(this.onChangePreselected, this);
       this.onChangeSelected = bind(this.onChangeSelected, this);
+      this.model = this.svgDocument.getSelectionModel();
       this.objectSelection = new ObjectSelection(this.svgDocument);
       this.objectPreselection = new ObjectSelection(this.svgDocument, {
         "class": 'object-preselection'
@@ -2381,8 +2399,11 @@
 
 },{"../vendor/svg":287,"../vendor/svg.export":286}],21:[function(require,module,exports){
 (function() {
-  var Point, Rectangle, ShapeTool, Size, getCanvasPosition, normalizePositionAndSize,
-    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var Emitter, Point, Rectangle, ShapeTool, Size, getCanvasPosition, normalizePositionAndSize,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    slice = [].slice;
+
+  Emitter = require('event-kit').Emitter;
 
   Point = require('./point');
 
@@ -2391,60 +2412,88 @@
   Rectangle = require('./rectangle');
 
   module.exports = ShapeTool = (function() {
-    function ShapeTool(svgDocument1, arg) {
-      this.svgDocument = svgDocument1;
-      this.selectionModel = (arg != null ? arg : {}).selectionModel;
+    function ShapeTool(svgDocument) {
+      this.svgDocument = svgDocument;
       this.onMouseUp = bind(this.onMouseUp, this);
       this.onMouseMove = bind(this.onMouseMove, this);
       this.onMouseDown = bind(this.onMouseDown, this);
-      this.objectRoot = this.svgDocument;
+      this.emitter = new Emitter;
+      this.selectionModel = this.svgDocument.getSelectionModel();
     }
 
+    ShapeTool.prototype.on = function() {
+      var args, ref;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (ref = this.emitter).on.apply(ref, args);
+    };
+
+    ShapeTool.prototype.getType = function() {
+      return this.shapeType;
+    };
+
+    ShapeTool.prototype.supportsType = function(type) {
+      return type === 'shape' || type === 'rectangle';
+    };
+
+    ShapeTool.prototype.isActive = function() {
+      return this.active;
+    };
+
     ShapeTool.prototype.activate = function(shapeType) {
+      var svg;
       this.shapeType = shapeType;
-      this.svgDocument.node.style.cursor = 'crosshair';
-      this.svgDocument.on('mousedown', this.onMouseDown);
-      this.svgDocument.on('mousemove', this.onMouseMove);
-      return this.svgDocument.on('mouseup', this.onMouseUp);
+      if (this.shapeType == null) {
+        this.shapeType = 'rectangle';
+      }
+      svg = this.svgDocument.getSVGRoot();
+      svg.node.style.cursor = 'crosshair';
+      svg.on('mousedown', this.onMouseDown);
+      svg.on('mousemove', this.onMouseMove);
+      svg.on('mouseup', this.onMouseUp);
+      return this.active = true;
     };
 
     ShapeTool.prototype.deactivate = function() {
-      this.svgDocument.node.style.cursor = null;
-      this.svgDocument.off('mousedown', this.onMouseDown);
-      this.svgDocument.off('mousemove', this.onMouseMove);
-      return this.svgDocument.off('mouseup', this.onMouseUp);
-    };
-
-    ShapeTool.prototype.setObjectRoot = function(objectRoot) {
-      this.objectRoot = objectRoot;
+      var svg;
+      svg = this.svgDocument.getSVGRoot();
+      svg.node.style.cursor = null;
+      svg.off('mousedown', this.onMouseDown);
+      svg.off('mousemove', this.onMouseMove);
+      svg.off('mouseup', this.onMouseUp);
+      return this.active = false;
     };
 
     ShapeTool.prototype.createShape = function(params) {
-      if (this.shapeType === 'Rectangle') {
-        return new Rectangle(this.objectRoot, params);
+      if (this.shapeType === 'rectangle') {
+        return new Rectangle(this.svgDocument, params);
       } else {
         return null;
       }
     };
 
     ShapeTool.prototype.onMouseDown = function(event) {
-      this.anchor = getCanvasPosition(this.svgDocument, event);
-      this.shape = this.createShape({
-        x: this.anchor.x,
-        y: this.anchor.y,
-        width: 0,
-        height: 0
-      });
-      this.selectionModel.setSelected(this.shape);
+      this.anchor = getCanvasPosition(this.svgDocument.getSVGRoot(), event);
       return true;
     };
 
     ShapeTool.prototype.onMouseMove = function(event) {
       var point, position, ref, size;
-      if (this.shape == null) {
+      if (this.anchor == null) {
         return;
       }
-      point = getCanvasPosition(this.svgDocument, event);
+      point = getCanvasPosition(this.svgDocument.getSVGRoot(), event);
+      if (!this.shape && (Math.abs(point.x - this.anchor.x) >= 5 || Math.abs(point.y - this.anchor.y) >= 5)) {
+        this.shape = this.createShape({
+          x: this.anchor.x,
+          y: this.anchor.y,
+          width: 0,
+          height: 0
+        });
+        this.selectionModel.setSelected(this.shape);
+      }
+      if (!this.shape) {
+        return;
+      }
       ref = normalizePositionAndSize(this.anchor, point), size = ref.size, position = ref.position;
       if (event.shiftKey) {
         size = Math.min(size.width, size.height);
@@ -2456,7 +2505,11 @@
 
     ShapeTool.prototype.onMouseUp = function(event) {
       this.anchor = null;
-      return this.shape = null;
+      if (this.shape != null) {
+        return this.shape = null;
+      } else {
+        return this.emitter.emit('cancel');
+      }
     };
 
     return ShapeTool;
@@ -2474,16 +2527,16 @@
     };
   };
 
-  getCanvasPosition = function(svgDocument, event) {
+  getCanvasPosition = function(svgRoot, event) {
     var x, y;
-    x = event.pageX - svgDocument.node.offsetLeft;
-    y = event.pageY - svgDocument.node.offsetTop;
+    x = event.pageX - svgRoot.node.offsetLeft;
+    y = event.pageY - svgRoot.node.offsetTop;
     return new Point(x, y);
   };
 
 }).call(this);
 
-},{"./point":15,"./rectangle":17,"./size":22}],22:[function(require,module,exports){
+},{"./point":15,"./rectangle":17,"./size":22,"event-kit":30}],22:[function(require,module,exports){
 (function() {
   var Size;
 
@@ -2757,8 +2810,9 @@
       return this.objects;
     };
 
-    SVGDocumentModel.prototype.setSize = function(size) {
-      size = Size.create(size);
+    SVGDocumentModel.prototype.setSize = function(w, h) {
+      var size;
+      size = Size.create(w, h);
       if (size.equals(this.size)) {
         return;
       }
@@ -2788,35 +2842,52 @@
       this.toolLayer = this.svg.group();
       this.toolLayer.node.setAttribute('class', 'tool-layer');
       this.selectionModel = new SelectionModel();
-      this.selectionView = new SelectionView(this.toolLayer, this.selectionModel);
-      this.tools = {
-        pointer: new PointerTool(this.svg, {
-          selectionModel: this.selectionModel,
-          selectionView: this.selectionView,
-          toolLayer: this.toolLayer
-        }),
-        shape: new ShapeTool(this.svg, {
-          selectionModel: this.selectionModel,
-          selectionView: this.selectionView,
-          toolLayer: this.toolLayer
-        })
-      };
-      this.tools.shape.activate('Rectangle');
+      this.selectionView = new SelectionView(this);
       this.model.on('change:size', this.onChangedSize);
     }
 
+    SVGDocument.prototype.initializeTools = function() {
+      var i, len, ref, tool;
+      this.tools = [new PointerTool(this), new ShapeTool(this)];
+      ref = this.tools;
+      for (i = 0, len = ref.length; i < len; i++) {
+        tool = ref[i];
+        if (typeof tool.on === "function") {
+          tool.on('cancel', (function(_this) {
+            return function() {
+              return _this.setActiveToolType('pointer');
+            };
+          })(this));
+        }
+      }
+      return this.setActiveToolType('pointer');
+    };
+
+
+    /*
+    Section: File Serialization
+     */
+
     SVGDocument.prototype.deserialize = function(svgString) {
-      var root;
-      this.model.setObjects(DeserializeSVG(this.svg, svgString));
-      root = this.getSvgRoot();
-      this.model.setSize(new Size(root.width(), root.height()));
+      var objectLayer;
+      this.model.setObjects(DeserializeSVG(this, svgString));
+      objectLayer = null;
+      this.svg.each(function() {
+        if (this.node.nodeName === 'svg') {
+          return objectLayer = this;
+        }
+      });
+      this.objectLayer = objectLayer;
+      if (objectLayer == null) {
+        objectLayer = this.getObjectLayer();
+      }
+      this.model.setSize(new Size(objectLayer.width(), objectLayer.height()));
       this.toolLayer.front();
-      return this.tools.shape.setObjectRoot(root);
     };
 
     SVGDocument.prototype.serialize = function() {
       var svgRoot;
-      svgRoot = this.getSvgRoot();
+      svgRoot = this.getObjectLayer();
       if (svgRoot) {
         return SerializeSVG(svgRoot, {
           whitespace: true
@@ -2826,24 +2897,92 @@
       }
     };
 
-    SVGDocument.prototype.getSvgRoot = function() {
-      var svgRoot;
-      svgRoot = null;
-      this.svg.each(function() {
-        if (this.node.nodeName === 'svg') {
-          return svgRoot = this;
+
+    /*
+    Section: Tool Management
+     */
+
+    SVGDocument.prototype.toolForType = function(toolType) {
+      var i, len, ref, tool;
+      ref = this.tools;
+      for (i = 0, len = ref.length; i < len; i++) {
+        tool = ref[i];
+        if (tool.supportsType(toolType)) {
+          return tool;
         }
-      });
-      return svgRoot;
+      }
+      return null;
+    };
+
+    SVGDocument.prototype.getActiveTool = function() {
+      var i, len, ref, tool;
+      ref = this.tools;
+      for (i = 0, len = ref.length; i < len; i++) {
+        tool = ref[i];
+        if (tool.isActive()) {
+          return tool;
+        }
+      }
+      return null;
+    };
+
+    SVGDocument.prototype.getActiveToolType = function() {
+      var ref;
+      return (ref = this.getActiveTool()) != null ? ref.getType() : void 0;
+    };
+
+    SVGDocument.prototype.setActiveToolType = function(toolType) {
+      var newTool, oldActiveTool;
+      oldActiveTool = this.getActiveTool();
+      newTool = this.toolForType(toolType);
+      if ((newTool != null) && newTool !== oldActiveTool) {
+        if (oldActiveTool != null) {
+          oldActiveTool.deactivate();
+        }
+        return newTool.activate(toolType);
+      }
     };
 
 
     /*
-    Section: Model Delegates
+    Section: Selections
      */
 
-    SVGDocument.prototype.setSize = function(size) {
-      return this.model.setSize(size);
+    SVGDocument.prototype.getSelectionModel = function() {
+      return this.selectionModel;
+    };
+
+    SVGDocument.prototype.getSelectionView = function() {
+      return this.selectionView;
+    };
+
+
+    /*
+    Section: SVG Details
+     */
+
+    SVGDocument.prototype.getSVGRoot = function() {
+      return this.svg;
+    };
+
+    SVGDocument.prototype.getToolLayer = function() {
+      return this.toolLayer;
+    };
+
+    SVGDocument.prototype.getObjectLayer = function() {
+      if (this.objectLayer == null) {
+        this.objectLayer = this._createObjectLayer();
+      }
+      return this.objectLayer;
+    };
+
+
+    /*
+    Section: Document Details
+     */
+
+    SVGDocument.prototype.setSize = function(w, h) {
+      return this.model.setSize(w, h);
     };
 
     SVGDocument.prototype.getSize = function() {
@@ -2868,7 +3007,7 @@
     SVGDocument.prototype.onChangedSize = function(arg) {
       var root, size;
       size = arg.size;
-      root = this.getSvgRoot();
+      root = this.getObjectLayer();
       root.width(size.width);
       return root.height(size.height);
     };
@@ -2886,6 +3025,12 @@
       deltaPoint = Point.create(deltaPoint);
       selectedObject = this.selectionModel.getSelected();
       return selectedObject != null ? typeof selectedObject.translate === "function" ? selectedObject.translate(deltaPoint) : void 0 : void 0;
+    };
+
+    SVGDocument.prototype._createObjectLayer = function() {
+      this.objectLayer = this.svg.nested();
+      this.setSize(1024, 1024);
+      return this.objectLayer;
     };
 
     return SVGDocument;
