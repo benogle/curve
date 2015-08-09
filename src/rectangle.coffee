@@ -1,11 +1,11 @@
 {Emitter} = require 'event-kit'
+ObjectAssign = require 'object-assign'
+
 Transform = require './transform'
 Utils = require './utils'
 Point = require './point'
 Size = require './size'
 Draggable = require './draggable-mixin'
-
-ObjectAssign = require 'object-assign'
 
 DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
 IDS = 0
