@@ -24,8 +24,8 @@ class SVGDocumentModel
 
   getObjects: -> @objects
 
-  setSize: (size) ->
-    size = Size.create(size)
+  setSize: (w, h) ->
+    size = Size.create(w, h)
     return if size.equals(@size)
     @size = size
     @emitter.emit 'change:size', {size}
@@ -65,11 +65,14 @@ class SVGDocument
 
   deserialize: (svgString) ->
     @model.setObjects(DeserializeSVG(this, svgString))
-    root = @getObjectLayer()
-    @model.setSize(new Size(root.width(), root.height()))
+
+    objectLayer = null
+    @svg.each -> objectLayer = this if this.node.nodeName == 'svg'
+    @objectLayer = objectLayer
+    objectLayer = @getObjectLayer() unless objectLayer?
+
+    @model.setSize(new Size(objectLayer.width(), objectLayer.height()))
     @toolLayer.front()
-    for tool in @tools
-      tool.setObjectRoot?(root)
     return
 
   serialize: ->
@@ -121,15 +124,14 @@ class SVGDocument
   getToolLayer: -> @toolLayer
 
   getObjectLayer: ->
-    svgRoot = null
-    @svg.each -> svgRoot = this if this.node.nodeName == 'svg'
-    svgRoot
+    @objectLayer = @_createObjectLayer() unless @objectLayer?
+    @objectLayer
 
   ###
   Section: Document Details
   ###
 
-  setSize: (size) -> @model.setSize(size)
+  setSize: (w, h) -> @model.setSize(w, h)
 
   getSize: -> @model.getSize()
 
@@ -156,3 +158,8 @@ class SVGDocument
 
     selectedObject = @selectionModel.getSelected()
     selectedObject?.translate?(deltaPoint)
+
+  _createObjectLayer: ->
+    @objectLayer = @svg.nested()
+    @setSize(1024, 1024)
+    @objectLayer

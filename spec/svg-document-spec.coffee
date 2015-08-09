@@ -1,4 +1,5 @@
 SVGDocument = require '../src/svg-document'
+Rectangle = require '../src/rectangle'
 Size = require '../src/size'
 Point = require '../src/point'
 
@@ -11,6 +12,18 @@ describe 'Curve.SVGDocument', ->
 
   it 'has a tool layer', ->
     expect(canvas.querySelector('svg>.tool-layer')).toBeDefined()
+
+  describe 'when the document is empty', ->
+    it "creates a new object layer with a default size", ->
+      rect = new Rectangle(svg, {x: 20, y: 30, width: 45, height: 55})
+      children = svg.getObjectLayer().node.childNodes
+      expect(children.length).toBe 1
+      expect(children[0].nodeName).toBe 'rect'
+
+      expect(svg.getObjectLayer().width()).toBe 1024
+      expect(svg.getObjectLayer().height()).toBe 1024
+
+      console.log svg.serialize()
 
   describe 'reading svg', ->
     beforeEach ->
