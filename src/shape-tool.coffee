@@ -8,11 +8,13 @@ class ShapeTool
     @objectRoot = @svgDocument
 
   activate: (@shapeType) ->
+    @svgDocument.node.style.cursor = 'crosshair'
     @svgDocument.on 'mousedown', @onMouseDown
     @svgDocument.on 'mousemove', @onMouseMove
     @svgDocument.on 'mouseup', @onMouseUp
 
   deactivate: ->
+    @svgDocument.node.style.cursor = null
     @svgDocument.off 'mousedown', @onMouseDown
     @svgDocument.off 'mousemove', @onMouseMove
     @svgDocument.off 'mouseup', @onMouseUp
