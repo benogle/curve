@@ -51,9 +51,13 @@ class SVGDocument
       pointer: new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
       shape: new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
 
-    @tools.shape.activate('Rectangle')
+    @tools.pointer.activate()
 
     @model.on('change:size', @onChangedSize)
+
+  ###
+  Section: File Serialization
+  ###
 
   deserialize: (svgString) ->
     @model.setObjects(DeserializeSVG(@svg, svgString))
@@ -69,14 +73,39 @@ class SVGDocument
     else
       ''
 
+  ###
+  Section: Tool Management
+  ###
+
+  getActiveTool: ->
+    for __, tool of @tools
+      return tool if tool.isActive()
+    null
+
+  getActiveToolType: ->
+    @getActiveTool()?.getType()
+
+  setActiveToolType: (toolType) ->
+    oldActiveTool = @getActiveTool()
+
+    newTool = null
+    for toolName, tool of @tools
+      if tool.supportsType(toolType)
+        newTool = tool
+        break
+
+    if newTool? and newTool isnt oldActiveTool
+      oldActiveTool.deactivate()
+      newTool.activate(toolType)
+
+  ###
+  Section: Document Details
+  ###
+
   getSvgRoot: ->
     svgRoot = null
     @svg.each -> svgRoot = this if this.node.nodeName == 'svg'
     svgRoot
-
-  ###
-  Section: Model Delegates
-  ###
 
   setSize: (size) -> @model.setSize(size)
 

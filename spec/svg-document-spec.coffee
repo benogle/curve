@@ -73,6 +73,37 @@ describe 'Curve.SVGDocument', ->
 
       expect(documentChangeSpy).toHaveBeenCalled()
 
+  describe "changing tools", ->
+    beforeEach ->
+      spyOn(svg.tools.pointer, 'activate').and.callThrough()
+      spyOn(svg.tools.pointer, 'deactivate').and.callThrough()
+      spyOn(svg.tools.shape, 'activate').and.callThrough()
+      spyOn(svg.tools.shape, 'deactivate').and.callThrough()
+
+    it "can switch to different tools", ->
+      expect(svg.getActiveToolType()).toBe 'pointer'
+
+      svg.setActiveToolType('rectangle')
+      expect(svg.tools.pointer.activate).not.toHaveBeenCalled()
+      expect(svg.tools.pointer.deactivate).toHaveBeenCalled()
+      expect(svg.tools.shape.activate).toHaveBeenCalledWith('rectangle')
+      expect(svg.tools.shape.deactivate).not.toHaveBeenCalled()
+      expect(svg.getActiveToolType()).toBe 'rectangle'
+
+      svg.tools.shape.activate.calls.reset()
+      svg.tools.pointer.deactivate.calls.reset()
+      svg.setActiveToolType('pointer')
+      expect(svg.tools.pointer.activate).toHaveBeenCalled()
+      expect(svg.tools.pointer.deactivate).not.toHaveBeenCalled()
+      expect(svg.tools.shape.activate).not.toHaveBeenCalled()
+      expect(svg.tools.shape.deactivate).toHaveBeenCalled()
+      expect(svg.getActiveToolType()).toBe 'pointer'
+
+    it "will not switch to non-existent tools", ->
+      svg.setActiveToolType('junk')
+      expect(svg.getActiveToolType()).toBe 'pointer'
+      expect(svg.tools.pointer.deactivate).not.toHaveBeenCalled()
+
   describe '::translateSelectedObjects', ->
     beforeEach ->
       svg.deserialize('<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="30" width="200" height="400" fill="red"/></svg>')

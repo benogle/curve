@@ -18,14 +18,14 @@ describe 'ShapeTool', ->
 
   it "has a crosshair cursor when activated", ->
     expect(svg.node.style.cursor).toBe ''
-    tool.activate('Rectangle')
+    tool.activate('rectangle')
     expect(svg.node.style.cursor).toBe 'crosshair'
     tool.deactivate()
     expect(svg.node.style.cursor).toBe ''
 
   describe "when activated with Rectangle", ->
     beforeEach ->
-      tool.activate('Rectangle')
+      tool.activate('rectangle')
       expect(selectionModel.getSelected()).toBe null
 
     it "creates a rectangle when dragging", ->

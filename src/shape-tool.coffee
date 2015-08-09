@@ -7,22 +7,31 @@ class ShapeTool
   constructor: (@svgDocument, {@selectionModel}={}) ->
     @objectRoot = @svgDocument
 
+  getType: -> @shapeType
+
+  supportsType: (type) -> type in ['rectangle']
+
+  isActive: -> @active
+
   activate: (@shapeType) ->
+    @shapeType ?= 'rectangle'
     @svgDocument.node.style.cursor = 'crosshair'
     @svgDocument.on 'mousedown', @onMouseDown
     @svgDocument.on 'mousemove', @onMouseMove
     @svgDocument.on 'mouseup', @onMouseUp
+    @active = true
 
   deactivate: ->
     @svgDocument.node.style.cursor = null
     @svgDocument.off 'mousedown', @onMouseDown
     @svgDocument.off 'mousemove', @onMouseMove
     @svgDocument.off 'mouseup', @onMouseUp
+    @active = false
 
   setObjectRoot: (@objectRoot) ->
 
   createShape: (params) ->
-    if @shapeType is 'Rectangle'
+    if @shapeType is 'rectangle'
       new Rectangle(@objectRoot, params)
     else
       null

@@ -8,6 +8,12 @@ class PointerTool
     @_evrect.width = @_evrect.height = 1;
     @objectEditor = new ObjectEditor(@toolLayer, @selectionModel)
 
+  getType: -> 'pointer'
+
+  supportsType: (type) -> type is 'pointer'
+
+  isActive: -> @active
+
   activate: ->
     @objectEditor.activate()
     @svgDocument.on 'mousedown', @onMouseDown
@@ -15,6 +21,7 @@ class PointerTool
 
     objectSelection = @selectionView.getObjectSelection()
     @changeSubscriptions = objectSelection.on('change:object', @onChangedSelectedObject)
+    @active = true
 
   deactivate: ->
     @objectEditor.deactivate()
@@ -23,6 +30,7 @@ class PointerTool
 
     @changeSubscriptions?.dispose()
     @changeSubscriptions = null
+    @active = false
 
   onChangedSelectedObject: ({object, old}) =>
     if object?
