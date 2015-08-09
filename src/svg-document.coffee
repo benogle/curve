@@ -47,10 +47,11 @@ class SVGDocument
     @selectionModel = new SelectionModel()
     @selectionView = new SelectionView(@toolLayer, @selectionModel)
 
-    # @tool = new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
-    # @tool.activate()
-    @tool = new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
-    @tool.activate('Rectangle')
+    @tools =
+      pointer: new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+      shape: new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+
+    @tools.shape.activate('Rectangle')
 
     @model.on('change:size', @onChangedSize)
 
@@ -59,6 +60,7 @@ class SVGDocument
     root = @getSvgRoot()
     @model.setSize(new Size(root.width(), root.height()))
     @toolLayer.front()
+    @tools.shape.setObjectRoot(root)
 
   serialize: ->
     svgRoot = @getSvgRoot()

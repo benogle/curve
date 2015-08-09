@@ -16,9 +16,11 @@ class ShapeTool
     @svgDocument.off 'mousemove', @onMouseMove
     @svgDocument.off 'mouseup', @onMouseUp
 
+  setObjectRoot: (@objectRoot) ->
+
   createShape: (params) ->
     if @shapeType is 'Rectangle'
-      new Rectangle(@svgDocument, params)
+      new Rectangle(@objectRoot, params)
     else
       null
 
