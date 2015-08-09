@@ -119,7 +119,7 @@ class Rectangle
     svgEl.attr(transform: @model.getTransformString() or null)
 
   cloneElement: (svgDocument=@svgDocument) ->
-    el = svgDocument.rect()
+    el = svgDocument.getObjectLayer().rect()
     @render(el)
     el
 
@@ -137,6 +137,6 @@ class Rectangle
 
   _setupSVGObject: (options) ->
     {@svgEl} = options
-    @svgEl = @svgDocument.rect().attr(ObjectAssign({}, DefaultAttrs, options)) unless @svgEl
+    @svgEl = @svgDocument.getObjectLayer().rect().attr(ObjectAssign({}, DefaultAttrs, options)) unless @svgEl
     Utils.setObjectOnNode(@svgEl.node, this)
     @updateFromAttributes()

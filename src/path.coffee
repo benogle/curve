@@ -188,7 +188,7 @@ class Path
     svgEl.attr(transform: @model.getTransformString() or null)
 
   cloneElement: (svgDocument=@svgDocument) ->
-    el = svgDocument.path()
+    el = svgDocument.getObjectLayer().path()
     @render(el)
     el
 
@@ -209,7 +209,7 @@ class Path
     @emitter.emit(eventName, args)
 
   _setupSVGObject: (@svgEl) ->
-    @svgEl = @svgDocument.path().attr(DefaultAttrs) unless @svgEl
+    @svgEl = @svgDocument.getObjectLayer().path().attr(DefaultAttrs) unless @svgEl
     Utils.setObjectOnNode(@svgEl.node, this)
     @model.setPathString(@svgEl.attr('d'))
 

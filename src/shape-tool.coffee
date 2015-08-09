@@ -6,9 +6,9 @@ Rectangle = require './rectangle'
 
 module.exports =
 class ShapeTool
-  constructor: (@svgDocument, {@selectionModel}={}) ->
-    @objectRoot = @svgDocument
+  constructor: (@svgDocument) ->
     @emitter = new Emitter
+    @selectionModel = @svgDocument.getSelectionModel()
 
   on: (args...) -> @emitter.on(args...)
 
@@ -20,20 +20,20 @@ class ShapeTool
 
   activate: (@shapeType) ->
     @shapeType ?= 'rectangle'
-    @svgDocument.node.style.cursor = 'crosshair'
-    @svgDocument.on 'mousedown', @onMouseDown
-    @svgDocument.on 'mousemove', @onMouseMove
-    @svgDocument.on 'mouseup', @onMouseUp
+    svg = @svgDocument.getSVGRoot()
+    svg.node.style.cursor = 'crosshair'
+    svg.on 'mousedown', @onMouseDown
+    svg.on 'mousemove', @onMouseMove
+    svg.on 'mouseup', @onMouseUp
     @active = true
 
   deactivate: ->
-    @svgDocument.node.style.cursor = null
-    @svgDocument.off 'mousedown', @onMouseDown
-    @svgDocument.off 'mousemove', @onMouseMove
-    @svgDocument.off 'mouseup', @onMouseUp
+    svg = @svgDocument.getSVGRoot()
+    svg.node.style.cursor = null
+    svg.off 'mousedown', @onMouseDown
+    svg.off 'mousemove', @onMouseMove
+    svg.off 'mouseup', @onMouseUp
     @active = false
-
-  setObjectRoot: (@objectRoot) ->
 
   createShape: (params) ->
     if @shapeType is 'rectangle'
@@ -42,12 +42,12 @@ class ShapeTool
       null
 
   onMouseDown: (event) =>
-    @anchor = getCanvasPosition(@svgDocument, event)
+    @anchor = getCanvasPosition(@svgDocument.getSVGRoot(), event)
     true
 
   onMouseMove: (event) =>
     return unless @anchor?
-    point = getCanvasPosition(@svgDocument, event)
+    point = getCanvasPosition(@svgDocument.getSVGRoot(), event)
 
     if not @shape and (Math.abs(point.x - @anchor.x) >= 5 or Math.abs(point.y - @anchor.y) >= 5)
       @shape = @createShape({x: @anchor.x, y: @anchor.y, width: 0, height: 0})
@@ -78,7 +78,7 @@ normalizePositionAndSize = (anchor, point) ->
   diff = bottomRight.subtract(topLeft)
   {position: topLeft, size: new Size(diff.x, diff.y)}
 
-getCanvasPosition = (svgDocument, event) ->
-  x = event.pageX - svgDocument.node.offsetLeft
-  y = event.pageY - svgDocument.node.offsetTop
+getCanvasPosition = (svgRoot, event) ->
+  x = event.pageX - svgRoot.node.offsetLeft
+  y = event.pageY - svgRoot.node.offsetTop
   new Point(x, y)

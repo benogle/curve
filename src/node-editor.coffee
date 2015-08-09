@@ -14,8 +14,8 @@ class NodeEditor
   handleElements = null
   lineElement = null
 
-  constructor: (@svgToolParent, @pathEditor) ->
-    @svgDocument = @svgToolParent.parent()
+  constructor: (@svgDocument, @pathEditor) ->
+    @toolLayer = @svgDocument.getToolLayer()
     @_setupNodeElement()
     @_setupLineElement()
     @_setupHandleElements()
@@ -93,7 +93,7 @@ class NodeEditor
     @nodeSubscriptions = null
 
   _setupNodeElement: ->
-    @nodeElement = @svgToolParent.circle(@nodeSize)
+    @nodeElement = @toolLayer.circle(@nodeSize)
     @nodeElement.node.setAttribute('class', 'node-editor-node')
 
     @nodeElement.mousedown (e) =>
@@ -117,16 +117,16 @@ class NodeEditor
       @nodeElement.attr('r': @nodeSize)
 
   _setupLineElement: ->
-    @lineElement = @svgToolParent.path('')
+    @lineElement = @toolLayer.path('')
     @lineElement.node.setAttribute('class', 'node-editor-lines')
 
   _setupHandleElements: ->
     self = this
 
-    @handleElements = @svgToolParent.set()
+    @handleElements = @toolLayer.set()
     @handleElements.add(
-      @svgToolParent.circle(@handleSize),
-      @svgToolParent.circle(@handleSize)
+      @toolLayer.circle(@handleSize),
+      @toolLayer.circle(@handleSize)
     )
     @handleElements.members[0].node.setAttribute('class', 'node-editor-handle')
     @handleElements.members[1].node.setAttribute('class', 'node-editor-handle')

@@ -3,10 +3,15 @@ Utils = require './Utils'
 
 module.exports =
 class PointerTool
-  constructor: (@svgDocument, {@selectionModel, @selectionView, @toolLayer}={}) ->
-    @_evrect = @svgDocument.node.createSVGRect();
+  constructor: (@svgDocument) ->
+    @_evrect = @svgDocument.getSVGRoot().node.createSVGRect();
     @_evrect.width = @_evrect.height = 1;
-    @objectEditor = new ObjectEditor(@toolLayer, @selectionModel)
+
+    @selectionModel = @svgDocument.getSelectionModel()
+    @selectionView =  @svgDocument.getSelectionView()
+    @toolLayer = @svgDocument.getToolLayer()
+
+    @objectEditor = new ObjectEditor(@svgDocument, @selectionModel)
 
   getType: -> 'pointer'
 
@@ -16,8 +21,9 @@ class PointerTool
 
   activate: ->
     @objectEditor.activate()
-    @svgDocument.on 'mousedown', @onMouseDown
-    @svgDocument.on 'mousemove', @onMouseMove
+    svg = @svgDocument.getSVGRoot()
+    svg.on 'mousedown', @onMouseDown
+    svg.on 'mousemove', @onMouseMove
 
     objectSelection = @selectionView.getObjectSelection()
     @changeSubscriptions = objectSelection.on('change:object', @onChangedSelectedObject)
@@ -25,8 +31,9 @@ class PointerTool
 
   deactivate: ->
     @objectEditor.deactivate()
-    @svgDocument.off 'mousedown', @onMouseDown
-    @svgDocument.off 'mousemove', @onMouseMove
+    svg = @svgDocument.getSVGRoot()
+    svg.off 'mousedown', @onMouseDown
+    svg.off 'mousemove', @onMouseMove
 
     @changeSubscriptions?.dispose()
     @changeSubscriptions = null
@@ -52,16 +59,17 @@ class PointerTool
 
   _hitWithTarget: (e) ->
     obj = null
-    obj = Utils.getObjectFromNode(e.target) if e.target != @svgDocument.node
+    obj = Utils.getObjectFromNode(e.target) if e.target != @svgDocument.getSVGRoot().node
     obj
 
   # This seems slower and more complicated than _hitWithTarget
   _hitWithIntersectionList: (e) ->
-    top = @svgDocument.node.offsetTop
-    left = @svgDocument.node.offsetLeft
+    svgNode = @svgDocument.getSVGRoot().node
+    top = svgNode.offsetTop
+    left = svgNode.offsetLeft
     @_evrect.x = e.clientX - left
     @_evrect.y = e.clientY - top
-    nodes = @svgDocument.node.getIntersectionList(@_evrect, null)
+    nodes = svgNode.getIntersectionList(@_evrect, null)
 
     if nodes.length
       for i in [nodes.length-1..0]

@@ -13,10 +13,10 @@ Utils =
   setObjectOnNode: (domNode, object) ->
     getObjectMap()[domNode.id] = object
 
-  pointForEvent: (svgDocument, event) ->
+  pointForEvent: (svgRoot, event) ->
     {clientX, clientY} = event
-    top = @svgDocument.node.offsetTop
-    left = @svgDocument.node.offsetLeft
+    top = @svgRoot.node.offsetTop
+    left = @svgRoot.node.offsetLeft
     new Point(event.clientX - left, event.clientY - top)
 
 module.exports = Utils

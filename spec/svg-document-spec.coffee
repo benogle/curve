@@ -51,7 +51,7 @@ describe 'Curve.SVGDocument', ->
       svg.on 'change:size', sizeChangeSpy = jasmine.createSpy()
 
       svg.setSize(Size.create(1000, 1050))
-      root = svg.getSvgRoot()
+      root = svg.getObjectLayer()
       expect(root.width()).toBe 1000
       expect(root.height()).toBe 1050
 

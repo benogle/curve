@@ -45,11 +45,11 @@ class SVGDocument
     @toolLayer.node.setAttribute('class', 'tool-layer')
 
     @selectionModel = new SelectionModel()
-    @selectionView = new SelectionView(@toolLayer, @selectionModel)
+    @selectionView = new SelectionView(this)
 
     @tools = [
-      new PointerTool(@svg, {@selectionModel, @selectionView, @toolLayer})
-      new ShapeTool(@svg, {@selectionModel, @selectionView, @toolLayer})
+      new PointerTool(this)
+      new ShapeTool(this)
     ]
 
     for tool in @tools
@@ -64,8 +64,8 @@ class SVGDocument
   ###
 
   deserialize: (svgString) ->
-    @model.setObjects(DeserializeSVG(@svg, svgString))
-    root = @getSvgRoot()
+    @model.setObjects(DeserializeSVG(this, svgString))
+    root = @getObjectLayer()
     @model.setSize(new Size(root.width(), root.height()))
     @toolLayer.front()
     for tool in @tools
@@ -73,7 +73,7 @@ class SVGDocument
     return
 
   serialize: ->
-    svgRoot = @getSvgRoot()
+    svgRoot = @getObjectLayer()
     if svgRoot
       SerializeSVG(svgRoot, whitespace: true)
     else
@@ -105,13 +105,29 @@ class SVGDocument
       newTool.activate(toolType)
 
   ###
-  Section: Document Details
+  Section: Selections
   ###
 
-  getSvgRoot: ->
+  getSelectionModel: -> @selectionModel
+
+  getSelectionView: -> @selectionView
+
+  ###
+  Section: SVG Details
+  ###
+
+  getSVGRoot: -> @svg
+
+  getToolLayer: -> @toolLayer
+
+  getObjectLayer: ->
     svgRoot = null
     @svg.each -> svgRoot = this if this.node.nodeName == 'svg'
     svgRoot
+
+  ###
+  Section: Document Details
+  ###
 
   setSize: (size) -> @model.setSize(size)
 
@@ -126,7 +142,7 @@ class SVGDocument
   ###
 
   onChangedSize: ({size}) =>
-    root = @getSvgRoot()
+    root = @getObjectLayer()
     root.width(size.width)
     root.height(size.height)
 
