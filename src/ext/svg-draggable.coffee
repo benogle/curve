@@ -59,7 +59,7 @@ onStart = (element, event=window.event) ->
   element.startPosition = {x, y, zoom, rotation}
   element.dragstart?({x: 0, y: 0, zoom}, event)
 
-  ### prevent selection dragging ###
+  # prevent selection dragging
   if event.preventDefault then event.preventDefault() else (event.returnValue = false)
 
 onDrag = (element, event=window.event) ->

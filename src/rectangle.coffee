@@ -100,13 +100,12 @@ class Rectangle
   updateFromAttributes: ->
     x = @svgEl.attr('x')
     y = @svgEl.attr('y')
-    @model.setPosition(x, y)
-
     width = @svgEl.attr('width')
     height = @svgEl.attr('height')
-    @model.setSize(width, height)
-
     transform = @svgEl.attr('transform')
+
+    @model.setPosition(x, y)
+    @model.setSize(width, height)
     @model.setTransformString(transform)
 
   # Will render the nodes and the transform from the model.
