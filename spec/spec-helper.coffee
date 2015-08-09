@@ -5,6 +5,21 @@ require "../vendor/svg.parser"
 require "../vendor/svg.export"
 
 util = require 'util'
+ObjectAssign = require 'object-assign'
+
+jasmine.buildMouseEvent = (type, properties...) ->
+  properties = ObjectAssign({bubbles: true, cancelable: true}, properties...)
+  properties.detail ?= 1
+  event = new MouseEvent(type, properties)
+  Object.defineProperty(event, 'which', get: -> properties.which) if properties.which?
+  if properties.target?
+    Object.defineProperty(event, 'target', get: -> properties.target)
+    Object.defineProperty(event, 'srcObject', get: -> properties.target)
+  if properties.pageX?
+    Object.defineProperty(event, 'pageX', get: -> properties.pageX)
+  if properties.pageY?
+    Object.defineProperty(event, 'pageY', get: -> properties.pageY)
+  event
 
 beforeEach ->
   jasmine.addMatchers
