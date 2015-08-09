@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "event-kit": "^1.2.0",
-    "mixto": "^1.0.0"
+    "mixto": "^1.0.0",
+    "object-assign": "^3.0.0"
   }
 }
