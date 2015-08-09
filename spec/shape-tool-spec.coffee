@@ -50,3 +50,12 @@ describe 'ShapeTool', ->
       svg.node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 200, pageY: 150))
       expect(selected.getPosition()).toEqual new Point(20, 10)
       expect(selected.getSize()).toEqual new Size(10, 20)
+
+    it "constrains the proportion to 1:1 when shift is held down", ->
+      svg.node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 0, pageY: 0))
+      selected = selectionModel.getSelected()
+
+      svg.node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 30, pageY: 50, shiftKey: true))
+      expect(selected.getSize()).toEqual new Size(30, 30)
+
+      svg.node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))

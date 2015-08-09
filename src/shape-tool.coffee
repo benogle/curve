@@ -36,6 +36,10 @@ class ShapeTool
     point = getCanvasPosition(@svgDocument, event)
     {size, position} = normalizePositionAndSize(@anchor, point)
 
+    if event.shiftKey
+      size = Math.min(size.width, size.height)
+      size = new Size(size, size)
+
     @shape.setPosition(position)
     @shape.setSize(size)
 
