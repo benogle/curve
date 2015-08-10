@@ -1947,13 +1947,18 @@
     };
 
     PointerTool.prototype.deactivate = function() {
-      var ref, svg;
+      var ref, ref1, svg;
       this.objectEditor.deactivate();
       svg = this.svgDocument.getSVGRoot();
       svg.off('mousedown', this.onMouseDown);
       svg.off('mousemove', this.onMouseMove);
-      if ((ref = this.changeSubscriptions) != null) {
-        ref.dispose();
+      if ((ref = this.selectionModel.getSelected()) != null) {
+        if (typeof ref.disableDragging === "function") {
+          ref.disableDragging();
+        }
+      }
+      if ((ref1 = this.changeSubscriptions) != null) {
+        ref1.dispose();
       }
       this.changeSubscriptions = null;
       return this.active = false;
@@ -1963,8 +1968,9 @@
       var object, old;
       object = arg.object, old = arg.old;
       if (object != null) {
-        return object.enableDragging();
-      } else if (old != null) {
+        object.enableDragging();
+      }
+      if (old != null) {
         return old.disableDragging();
       }
     };
