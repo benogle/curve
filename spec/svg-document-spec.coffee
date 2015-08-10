@@ -84,12 +84,17 @@ describe 'Curve.SVGDocument', ->
 
       expect(documentChangeSpy).toHaveBeenCalled()
 
-    it "emits a change event when a new object is added", ->
+    it "emits a change event when a new object is added and then removed", ->
       svg.on 'change', documentChangeSpy = jasmine.createSpy()
 
       object = new Rectangle(svg, {width: 10, height: 35})
       expect(documentChangeSpy).toHaveBeenCalled()
       expect(svg.getObjects()).toContain object
+
+      documentChangeSpy.calls.reset()
+      object.remove()
+      expect(documentChangeSpy).toHaveBeenCalled()
+      expect(svg.getObjects()).not.toContain object
 
   describe "changing tools", ->
     [pointerTool, shapeTool] = []

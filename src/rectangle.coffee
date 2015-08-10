@@ -84,6 +84,8 @@ class Rectangle
 
   getType: -> 'Rectangle'
 
+  getID: -> "#{@getType()}-#{@id}"
+
   toString: -> @model.toString()
 
   getPosition: -> @model.getPosition()

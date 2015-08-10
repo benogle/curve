@@ -19,6 +19,7 @@ class SVGDocumentModel
     @objects = []
     @objectSubscriptions?.dispose()
     @objectSubscriptions = new CompositeDisposable
+    @objectSubscriptionsByObject = {}
 
   on: (args...) -> @emitter.on(args...)
 
@@ -32,7 +33,13 @@ class SVGDocumentModel
   getObjects: -> @objects
 
   registerObject: (object, options) ->
-    @objectSubscriptions.add object.on('change', @onChangedObject)
+
+    @objectSubscriptionsByObject[object.getID()] = subscriptions = new CompositeDisposable
+
+    subscriptions.add object.on('change', @onChangedObject)
+    subscriptions.add object.on('remove', @onRemovedObject)
+
+    @objectSubscriptions.add(subscriptions)
     @objects.push(object)
     @emitter.emit('change') unless @options?.silent
 
@@ -45,6 +52,17 @@ class SVGDocumentModel
   getSize: -> @size
 
   onChangedObject: (event) =>
+    @emitter.emit 'change', event
+
+  onRemovedObject: (event) =>
+    {object} = event
+    subscription = @objectSubscriptionsByObject[object.getID()]
+    delete @objectSubscriptionsByObject[object.getID()]
+    if subscription?
+      subscription.dispose()
+      @objectSubscriptions.remove(subscription)
+    index = @objects.indexOf(object)
+    @objects.splice(index, 1) if index > -1
     @emitter.emit 'change', event
 
 module.exports =

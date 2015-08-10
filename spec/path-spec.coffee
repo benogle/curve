@@ -14,13 +14,18 @@ describe 'Path', ->
     jasmine.attachToDOM(canvas)
     svg = new SVGDocument(canvas)
 
-  it 'has empty path string after creation', ->
-    path = new Path(svg)
-    expect(path.getPathString()).toEqual ''
+  describe "creation", ->
+    it 'has an id', ->
+      path = new Path(svg)
+      expect(path.getID()).toBe "Path-#{path.id}"
 
-  it 'registers itself with the document', ->
-    path = new Path(svg)
-    expect(svg.getObjects()).toContain path
+    it 'has empty path string after creation', ->
+      path = new Path(svg)
+      expect(path.getPathString()).toEqual ''
+
+    it 'registers itself with the document', ->
+      path = new Path(svg)
+      expect(svg.getObjects()).toContain path
 
   it 'emits an event when it is removed', ->
     path = new Path(svg)

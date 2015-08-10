@@ -154,6 +154,8 @@ class Path
 
   getType: -> 'Path'
 
+  getID: -> "#{@getType()}-#{@id}"
+
   toString: ->
     "Path #{@id} #{@model.toString()}"
 
