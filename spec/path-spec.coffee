@@ -22,6 +22,12 @@ describe 'Path', ->
     path = new Path(svg)
     expect(svg.getObjects()).toContain path
 
+  it 'emits an event when it is removed', ->
+    path = new Path(svg)
+    path.on 'remove', removeSpy = jasmine.createSpy()
+    path.remove()
+    expect(removeSpy).toHaveBeenCalledWith({object: path})
+
   it 'has empty path string with empty subpath', ->
     path = new Path(svg)
     path.model._addSubpath(new Subpath({path}))

@@ -96,6 +96,10 @@ class Rectangle
 
   translate: (x, y) -> @model.translate(x, y)
 
+  remove: ->
+    @svgEl.remove()
+    @emitter.emit('remove', object: this)
+
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
   updateFromAttributes: ->

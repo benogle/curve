@@ -16,6 +16,12 @@ describe 'Rectangle', ->
       rect = new Rectangle(svg)
       expect(svg.getObjects()).toContain rect
 
+    it 'emits an event when it is removed', ->
+      rect = new Rectangle(svg)
+      rect.on 'remove', removeSpy = jasmine.createSpy()
+      rect.remove()
+      expect(removeSpy).toHaveBeenCalledWith({object: rect})
+
     it 'can be created with no parameters', ->
       rect = new Rectangle(svg)
 
