@@ -2909,9 +2909,11 @@
 
 },{"./point":15,"./size":22,"event-kit":31}],25:[function(require,module,exports){
 (function() {
-  var DeserializeSVG, Point, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, ShapeTool, Size,
+  var DeserializeSVG, Emitter, Point, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, ShapeTool, Size,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     slice = [].slice;
+
+  Emitter = require('event-kit').Emitter;
 
   SVG = require('../vendor/svg');
 
@@ -2936,6 +2938,7 @@
   module.exports = SVGDocument = (function() {
     function SVGDocument(rootNode) {
       this.onChangedSize = bind(this.onChangedSize, this);
+      this.emitter = new Emitter;
       this.model = new SVGDocumentModel;
       this.svg = SVG(rootNode);
       this.toolLayer = this.svg.group();
@@ -2943,7 +2946,23 @@
       this.selectionModel = new SelectionModel();
       this.selectionView = new SelectionView(this);
       this.model.on('change:size', this.onChangedSize);
+      this.model.on('change', (function(_this) {
+        return function(event) {
+          return _this.emitter.emit('change', event);
+        };
+      })(this));
+      this.model.on('change:size', (function(_this) {
+        return function(event) {
+          return _this.emitter.emit('change:size', event);
+        };
+      })(this));
     }
+
+    SVGDocument.prototype.on = function() {
+      var args, ref;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (ref = this.emitter).on.apply(ref, args);
+    };
 
     SVGDocument.prototype.initializeTools = function() {
       var i, len, ref, tool;
@@ -3038,7 +3057,10 @@
         if (oldActiveTool != null) {
           oldActiveTool.deactivate();
         }
-        return newTool.activate(toolType);
+        newTool.activate(toolType);
+        return this.emitter.emit('change:tool', {
+          toolType: toolType
+        });
       }
     };
 
@@ -3092,12 +3114,6 @@
       return this.model.getObjects();
     };
 
-    SVGDocument.prototype.on = function() {
-      var args, ref;
-      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-      return (ref = this.model).on.apply(ref, args);
-    };
-
 
     /*
     Section: Event Handlers
@@ -3148,7 +3164,7 @@
 
 }).call(this);
 
-},{"../vendor/svg":288,"./deserialize-svg":3,"./point":15,"./pointer-tool":16,"./selection-model":18,"./selection-view":19,"./serialize-svg":20,"./shape-tool":21,"./size":22,"./svg-document-model":24}],26:[function(require,module,exports){
+},{"../vendor/svg":288,"./deserialize-svg":3,"./point":15,"./pointer-tool":16,"./selection-model":18,"./selection-view":19,"./serialize-svg":20,"./shape-tool":21,"./size":22,"./svg-document-model":24,"event-kit":31}],26:[function(require,module,exports){
 (function() {
   var Point, SVG, Transform;
 
