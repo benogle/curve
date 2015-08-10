@@ -35,15 +35,15 @@ class PointerTool
     svg.off 'mousedown', @onMouseDown
     svg.off 'mousemove', @onMouseMove
 
+    @selectionModel.getSelected()?.disableDragging?()
+
     @changeSubscriptions?.dispose()
     @changeSubscriptions = null
     @active = false
 
   onChangedSelectedObject: ({object, old}) =>
-    if object?
-      object.enableDragging()
-    else if old?
-      old.disableDragging()
+    object.enableDragging() if object?
+    old.disableDragging() if old?
 
   onMouseDown: (event) =>
     # obj = @_hitWithIntersectionList(event)
