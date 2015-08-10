@@ -1,3 +1,4 @@
+{Emitter} = require 'event-kit'
 SVG = require '../vendor/svg'
 
 SelectionModel = require "./selection-model"
@@ -13,6 +14,7 @@ SVGDocumentModel = require "./svg-document-model"
 module.exports =
 class SVGDocument
   constructor: (rootNode) ->
+    @emitter = new Emitter
     @model = new SVGDocumentModel
     @svg = SVG(rootNode)
 
@@ -23,6 +25,12 @@ class SVGDocument
     @selectionView = new SelectionView(this)
 
     @model.on('change:size', @onChangedSize)
+
+    # delegate model events
+    @model.on 'change', (event) => @emitter.emit('change', event)
+    @model.on 'change:size', (event) => @emitter.emit('change:size', event)
+
+  on: (args...) -> @emitter.on(args...)
 
   initializeTools: ->
     @tools = [
@@ -82,6 +90,7 @@ class SVGDocument
     if newTool? and newTool isnt oldActiveTool
       oldActiveTool?.deactivate()
       newTool.activate(toolType)
+      @emitter.emit('change:tool', {toolType})
 
   ###
   Section: Selections
@@ -112,8 +121,6 @@ class SVGDocument
   getSize: -> @model.getSize()
 
   getObjects: -> @model.getObjects()
-
-  on: (args...) -> @model.on(args...)
 
   ###
   Section: Event Handlers

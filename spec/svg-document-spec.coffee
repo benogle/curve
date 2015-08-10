@@ -109,9 +109,12 @@ describe 'Curve.SVGDocument', ->
       spyOn(shapeTool, 'deactivate').and.callThrough()
 
     it "can switch to different tools", ->
+      svg.on 'change:tool', toolChangeSpy = jasmine.createSpy()
+
       expect(svg.getActiveToolType()).toBe 'pointer'
 
       svg.setActiveToolType('rectangle')
+      expect(toolChangeSpy).toHaveBeenCalledWith(toolType: 'rectangle')
       expect(pointerTool.activate).not.toHaveBeenCalled()
       expect(pointerTool.deactivate).toHaveBeenCalled()
       expect(shapeTool.activate).toHaveBeenCalledWith('rectangle')
@@ -120,7 +123,9 @@ describe 'Curve.SVGDocument', ->
 
       shapeTool.activate.calls.reset()
       pointerTool.deactivate.calls.reset()
+      toolChangeSpy.calls.reset()
       svg.setActiveToolType('pointer')
+      expect(toolChangeSpy).toHaveBeenCalledWith(toolType: 'pointer')
       expect(pointerTool.activate).toHaveBeenCalled()
       expect(pointerTool.deactivate).not.toHaveBeenCalled()
       expect(shapeTool.activate).not.toHaveBeenCalled()
