@@ -8,9 +8,10 @@ PathEditor = require './path-editor'
 # activate it when it wants UIs for object editing.
 module.exports =
 class ObjectEditor
-  constructor: (@svgDocument, @selectionModel) ->
+  constructor: (@svgDocument) ->
     @active = false
     @activeEditor = null
+    @selectionModel = @svgDocument.getSelectionModel()
     @editors =
       Path: new PathEditor(@svgDocument)
 

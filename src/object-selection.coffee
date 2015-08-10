@@ -21,8 +21,10 @@ class ObjectSelection
     @trackingObject.remove() if @trackingObject
     @trackingObject = null
     if @object
-      @trackingObject = @object.cloneElement(@svgDocument).back()
+      @trackingObject = @object.cloneElement(@svgDocument)
       @trackingObject.node.setAttribute('class', @options.class + ' invisible-to-hit-test')
+      @svgDocument.getToolLayer().add(@trackingObject)
+      @trackingObject.back()
       @render()
     @emitter.emit 'change:object', {objectSelection: this, @object, old}
 

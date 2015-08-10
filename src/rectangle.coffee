@@ -1,11 +1,11 @@
 {Emitter} = require 'event-kit'
+ObjectAssign = require 'object-assign'
+
 Transform = require './transform'
 Utils = require './utils'
 Point = require './point'
 Size = require './size'
 Draggable = require './draggable-mixin'
-
-ObjectAssign = require 'object-assign'
 
 DefaultAttrs = {x: 0, y: 0, width: 10, height: 10, fill: '#eee', stroke: 'none'}
 IDS = 0
@@ -74,6 +74,7 @@ class Rectangle
     @model = new RectangleModel
     @_setupSVGObject(options)
     @model.on 'change', @onModelChange
+    @svgDocument.registerObject(this)
 
   on: (args...) -> @emitter.on(args...)
 
@@ -83,24 +84,35 @@ class Rectangle
 
   getType: -> 'Rectangle'
 
+  getID: -> "#{@getType()}-#{@id}"
+
   toString: -> @model.toString()
 
   getPosition: -> @model.getPosition()
 
-  translate: (point) -> @model.translate(point)
+  setPosition: (x, y) -> @model.setPosition(x, y)
+
+  getSize: -> @model.getSize()
+
+  setSize: (w, h) -> @model.setSize(w, h)
+
+  translate: (x, y) -> @model.translate(x, y)
+
+  remove: ->
+    @svgEl.remove()
+    @emitter.emit('remove', object: this)
 
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
   updateFromAttributes: ->
     x = @svgEl.attr('x')
     y = @svgEl.attr('y')
-    @model.setPosition(x, y)
-
     width = @svgEl.attr('width')
     height = @svgEl.attr('height')
-    @model.setSize(width, height)
-
     transform = @svgEl.attr('transform')
+
+    @model.setPosition(x, y)
+    @model.setSize(width, height)
     @model.setTransformString(transform)
 
   # Will render the nodes and the transform from the model.
@@ -114,7 +126,7 @@ class Rectangle
     svgEl.attr(transform: @model.getTransformString() or null)
 
   cloneElement: (svgDocument=@svgDocument) ->
-    el = svgDocument.rect()
+    el = svgDocument.getObjectLayer().rect()
     @render(el)
     el
 
@@ -132,6 +144,6 @@ class Rectangle
 
   _setupSVGObject: (options) ->
     {@svgEl} = options
-    @svgEl = @svgDocument.rect().attr(ObjectAssign({}, DefaultAttrs, options)) unless @svgEl
+    @svgEl = @svgDocument.getObjectLayer().rect().attr(ObjectAssign({}, DefaultAttrs, options)) unless @svgEl
     Utils.setObjectOnNode(@svgEl.node, this)
     @updateFromAttributes()

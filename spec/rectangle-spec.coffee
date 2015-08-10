@@ -1,4 +1,4 @@
-SVG = require '../vendor/svg'
+SVGDocument = require '../src/svg-document'
 
 Rectangle = require '../src/rectangle'
 Point = require '../src/point'
@@ -9,9 +9,23 @@ describe 'Rectangle', ->
   beforeEach ->
     canvas = document.createElement('canvas')
     jasmine.attachToDOM(canvas)
-    svg = SVG(canvas)
+    svg = new SVGDocument(canvas)
 
   describe "creation", ->
+    it 'has an id', ->
+      rect = new Rectangle(svg)
+      expect(rect.getID()).toBe "Rectangle-#{rect.id}"
+
+    it 'registers itself with the document', ->
+      rect = new Rectangle(svg)
+      expect(svg.getObjects()).toContain rect
+
+    it 'emits an event when it is removed', ->
+      rect = new Rectangle(svg)
+      rect.on 'remove', removeSpy = jasmine.createSpy()
+      rect.remove()
+      expect(removeSpy).toHaveBeenCalledWith({object: rect})
+
     it 'can be created with no parameters', ->
       rect = new Rectangle(svg)
 

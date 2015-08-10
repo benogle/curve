@@ -11,7 +11,7 @@ Rectangle = require "./rectangle"
 # Place the `svgString` in the svgDocument, and parse into objects Curve can
 # understand
 #
-# * `svgDocument` An empty {SVG} document
+# * `svgDocument` A {SVGDocument}
 # * `svgString` {String} with the svg markup
 #
 # Returns an array of objects selectable and editable by Curve tools.
@@ -30,7 +30,7 @@ module.exports = (svgDocument, svgString) ->
     .replace(/<(\w+)([^<]+?)\/>/g, '<$1$2></$1>')
 
   objects = []
-  convertNodes parentNode.childNodes, svgDocument, 0, store, ->
+  convertNodes parentNode.childNodes, svgDocument.getSVGRoot(), 0, store, ->
     nodeType = this.node.nodeName
     objects = objects.concat(IMPORT_FNS[nodeType](this)) if IMPORT_FNS[nodeType]
     null

@@ -1,4 +1,4 @@
-{Emitter} = require 'event-kit'
+{Emitter, CompositeDisposable} = require 'event-kit'
 
 # Models what is selected and preselected. Preselection is shown as a red
 # outline when the user hovers over the object.
@@ -27,6 +27,14 @@ class SelectionModel
     return if selected == @selected
     old = @selected
     @selected = selected
+
+    @selectedSubscriptions?.dispose()
+    @selectedSubscriptions = null
+
+    if @selected?
+      @selectedSubscriptions = new CompositeDisposable
+      @selectedSubscriptions.add @selected?.on('remove', => @setSelected(null)) if @selected.on?
+
     @setPreselected(null) if @preselected is selected
     @emitter.emit 'change:selected', object: @selected, old: old
 

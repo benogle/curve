@@ -1,4 +1,5 @@
 SVGDocument = require '../src/svg-document'
+Rectangle = require '../src/rectangle'
 Size = require '../src/size'
 Point = require '../src/point'
 
@@ -11,6 +12,16 @@ describe 'Curve.SVGDocument', ->
 
   it 'has a tool layer', ->
     expect(canvas.querySelector('svg>.tool-layer')).toBeDefined()
+
+  describe 'when the document is empty', ->
+    it "creates a new object layer with a default size", ->
+      rect = new Rectangle(svg, {x: 20, y: 30, width: 45, height: 55})
+      children = svg.getObjectLayer().node.childNodes
+      expect(children.length).toBe 1
+      expect(children[0].nodeName).toBe 'rect'
+
+      expect(svg.getObjectLayer().width()).toBe 1024
+      expect(svg.getObjectLayer().height()).toBe 1024
 
   describe 'reading svg', ->
     beforeEach ->
@@ -51,7 +62,7 @@ describe 'Curve.SVGDocument', ->
       svg.on 'change:size', sizeChangeSpy = jasmine.createSpy()
 
       svg.setSize(Size.create(1000, 1050))
-      root = svg.getSvgRoot()
+      root = svg.getObjectLayer()
       expect(root.width()).toBe 1000
       expect(root.height()).toBe 1050
 
@@ -73,21 +84,88 @@ describe 'Curve.SVGDocument', ->
 
       expect(documentChangeSpy).toHaveBeenCalled()
 
-  describe '::translateSelectedObjects', ->
+    it "emits a change event when a new object is added and then removed", ->
+      svg.on 'change', documentChangeSpy = jasmine.createSpy()
+
+      object = new Rectangle(svg, {width: 10, height: 35})
+      expect(documentChangeSpy).toHaveBeenCalled()
+      expect(svg.getObjects()).toContain object
+
+      documentChangeSpy.calls.reset()
+      object.remove()
+      expect(documentChangeSpy).toHaveBeenCalled()
+      expect(svg.getObjects()).not.toContain object
+
+  describe "changing tools", ->
+    [pointerTool, shapeTool] = []
     beforeEach ->
-      svg.deserialize('<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="30" width="200" height="400" fill="red"/></svg>')
+      svg.initializeTools()
+      shapeTool = svg.toolForType('shape')
+      pointerTool = svg.toolForType('pointer')
+
+      spyOn(pointerTool, 'activate').and.callThrough()
+      spyOn(pointerTool, 'deactivate').and.callThrough()
+      spyOn(shapeTool, 'activate').and.callThrough()
+      spyOn(shapeTool, 'deactivate').and.callThrough()
+
+    it "can switch to different tools", ->
+      expect(svg.getActiveToolType()).toBe 'pointer'
+
+      svg.setActiveToolType('rectangle')
+      expect(pointerTool.activate).not.toHaveBeenCalled()
+      expect(pointerTool.deactivate).toHaveBeenCalled()
+      expect(shapeTool.activate).toHaveBeenCalledWith('rectangle')
+      expect(shapeTool.deactivate).not.toHaveBeenCalled()
+      expect(svg.getActiveToolType()).toBe 'rectangle'
+
+      shapeTool.activate.calls.reset()
+      pointerTool.deactivate.calls.reset()
+      svg.setActiveToolType('pointer')
+      expect(pointerTool.activate).toHaveBeenCalled()
+      expect(pointerTool.deactivate).not.toHaveBeenCalled()
+      expect(shapeTool.activate).not.toHaveBeenCalled()
+      expect(shapeTool.deactivate).toHaveBeenCalled()
+      expect(svg.getActiveToolType()).toBe 'pointer'
+
+    it "will not switch to non-existent tools", ->
+      svg.setActiveToolType('junk')
+      expect(svg.getActiveToolType()).toBe 'pointer'
+      expect(pointerTool.deactivate).not.toHaveBeenCalled()
+
+    it "will not call deactivate when attempting to switch to the same", ->
+      svg.setActiveToolType('pointer')
+      expect(svg.getActiveToolType()).toBe 'pointer'
+      expect(pointerTool.deactivate).not.toHaveBeenCalled()
+
+  describe '::translateSelectedObjects', ->
+    [object] = []
+    beforeEach ->
+      object = new Rectangle(svg, {x: 20, y: 30})
 
     it "does nothing when there is no selected object", ->
       svg.translateSelectedObjects([10, 0])
 
     it "translates the selected object by the point specified", ->
-      object = svg.getObjects()[0]
       expect(object.getPosition()).toEqual new Point(20, 30)
 
       svg.selectionModel.setSelected(object)
       svg.translateSelectedObjects([20, 0])
 
       expect(object.getPosition()).toEqual new Point(40, 30)
+
+  describe '::removeSelectedObjects', ->
+    [object] = []
+    beforeEach ->
+      object = new Rectangle(svg, {x: 20, y: 30})
+
+    it "does nothing when there is no selected object", ->
+      svg.removeSelectedObjects()
+
+    it "removes the selected objects", ->
+      expect(svg.getObjects()).toContain object
+      svg.selectionModel.setSelected(object)
+      svg.removeSelectedObjects()
+      expect(svg.getObjects()).not.toContain object
 
 DOCUMENT = '''
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">

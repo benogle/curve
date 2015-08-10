@@ -144,6 +144,7 @@ class Path
     @model.on 'change', @onModelChange
     @model.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
     @_setupSVGObject(svgEl)
+    @svgDocument.registerObject(this)
 
   on: (args...) -> @emitter.on(args...)
 
@@ -152,6 +153,8 @@ class Path
   ###
 
   getType: -> 'Path'
+
+  getID: -> "#{@getType()}-#{@id}"
 
   toString: ->
     "Path #{@id} #{@model.toString()}"
@@ -173,6 +176,10 @@ class Path
   getPosition: ->
     new Point(@svgEl.x(), @svgEl.y())
 
+  remove: ->
+    @svgEl.remove()
+    @emitter.emit('remove', object: this)
+
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
   updateFromAttributes: ->
@@ -188,7 +195,7 @@ class Path
     svgEl.attr(transform: @model.getTransformString() or null)
 
   cloneElement: (svgDocument=@svgDocument) ->
-    el = svgDocument.path()
+    el = svgDocument.getObjectLayer().path()
     @render(el)
     el
 
@@ -209,7 +216,7 @@ class Path
     @emitter.emit(eventName, args)
 
   _setupSVGObject: (@svgEl) ->
-    @svgEl = @svgDocument.path().attr(DefaultAttrs) unless @svgEl
+    @svgEl = @svgDocument.getObjectLayer().path().attr(DefaultAttrs) unless @svgEl
     Utils.setObjectOnNode(@svgEl.node, this)
     @model.setPathString(@svgEl.attr('d'))
 

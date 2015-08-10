@@ -5,7 +5,8 @@ ObjectSelection = require "./object-selection"
 
 module.exports =
 class SelectionView
-  constructor: (@svgDocument, @model) ->
+  constructor: (@svgDocument) ->
+    @model = @svgDocument.getSelectionModel()
     @objectSelection = new ObjectSelection(@svgDocument)
     @objectPreselection = new ObjectSelection(@svgDocument, class: 'object-preselection')
     @model.on 'change:selected', @onChangeSelected

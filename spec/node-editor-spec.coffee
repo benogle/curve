@@ -1,4 +1,4 @@
-SVG = require '../vendor/svg'
+SVGDocument = require '../src/svg-document'
 
 Node = require '../src/node'
 Path = require '../src/path'
@@ -10,7 +10,7 @@ describe 'NodeEditor', ->
   beforeEach ->
     canvas = document.createElement('canvas')
     jasmine.attachToDOM(canvas)
-    svgDocument = SVG(canvas)
+    svgDocument = new SVGDocument(canvas)
 
     path = new Path(svgDocument)
     path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
