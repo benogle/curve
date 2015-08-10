@@ -138,20 +138,34 @@ describe 'Curve.SVGDocument', ->
       expect(pointerTool.deactivate).not.toHaveBeenCalled()
 
   describe '::translateSelectedObjects', ->
+    [object] = []
     beforeEach ->
-      svg.deserialize('<svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="30" width="200" height="400" fill="red"/></svg>')
+      object = new Rectangle(svg, {x: 20, y: 30})
 
     it "does nothing when there is no selected object", ->
       svg.translateSelectedObjects([10, 0])
 
     it "translates the selected object by the point specified", ->
-      object = svg.getObjects()[0]
       expect(object.getPosition()).toEqual new Point(20, 30)
 
       svg.selectionModel.setSelected(object)
       svg.translateSelectedObjects([20, 0])
 
       expect(object.getPosition()).toEqual new Point(40, 30)
+
+  describe '::removeSelectedObjects', ->
+    [object] = []
+    beforeEach ->
+      object = new Rectangle(svg, {x: 20, y: 30})
+
+    it "does nothing when there is no selected object", ->
+      svg.removeSelectedObjects()
+
+    it "removes the selected objects", ->
+      expect(svg.getObjects()).toContain object
+      svg.selectionModel.setSelected(object)
+      svg.removeSelectedObjects()
+      expect(svg.getObjects()).not.toContain object
 
 DOCUMENT = '''
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">

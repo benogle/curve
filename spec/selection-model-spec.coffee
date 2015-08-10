@@ -1,3 +1,5 @@
+{Emitter} = require 'event-kit'
+Rectangle = require '../src/rectangle'
 SelectionModel = require '../src/selection-model'
 
 describe 'SelectionModel', ->
@@ -29,3 +31,13 @@ describe 'SelectionModel', ->
 
     expect(onSelectedNode).toHaveBeenCalled()
     expect(onSelectedNode.calls.mostRecent().args[0]).toEqual node: null, old: node
+
+  it "deselects the object when it's been removed", ->
+    emitter = new Emitter
+    path.on = (args...) -> emitter.on(args...)
+
+    model.setSelected(path)
+    expect(model.getSelected()).toBe path
+
+    emitter.emit('remove', {object: path})
+    expect(model.getSelected()).toBe null
