@@ -2573,8 +2573,13 @@
 
   getCanvasPosition = function(svgRoot, event) {
     var x, y;
-    x = event.pageX - svgRoot.node.offsetLeft;
-    y = event.pageY - svgRoot.node.offsetTop;
+    if ((event.offsetX != null) && (event.offsetY != null)) {
+      x = event.offsetX;
+      y = event.offsetY;
+    } else {
+      x = event.pageX - svgRoot.node.offsetLeft;
+      y = event.pageY - svgRoot.node.offsetTop;
+    }
     return new Point(x, y);
   };
 
