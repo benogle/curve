@@ -19,6 +19,10 @@ jasmine.buildMouseEvent = (type, properties...) ->
     Object.defineProperty(event, 'pageX', get: -> properties.pageX)
   if properties.pageY?
     Object.defineProperty(event, 'pageY', get: -> properties.pageY)
+  if properties.offsetX?
+    Object.defineProperty(event, 'offsetX', get: -> properties.offsetX)
+  if properties.offsetY?
+    Object.defineProperty(event, 'offsetY', get: -> properties.offsetY)
   event
 
 beforeEach ->

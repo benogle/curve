@@ -28,7 +28,7 @@ describe 'ShapeTool', ->
 
     tool.activate()
     svgNode = svg.getSVGRoot().node
-    svgNode.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 20, pageY: 30))
+    svgNode.dispatchEvent(jasmine.buildMouseEvent('mousedown', getMouseParams(20, 30)))
     svgNode.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
 
     expect(cancelSpy).toHaveBeenCalled()
@@ -39,49 +39,57 @@ describe 'ShapeTool', ->
       expect(selectionModel.getSelected()).toBe null
 
     it "does not create an object unless dragging for >= 5px", ->
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 20, pageY: 30))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', getMouseParams(20, 30)))
       selected = selectionModel.getSelected()
       expect(selected).toBe null
 
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 21, pageY: 34))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(21, 34)))
       selected = selectionModel.getSelected()
       expect(selected).toBe null
 
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 21, pageY: 36))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(21, 36)))
       selected = selectionModel.getSelected()
       expect(selected).not.toBe null
 
     it "creates a rectangle when dragging", ->
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 20, pageY: 30))
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 30, pageY: 50))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', getMouseParams(20, 30)))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(30, 50)))
       selected = selectionModel.getSelected()
       expect(selected instanceof Rectangle).toBe true
       expect(selected.getPosition()).toEqual new Point(20, 30)
       expect(selected.getSize()).toEqual new Size(10, 20)
 
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 10, pageY: 50))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(10, 50)))
       expect(selected.getPosition()).toEqual new Point(10, 30)
       expect(selected.getSize()).toEqual new Size(10, 20)
 
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 10, pageY: 10))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(10, 10)))
       expect(selected.getPosition()).toEqual new Point(10, 10)
       expect(selected.getSize()).toEqual new Size(10, 20)
 
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 30, pageY: 10))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(30, 10)))
       expect(selected.getPosition()).toEqual new Point(20, 10)
       expect(selected.getSize()).toEqual new Size(10, 20)
 
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
 
       # mousemove events dont change it after the mouse up
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 200, pageY: 150))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(200, 150)))
       expect(selected.getPosition()).toEqual new Point(20, 10)
       expect(selected.getSize()).toEqual new Size(10, 20)
 
     it "constrains the proportion to 1:1 when shift is held down", ->
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', pageX: 0, pageY: 0))
-      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', pageX: 30, pageY: 50, shiftKey: true))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', getMouseParams(0, 0)))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', getMouseParams(30, 50), shiftKey: true))
       selected = selectionModel.getSelected()
       expect(selected.getSize()).toEqual new Size(30, 30)
 
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
+
+getMouseParams = (x, y) ->
+  {
+    pageX: x
+    pageY: y
+    offsetX: x
+    offsetY: y
+  }

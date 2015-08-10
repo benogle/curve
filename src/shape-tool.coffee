@@ -79,6 +79,10 @@ normalizePositionAndSize = (anchor, point) ->
   {position: topLeft, size: new Size(diff.x, diff.y)}
 
 getCanvasPosition = (svgRoot, event) ->
-  x = event.pageX - svgRoot.node.offsetLeft
-  y = event.pageY - svgRoot.node.offsetTop
+  if event.offsetX? and event.offsetY?
+    x = event.offsetX
+    y = event.offsetY
+  else
+    x = event.pageX - svgRoot.node.offsetLeft
+    y = event.pageY - svgRoot.node.offsetTop
   new Point(x, y)
