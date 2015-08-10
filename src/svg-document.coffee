@@ -1,4 +1,4 @@
-{Emitter} = require 'event-kit'
+{Emitter, CompositeDisposable} = require 'event-kit'
 SVG = require '../vendor/svg'
 
 SelectionModel = require "./selection-model"
@@ -13,16 +13,28 @@ Point = require "./point"
 class SVGDocumentModel
   constructor: ->
     @emitter = new Emitter
+    @reset()
+
+  reset: ->
     @objects = []
+    @objectSubscriptions?.dispose()
+    @objectSubscriptions = new CompositeDisposable
 
   on: (args...) -> @emitter.on(args...)
 
-  setObjects: (@objects) ->
-    for object in @objects
-      object.on 'change', @onChangedObject
+  setObjects: (objects) ->
+    @reset()
+    options = {silent: true}
+    for object in objects
+      @registerObject(object, options)
     return
 
   getObjects: -> @objects
+
+  registerObject: (object, options) ->
+    @objectSubscriptions.add object.on('change', @onChangedObject)
+    @objects.push(object)
+    @emitter.emit('change') unless @options?.silent
 
   setSize: (w, h) ->
     size = Size.create(w, h)
@@ -159,6 +171,9 @@ class SVGDocument
 
     selectedObject = @selectionModel.getSelected()
     selectedObject?.translate?(deltaPoint)
+
+  registerObject: (object) ->
+    @model.registerObject(object)
 
   _createObjectLayer: ->
     @objectLayer = @svg.nested()

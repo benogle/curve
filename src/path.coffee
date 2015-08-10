@@ -144,6 +144,7 @@ class Path
     @model.on 'change', @onModelChange
     @model.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
     @_setupSVGObject(svgEl)
+    @svgDocument.registerObject(this)
 
   on: (args...) -> @emitter.on(args...)
 

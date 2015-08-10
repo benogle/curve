@@ -18,6 +18,10 @@ describe 'Path', ->
     path = new Path(svg)
     expect(path.getPathString()).toEqual ''
 
+  it 'registers itself with the document', ->
+    path = new Path(svg)
+    expect(svg.getObjects()).toContain path
+
   it 'has empty path string with empty subpath', ->
     path = new Path(svg)
     path.model._addSubpath(new Subpath({path}))

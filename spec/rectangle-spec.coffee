@@ -12,6 +12,10 @@ describe 'Rectangle', ->
     svg = new SVGDocument(canvas)
 
   describe "creation", ->
+    it 'registers itself with the document', ->
+      rect = new Rectangle(svg)
+      expect(svg.getObjects()).toContain rect
+
     it 'can be created with no parameters', ->
       rect = new Rectangle(svg)
 

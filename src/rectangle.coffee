@@ -74,6 +74,7 @@ class Rectangle
     @model = new RectangleModel
     @_setupSVGObject(options)
     @model.on 'change', @onModelChange
+    @svgDocument.registerObject(this)
 
   on: (args...) -> @emitter.on(args...)
 
