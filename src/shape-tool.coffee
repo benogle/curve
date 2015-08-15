@@ -3,6 +3,7 @@
 Point = require './point'
 Size = require './size'
 Rectangle = require './rectangle'
+{getCanvasPosition} = require './utils'
 
 module.exports =
 class ShapeTool
@@ -76,12 +77,3 @@ normalizePositionAndSize = (anchor, point) ->
   bottomRight = new Point(Math.max(anchor.x, point.x), Math.max(anchor.y, point.y))
   diff = bottomRight.subtract(topLeft)
   {position: topLeft, size: new Size(diff.x, diff.y)}
-
-getCanvasPosition = (svgRoot, event) ->
-  if event.offsetX? and event.offsetY?
-    x = event.offsetX
-    y = event.offsetY
-  else
-    x = event.pageX - svgRoot.node.offsetLeft
-    y = event.pageY - svgRoot.node.offsetTop
-  new Point(x, y)
