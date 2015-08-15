@@ -17,7 +17,7 @@ describe 'Path', ->
   describe "creation", ->
     it 'has an id', ->
       path = new Path(svg)
-      expect(path.getID()).toBe "Path-#{path.id}"
+      expect(path.getID()).toBe "Path-#{path.getModel().id}"
 
     it 'has empty path string after creation', ->
       path = new Path(svg)
