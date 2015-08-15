@@ -25,12 +25,28 @@ class PathModel
   on: (args...) -> @emitter.on(args...)
 
   ###
-  Section: Public Methods
+  Section: Path Details
   ###
+
+  toString: -> @getPathString()
 
   getNodes: ->
     nodes = (subpath.getNodes() for subpath in @subpaths)
     flatten(nodes)
+
+  ###
+  Section: Position / Size Methods
+  ###
+
+  translate: (point) ->
+    point = Point.create(point)
+    for subpath in @subpaths
+      subpath.translate(point)
+    return
+
+  ###
+  Section: Editable Attributes
+  ###
 
   getTransform: -> @transform
 
@@ -46,16 +62,13 @@ class PathModel
     if pathString isnt @pathString
       @_parseFromPathString(pathString)
 
-  toString: -> @getPathString()
+  ###
+  Section: Curent Subpath stuff
 
-  translate: (point) ->
-    point = Point.create(point)
-    for subpath in @subpaths
-      subpath.translate(point)
-    return
+  FIXME: the currentSubpath thing will probably leave. depends on how insert
+  nodes works in interface.
+  ###
 
-  # FIXME: the currentSubpath thing will probably leave. depends on how insert
-  # nodes works in interface.
   addNode: (node) ->
     @_addCurrentSubpathIfNotPresent()
     @currentSubpath.addNode(node)
@@ -67,7 +80,6 @@ class PathModel
     @currentSubpath.close()
   _addCurrentSubpathIfNotPresent: ->
     @currentSubpath = @_createSubpath() unless @currentSubpath
-  # End currentSubpath stuff
 
   ###
   Section: Event Handlers
@@ -124,8 +136,9 @@ class PathModel
   _forwardEvent: (eventName, args) ->
     @emitter.emit(eventName, args)
 
-  _emitChangeEvent: ->
-    @emitter.emit 'change', this
+  _emitChangeEvent: (eventName) ->
+    @emitter.emit("change:#{eventName}", this) if eventName
+    @emitter.emit('change', this)
 
 
 

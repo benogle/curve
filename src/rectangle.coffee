@@ -26,18 +26,21 @@ class RectangleModel
   Section: Public Methods
   ###
 
-  getTransform: -> @transform
+  toString: -> "{Rect #{@id}: #{@position} #{@size}"
 
-  getTransformString: -> @transform.toString()
-
-  setTransformString: (transformString) ->
-    if @transform.setTransformString(transformString)
-      @_emitChangeEvent()
+  ###
+  Section: Position / Size Methods
+  ###
 
   getPosition: -> @position
 
   setPosition: (x, y) ->
     @position = Point.create(x, y)
+    @_emitChangeEvent()
+
+  translate: (point) ->
+    point = Point.create(point)
+    @setPosition(@position.add(point))
     @_emitChangeEvent()
 
   getSize: -> @size
@@ -46,12 +49,17 @@ class RectangleModel
     @size = Size.create(width, height)
     @_emitChangeEvent()
 
-  toString: -> "{Rect #{@id}: #{@position} #{@size}"
+  ###
+  Section: Editable Attributes
+  ###
 
-  translate: (point) ->
-    point = Point.create(point)
-    @setPosition(@position.add(point))
-    @_emitChangeEvent()
+  getTransform: -> @transform
+
+  getTransformString: -> @transform.toString()
+
+  setTransformString: (transformString) ->
+    if @transform.setTransformString(transformString)
+      @_emitChangeEvent()
 
   ###
   Section: Private Methods
