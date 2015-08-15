@@ -232,6 +232,60 @@ describe 'PathParser.parsePath', ->
     expect(getXY(subject.nodes[3].handleIn, 'x', 'y')).toEqual x: -30, y: -70
     expect(subject.nodes[3].handleOut).toBeUndefined()
 
+  it 'parses S and s commands when multiple coordinate sets specified', ->
+    path = 'M10 80 C 40 10, 65 10, 100 100 s 50 50, 80-20 55-70, 85 0S300,400 350,320 500,100 600,320'
+    parsedPath = PathParser.parsePath(path)
+    expect(parsedPath.subpaths.length).toEqual 1
+
+    subject = parsedPath.subpaths[0]
+    expect(subject.closed).toEqual false
+    expect(subject.nodes.length).toEqual 6
+
+    expect(getXY(subject.nodes[0].point, 'x', 'y')).toEqual x: 10, y: 80
+    expect(subject.nodes[0].handleIn).toBeUndefined()
+    expect(getXY(subject.nodes[0].handleOut, 'x', 'y')).toEqual x: 30, y: -70
+
+    expect(getXY(subject.nodes[1].point, 'x', 'y')).toEqual x: 100, y: 100
+    expect(getXY(subject.nodes[1].handleIn, 'x', 'y')).toEqual x: -35, y: -90
+    expect(getXY(subject.nodes[1].handleOut, 'x', 'y')).toEqual x: 35, y: 90
+
+    expect(getXY(subject.nodes[2].point, 'x', 'y')).toEqual x: 180, y: 80
+    expect(getXY(subject.nodes[2].handleIn, 'x', 'y')).toEqual x: -30, y: 70
+    expect(getXY(subject.nodes[2].handleOut, 'x', 'y')).toEqual x: 30, y: -70
+
+    expect(getXY(subject.nodes[3].point, 'x', 'y')).toEqual x: 265, y: 80
+    expect(getXY(subject.nodes[3].handleIn, 'x', 'y')).toEqual x: -30, y: -70
+    expect(getXY(subject.nodes[3].handleOut, 'x', 'y')).toEqual x: 30, y: 70
+
+    expect(getXY(subject.nodes[4].point, 'x', 'y')).toEqual x: 350, y: 320
+    expect(getXY(subject.nodes[4].handleIn, 'x', 'y')).toEqual x: -50, y: 80
+    expect(getXY(subject.nodes[4].handleOut, 'x', 'y')).toEqual x: 50, y: -80
+
+    expect(getXY(subject.nodes[5].point, 'x', 'y')).toEqual x: 600, y: 320
+    expect(getXY(subject.nodes[5].handleIn, 'x', 'y')).toEqual x: -100, y: -220
+    expect(subject.nodes[5].handleOut).toBeUndefined()
+
+  it 'parses C and c commands when multiple coordinate sets specified', ->
+    path = 'M10 80 C 40 10, 65 10, 100 100 45 15, 70 15, 105 105 '
+    parsedPath = PathParser.parsePath(path)
+    expect(parsedPath.subpaths.length).toEqual 1
+
+    subject = parsedPath.subpaths[0]
+    expect(subject.closed).toEqual false
+    expect(subject.nodes.length).toEqual 3
+
+    expect(getXY(subject.nodes[0].point, 'x', 'y')).toEqual x: 10, y: 80
+    expect(subject.nodes[0].handleIn).toBeUndefined()
+    expect(getXY(subject.nodes[0].handleOut, 'x', 'y')).toEqual x: 30, y: -70
+
+    expect(getXY(subject.nodes[1].point, 'x', 'y')).toEqual x: 100, y: 100
+    expect(getXY(subject.nodes[1].handleIn, 'x', 'y')).toEqual x: -35, y: -90
+    expect(getXY(subject.nodes[1].handleOut, 'x', 'y')).toEqual x: -55, y: -85
+
+    expect(getXY(subject.nodes[2].point, 'x', 'y')).toEqual x: 105, y: 105
+    expect(getXY(subject.nodes[2].handleIn, 'x', 'y')).toEqual x: -35, y: -90
+    expect(subject.nodes[2].handleOut).toBeUndefined()
+
   it 'parses Q and T commands', ->
     path = 'M10 80 Q 52.5 10, 95 80 T 180 80'
     parsedPath = PathParser.parsePath(path)
