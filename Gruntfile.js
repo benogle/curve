@@ -66,7 +66,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-shell');
 
-  // grunt.registerTask('test', ['coffee', 'browserify', 'jasmine']);
-  grunt.registerTask('test', ['coffee', 'browserify', 'shell:test']);
+  grunt.registerTask('test', ['shell:test']);
   grunt.registerTask('default', ['coffee', 'browserify', 'uglify']);
 };
