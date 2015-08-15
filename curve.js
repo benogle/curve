@@ -917,11 +917,10 @@
 
 },{"./path-editor":11,"event-kit":31}],10:[function(require,module,exports){
 (function() {
-  var CompositeDisposable, Emitter, ObjectSelection, ref,
-    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    slice = [].slice;
+  var CompositeDisposable, ObjectSelection,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  ref = require('event-kit'), Emitter = ref.Emitter, CompositeDisposable = ref.CompositeDisposable;
+  CompositeDisposable = require('event-kit').CompositeDisposable;
 
   module.exports = ObjectSelection = (function() {
     function ObjectSelection(svgDocument, options) {
@@ -929,22 +928,16 @@
       this.svgDocument = svgDocument;
       this.options = options != null ? options : {};
       this.render = bind(this.render, this);
-      this.emitter = new Emitter;
       if ((base = this.options)["class"] == null) {
         base["class"] = 'object-selection';
       }
     }
 
-    ObjectSelection.prototype.on = function() {
-      var args, ref1;
-      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-      return (ref1 = this.emitter).on.apply(ref1, args);
-    };
-
     ObjectSelection.prototype.setObject = function(object) {
-      var old;
+      if (object === this.object) {
+        return;
+      }
       this._unbindObject();
-      old = object;
       this.object = object;
       this._bindObject(this.object);
       if (this.trackingObject) {
@@ -958,11 +951,6 @@
         this.trackingObject.back();
         this.render();
       }
-      return this.emitter.emit('change:object', {
-        objectSelection: this,
-        object: this.object,
-        old: old
-      });
     };
 
     ObjectSelection.prototype.render = function() {
@@ -978,9 +966,9 @@
     };
 
     ObjectSelection.prototype._unbindObject = function() {
-      var ref1;
-      if ((ref1 = this.selectedObjectSubscriptions) != null) {
-        ref1.dispose();
+      var ref;
+      if ((ref = this.selectedObjectSubscriptions) != null) {
+        ref.dispose();
       }
       return this.selectedObjectSubscriptions = null;
     };
@@ -1147,7 +1135,7 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, isRelative, iterateOverParameterSets, j, k, l, lastNode, len, len1, makeAbsolute, node, params, ref1, ref2, ref3, ref4, ref5, ref6, result, setSize, slicePoint, subpath;
+    var addNewSubpath, command, createNode, currentPoint, currentSubpath, hasMoved, i, isRelative, iterateOverParameterSets, j, k, l, len, len1, makeAbsolute, node, ref1, ref2, ref3, ref4, result, setSize, slicePoint, subpath;
     result = {
       subpaths: []
     };
@@ -1171,12 +1159,16 @@
     };
     makeAbsolute = function(array) {
       var i, j, len, results, val;
-      results = [];
-      for (i = j = 0, len = array.length; j < len; i = ++j) {
-        val = array[i];
-        results.push(val + currentPoint[i % 2]);
+      if (currentPoint != null) {
+        results = [];
+        for (i = j = 0, len = array.length; j < len; i = ++j) {
+          val = array[i];
+          results.push(val + currentPoint[i % 2]);
+        }
+        return results;
+      } else {
+        return array;
       }
-      return results;
     };
     createNode = function(point, commandIndex) {
       var firstNode, nextCommand, node, ref2;
@@ -1208,68 +1200,91 @@
       switch (command.type) {
         case 'M':
         case 'm':
-          params = command.parameters;
-          if (command.type === 'm') {
-            params = makeAbsolute(params);
-          }
-          currentPoint = params;
-          addNewSubpath(currentPoint);
+          hasMoved = false;
+          setSize = 2;
+          isRelative = command.type === 'm';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            if (hasMoved) {
+              return createNode(paramSet, i);
+            } else {
+              hasMoved = true;
+              currentPoint = paramSet;
+              return addNewSubpath(currentPoint);
+            }
+          });
           break;
         case 'L':
         case 'l':
-          params = command.parameters;
-          if (command.type === 'l') {
-            params = makeAbsolute(params);
-          }
-          createNode(slicePoint(params, 0), i);
+          setSize = 2;
+          isRelative = command.type === 'l';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            return createNode(slicePoint(paramSet, 0), i);
+          });
           break;
         case 'H':
         case 'h':
-          params = command.parameters;
-          if (command.type === 'h') {
-            params = makeAbsolute(params);
-          }
-          createNode([params[0], currentPoint[1]], i);
+          setSize = 1;
+          isRelative = command.type === 'h';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            return createNode([paramSet[0], currentPoint[1]], i);
+          });
           break;
         case 'V':
         case 'v':
-          params = command.parameters;
-          if (command.type === 'v') {
-            params = makeAbsolute([0, params[0]]);
-            params = params.slice(1);
-          }
-          createNode([currentPoint[0], params[0]], i);
+          setSize = 1;
+          isRelative = command.type === 'v';
+          iterateOverParameterSets(command, setSize, false, function(paramSet) {
+            var val;
+            val = paramSet[0];
+            if (isRelative) {
+              val += currentPoint[1];
+            }
+            return createNode([currentPoint[0], val], i);
+          });
           break;
         case 'C':
         case 'c':
+          setSize = 6;
+          isRelative = command.type === 'c';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            var firstNode, handleIn, handleOut, lastNode, node;
+            currentPoint = slicePoint(paramSet, 4);
+            handleIn = slicePoint(paramSet, 2);
+            handleOut = slicePoint(paramSet, 0);
+            lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+            lastNode.setAbsoluteHandleOut(handleOut);
+            if (node = createNode(currentPoint, i)) {
+              return node.setAbsoluteHandleIn(handleIn);
+            } else {
+              firstNode = currentSubpath.nodes[0];
+              return firstNode.setAbsoluteHandleIn(handleIn);
+            }
+          });
+          break;
         case 'Q':
         case 'q':
-          params = command.parameters;
-          if ((ref3 = command.type) === 'c' || ref3 === 'q') {
-            params = makeAbsolute(params);
-          }
-          if ((ref4 = command.type) === 'C' || ref4 === 'c') {
-            currentPoint = slicePoint(params, 4);
-            handleIn = slicePoint(params, 2);
-            handleOut = slicePoint(params, 0);
-          } else {
-            currentPoint = slicePoint(params, 2);
-            handleIn = handleOut = slicePoint(params, 0);
-          }
-          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
-          lastNode.setAbsoluteHandleOut(handleOut);
-          if (node = createNode(currentPoint, i)) {
-            node.setAbsoluteHandleIn(handleIn);
-          } else {
-            firstNode = currentSubpath.nodes[0];
-            firstNode.setAbsoluteHandleIn(handleIn);
-          }
+          setSize = 4;
+          isRelative = command.type === 'q';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            var firstNode, handleIn, handleOut, lastNode, node;
+            currentPoint = slicePoint(paramSet, 2);
+            handleIn = handleOut = slicePoint(paramSet, 0);
+            lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+            lastNode.setAbsoluteHandleOut(handleOut);
+            if (node = createNode(currentPoint, i)) {
+              return node.setAbsoluteHandleIn(handleIn);
+            } else {
+              firstNode = currentSubpath.nodes[0];
+              return firstNode.setAbsoluteHandleIn(handleIn);
+            }
+          });
           break;
         case 'S':
         case 's':
           setSize = 4;
           isRelative = command.type === 's';
           iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            var firstNode, handleIn, lastNode, node;
             currentPoint = slicePoint(paramSet, 2);
             handleIn = slicePoint(paramSet, 0);
             lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
@@ -1284,32 +1299,33 @@
           break;
         case 'T':
         case 't':
-          params = command.parameters;
-          if (command.type === 't') {
-            params = makeAbsolute(params);
-          }
-          currentPoint = slicePoint(params, 0);
-          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
-          lastNode.join('handleIn');
-          handleIn = lastNode.getAbsoluteHandleOut();
-          if (node = createNode(currentPoint, i)) {
-            node.setAbsoluteHandleIn(handleIn);
-          } else {
-            firstNode = currentSubpath.nodes[0];
-            firstNode.setAbsoluteHandleIn(handleIn);
-          }
+          setSize = 2;
+          isRelative = command.type === 'q';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            var firstNode, handleIn, lastNode, node;
+            currentPoint = slicePoint(paramSet, 0);
+            lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+            lastNode.join('handleIn');
+            handleIn = lastNode.getAbsoluteHandleOut();
+            if (node = createNode(currentPoint, i)) {
+              return node.setAbsoluteHandleIn(handleIn);
+            } else {
+              firstNode = currentSubpath.nodes[0];
+              return firstNode.setAbsoluteHandleIn(handleIn);
+            }
+          });
           break;
         case 'Z':
         case 'z':
           currentSubpath.closed = true;
       }
     }
-    ref5 = result.subpaths;
-    for (k = 0, len = ref5.length; k < len; k++) {
-      subpath = ref5[k];
-      ref6 = subpath.nodes;
-      for (l = 0, len1 = ref6.length; l < len1; l++) {
-        node = ref6[l];
+    ref3 = result.subpaths;
+    for (k = 0, len = ref3.length; k < len; k++) {
+      subpath = ref3[k];
+      ref4 = subpath.nodes;
+      for (l = 0, len1 = ref4.length; l < len1; l++) {
+        node = ref4[l];
         node.computeIsjoined();
       }
     }
@@ -1958,13 +1974,12 @@
     };
 
     PointerTool.prototype.activate = function() {
-      var objectSelection, svg;
+      var svg;
       this.objectEditor.activate();
       svg = this.svgDocument.getSVGRoot();
       svg.on('mousedown', this.onMouseDown);
       svg.on('mousemove', this.onMouseMove);
-      objectSelection = this.selectionView.getObjectSelection();
-      this.changeSubscriptions = objectSelection.on('change:object', this.onChangedSelectedObject);
+      this.changeSubscriptions = this.selectionModel.on('change:selected', this.onChangedSelectedObject);
       return this.active = true;
     };
 
