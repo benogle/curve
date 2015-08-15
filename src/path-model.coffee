@@ -5,6 +5,7 @@ PathParser = require './path-parser'
 Transform = require './transform'
 Subpath = require './subpath'
 Point = require './point'
+Model = require './model'
 
 IDS = 0
 
@@ -22,15 +23,21 @@ flatten = (array) ->
 # {Curve.Node} objects. This model has no idea how to render SVG or anything
 # about the DOM.
 module.exports =
-class PathModel
+class PathModel extends Model
+
   constructor: ->
-    @emitter = new Emitter
+    super(['transform', 'path', 'fill'])
     @id = IDS++
     @subpaths = []
-    @pathString = ''
     @transform = new Transform
 
-  on: (args...) -> @emitter.on(args...)
+    @addFilter 'path', (value) => @_parseFromPathString(value)
+
+    @subscriptions = new CompositeDisposable
+    @subscriptions.add @on 'change:transform', ({value}) => @transform.setTransformString(value)
+
+  destroy: ->
+    @subscriptions.dispose()
 
   ###
   Section: Path Details
@@ -58,26 +65,10 @@ class PathModel
       subpath.translate(point)
     return
 
-  ###
-  Section: Editable Attributes
-  ###
-
   getTransform: -> @transform
 
-  getTransformString: -> @transform.toString()
-
-  setTransformString: (transformString) ->
-    if @transform.setTransformString(transformString)
-      @_emitChangeEvent()
-
-  getPathString: -> @pathString
-
-  setPathString: (pathString) ->
-    if pathString isnt @pathString
-      @_parseFromPathString(pathString)
-
   ###
-  Section: Curent Subpath stuff
+  Section: Current Subpath stuff
 
   FIXME: the currentSubpath thing will probably leave. depends on how insert
   nodes works in interface.
@@ -101,7 +92,6 @@ class PathModel
 
   onSubpathChange: (subpath, eventArgs) =>
     @_updatePathString()
-    @_emitChangeEvent()
 
   ###
   Section: Private Methods
@@ -133,9 +123,10 @@ class PathModel
     @subpaths = []
 
   _updatePathString: ->
-    oldPathString = @pathString
-    @pathString = (subpath.toPathString() for subpath in @subpaths).join(' ')
-    @_emitChangeEvent() if oldPathString isnt @pathString
+    @set({path: @_pathToString()}, filter: false)
+
+  _pathToString: ->
+    (subpath.toPathString() for subpath in @subpaths).join(' ')
 
   _parseFromPathString: (pathString) ->
     return unless pathString
@@ -144,12 +135,7 @@ class PathModel
     parsedPath = PathParser.parsePath(pathString)
     @_createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
     @currentSubpath = @subpaths[@subpaths.length - 1]
-    @_updatePathString()
-    null
+    @_pathToString()
 
   _forwardEvent: (eventName, args) ->
     @emitter.emit(eventName, args)
-
-  _emitChangeEvent: (eventName) ->
-    @emitter.emit("change:#{eventName}", this) if eventName
-    @emitter.emit('change', this)

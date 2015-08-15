@@ -21,7 +21,7 @@ describe 'Path', ->
 
     it 'has empty path string after creation', ->
       path = new Path(svg)
-      expect(path.getPathString()).toEqual ''
+      expect(path.get('path')).toEqual ''
 
     it 'registers itself with the document', ->
       path = new Path(svg)
@@ -36,7 +36,7 @@ describe 'Path', ->
   it 'has empty path string with empty subpath', ->
     path = new Path(svg)
     path.model._addSubpath(new Subpath({path}))
-    expect(path.getPathString()).toEqual ''
+    expect(path.get('path')).toEqual ''
 
   it 'can be created', ->
     path = new Path(svg)
@@ -72,21 +72,21 @@ describe 'Path', ->
       node = svg.getSVGRoot().path(pathString)
       path = new Path(svg, svgEl: node)
 
-      expect(path.getPathString()).toEqual pathString
+      expect(path.get('path')).toEqual pathString
 
     it 'can be created with non-wrapped closed shapes', ->
       pathString = 'M10,10C20,10,70,55,80,60C90,65,68,103,60,80C50,80,40,50,50,50Z'
       node = svg.getSVGRoot().path(pathString)
       path = new Path(svg, svgEl: node)
 
-      expect(path.getPathString()).toEqual pathString
+      expect(path.get('path')).toEqual pathString
 
     it 'handles move nodes', ->
       pathString = 'M50,50C60,50,70,55,80,60C90,65,68,103,60,80Z M10,10C60,50,70,55,50,70C90,65,68,103,60,80Z'
       node = svg.getSVGRoot().path(pathString)
       path = new Path(svg, svgEl: node)
 
-      expect(path.getPathString()).toEqual pathString
+      expect(path.get('path')).toEqual pathString
 
   describe "::translate()", ->
     beforeEach ->
@@ -106,7 +106,7 @@ describe 'Path', ->
     beforeEach ->
       path = new Path(svg)
       path.addNode(new Node([60, 60], [-10, 0], [10, 0]))
-      expect(path.getPathString()).toBe 'M60,60'
+      expect(path.get('path')).toBe 'M60,60'
 
     it 'updates the model when the path string changes', ->
       newPathString = 'M50,50C60,50,70,55,80,60C90,65,70,80,60,80C50,80,40,50,50,50Z'
@@ -126,7 +126,7 @@ describe 'Path', ->
       el.attr(transform: 'translate(10 20)')
       path.updateFromAttributes()
 
-      transformString = path.model.getTransformString()
+      transformString = path.model.get('transform')
       expect(transformString).toBe 'translate(10 20)'
 
     it "updates the node points when the transform changes", ->
@@ -146,7 +146,6 @@ describe 'Path', ->
       path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
       path.addNode(new Node([80, 60], [-10, -5], [10, 5]))
       path.addNode(new Node([60, 80], [10, 0], [-10, 0]))
-      path.close()
 
     it 'renders when node point is updated', ->
       path.getSubpaths()[0].nodes[0].setPoint([70, 70])
@@ -161,7 +160,6 @@ describe 'Path', ->
 
     it 'kicks out event when closed', ->
       closespy = jasmine.createSpy()
-      changespy = jasmine.createSpy()
       path.on 'change', closespy
       path.close()
       expect(closespy).toHaveBeenCalled()
@@ -176,7 +174,7 @@ describe 'Path', ->
       expect(insertSpy).toHaveBeenCalled()
       expect(insertSpy.calls.mostRecent().args[0].index).toEqual 3
       expect(insertSpy.calls.mostRecent().args[0].node).toEqual node
-      expect(insertSpy.calls.mostRecent().args[0].path).toEqual path
+      expect(insertSpy.calls.mostRecent().args[0].object).toEqual path
 
     it 'node inserted inserts node in right place', ->
       node = new Node([40, 60], [0, 0], [0, 0])

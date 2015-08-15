@@ -16,8 +16,7 @@ class Path
   Delegator.includeInto(this)
 
   @delegatesMethods 'on', toProperty: 'emitter'
-  @delegatesMethods 'getID', 'getType',
-    'getPathString',
+  @delegatesMethods 'get', 'set', 'getID', 'getType',
     'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'close',
     'translate'
     toProperty: 'model'
@@ -50,16 +49,15 @@ class Path
   # Call when the XML attributes change without the model knowing. Will update
   # the model with the new attributes.
   updateFromAttributes: ->
-    pathString = @svgEl.attr('d')
+    path = @svgEl.attr('d')
     transform = @svgEl.attr('transform')
-    @model.setTransformString(transform)
-    @model.setPathString(pathString)
+    @model.set({transform, path})
 
   # Will render the nodes and the transform from the model.
   render: (svgEl=@svgEl) ->
-    pathStr = @model.getPathString()
+    pathStr = @model.get('path')
     svgEl.attr(d: pathStr) if pathStr
-    svgEl.attr(transform: @model.getTransformString() or null)
+    svgEl.attr(transform: @model.get('transform') or null)
 
   cloneElement: (svgDocument=@svgDocument) ->
     el = svgDocument.getObjectLayer().path()
@@ -70,19 +68,20 @@ class Path
   Section: Event Handlers
   ###
 
-  onModelChange: =>
+  onModelChange: (args) =>
     @render()
-    @emitter.emit 'change', this
+    args.object = this
+    @emitter.emit 'change', args
 
   ###
   Section: Private Methods
   ###
 
   _forwardEvent: (eventName, args) ->
-    args.path = this
+    args.object = this
     @emitter.emit(eventName, args)
 
   _setupSVGObject: (@svgEl) ->
     @svgEl = @svgDocument.getObjectLayer().path().attr(DefaultAttrs) unless @svgEl
     Utils.setObjectOnNode(@svgEl.node, this)
-    @model.setPathString(@svgEl.attr('d'))
+    @model.set(path: @svgEl.attr('d'))
