@@ -13,7 +13,7 @@ class Draggable extends Mixin
     element.dragmove = =>
       @updateFromAttributes()
     element.dragend = (event) =>
-      @model.setTransformString(null)
+      @model.set(transform: null)
       @model.translate([event.x, event.y])
     @_draggingEnabled = true
 
