@@ -25,6 +25,16 @@ describe 'ObjectEditor', ->
     expect(editor.isActive()).toBe false
     expect(editor.getActiveObject()).toBe null
 
+  describe "when there are selected objects before the editor becomes active", ->
+    beforeEach ->
+      model.setSelected(path)
+      model.setSelectedNode(path.getNodes()[0])
+
+    it 'activates the editor associated with the selected object', ->
+      editor.activate()
+      expect(editor.isActive()).toBe true
+      expect(editor.getActiveObject()).toBe path.getNodes()[0]
+
   describe "when the ObjectEditor is active", ->
     beforeEach ->
       editor.activate()
