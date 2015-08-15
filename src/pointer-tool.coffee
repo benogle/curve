@@ -25,8 +25,7 @@ class PointerTool
     svg.on 'mousedown', @onMouseDown
     svg.on 'mousemove', @onMouseMove
 
-    objectSelection = @selectionView.getObjectSelection()
-    @changeSubscriptions = objectSelection.on('change:object', @onChangedSelectedObject)
+    @changeSubscriptions = @selectionModel.on('change:selected', @onChangedSelectedObject)
     @active = true
 
   deactivate: ->
