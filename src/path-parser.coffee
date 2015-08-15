@@ -30,7 +30,10 @@ parseTokens = (groupedCommands) ->
 
   # make relative points absolute based on currentPoint
   makeAbsolute = (array) ->
-    (val + currentPoint[i % 2] for val, i in array)
+    if currentPoint?
+      (val + currentPoint[i % 2] for val, i in array)
+    else
+      array
 
   # Create a node and add it to the list. When the last node is the same as the
   # first, and the path is closed, we do not create the node.
@@ -68,10 +71,16 @@ parseTokens = (groupedCommands) ->
     switch command.type
       when 'M', 'm'
         # Move to
-        params = command.parameters
-        params = makeAbsolute(params) if command.type == 'm'
-        currentPoint = params
-        addNewSubpath(currentPoint)
+        hasMoved = false
+        setSize = 2
+        isRelative = command.type == 'm'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          if hasMoved
+            createNode(paramSet, i)
+          else
+            hasMoved = true
+            currentPoint = paramSet
+            addNewSubpath(currentPoint)
 
       when 'L', 'l'
         # Line to
