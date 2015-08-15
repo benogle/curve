@@ -1,5 +1,6 @@
 {Emitter} = require 'event-kit'
 ObjectAssign = require 'object-assign'
+Delegator = require 'delegato'
 
 Transform = require './transform'
 Utils = require './utils'
@@ -76,6 +77,14 @@ class RectangleModel
 module.exports =
 class Rectangle
   Draggable.includeInto(this)
+  Delegator.includeInto(this)
+
+  @delegatesMethods 'on', toProperty: 'emitter'
+  @delegatesMethods 'getPathString',
+    'getPosition', 'setPosition'
+    'getSize', 'setSize'
+    'translate'
+    toProperty: 'model'
 
   constructor: (@svgDocument, options={}) ->
     @emitter = new Emitter
@@ -83,8 +92,6 @@ class Rectangle
     @_setupSVGObject(options)
     @model.on 'change', @onModelChange
     @svgDocument.registerObject(this)
-
-  on: (args...) -> @emitter.on(args...)
 
   ###
   Section: Public Methods
@@ -95,16 +102,6 @@ class Rectangle
   getID: -> "#{@getType()}-#{@id}"
 
   toString: -> @model.toString()
-
-  getPosition: -> @model.getPosition()
-
-  setPosition: (x, y) -> @model.setPosition(x, y)
-
-  getSize: -> @model.getSize()
-
-  setSize: (w, h) -> @model.setSize(w, h)
-
-  translate: (x, y) -> @model.translate(x, y)
 
   remove: ->
     @svgEl.remove()
