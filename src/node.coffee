@@ -10,6 +10,9 @@ class Node
     @setHandleIn(handleIn) if handleIn
     @setHandleOut(handleOut) if handleOut
 
+  toString: ->
+    "(#{@getPoint()}, #{@getHandleIn()}, #{@getHandleOut()})"
+
   on: (args...) -> @emitter.on(args...)
 
   join: (referenceHandle='handleIn') ->
