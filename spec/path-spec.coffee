@@ -27,6 +27,12 @@ describe 'Path', ->
       path = new Path(svg)
       expect(svg.getObjects()).toContain path
 
+    it "can be created with attributes", ->
+      path = new Path(svg, {fill: '#ff0000'})
+
+      el = path.svgEl
+      expect(el.attr('fill')).toBe '#ff0000'
+
   it 'emits an event when it is removed', ->
     path = new Path(svg)
     path.on 'remove', removeSpy = jasmine.createSpy()
@@ -139,7 +145,6 @@ describe 'Path', ->
       expect(nodes[0].getAbsoluteHandleIn()).toEqual new Point(60, 80)
       expect(nodes[0].getAbsoluteHandleOut()).toEqual new Point(80, 80)
 
-
   describe 'updating via the model', ->
     beforeEach ->
       path = new Path(svg)
@@ -183,3 +188,15 @@ describe 'Path', ->
       path.insertNode(node, 0)
       expect(path.getSubpaths()[0].nodes[0]).toEqual node
       expect(spy).toHaveBeenCalled()
+
+  describe "updating attributes", ->
+    it "can have its fill color changed", ->
+      path = new Path(svg, {x: 10, y: 20, width: 200, height: 300, fill: '#ff0000'})
+
+      el = path.svgEl
+      expect(el.attr('fill')).toBe '#ff0000'
+      expect(path.get('fill')).toBe '#ff0000'
+
+      path.set(fill: '#00ff00')
+      expect(el.attr('fill')).toBe '#00ff00'
+      expect(path.get('fill')).toBe '#00ff00'

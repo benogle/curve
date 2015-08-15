@@ -1,5 +1,6 @@
 {Emitter, CompositeDisposable} = require 'event-kit'
 Delegator = require 'delegato'
+ObjectAssign = require 'object-assign'
 
 Utils = require './utils'
 Point = require './point'
@@ -21,13 +22,13 @@ class Path
     'translate'
     toProperty: 'model'
 
-  constructor: (@svgDocument, {svgEl}={}) ->
+  constructor: (@svgDocument, options={}) ->
     @emitter = new Emitter
     @_draggingEnabled = false
     @model = new PathModel
     @model.on 'change', @onModelChange
     @model.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
-    @_setupSVGObject(svgEl)
+    @_setupSVGObject(options)
     @svgDocument.registerObject(this)
 
   ###
@@ -51,13 +52,17 @@ class Path
   updateFromAttributes: ->
     path = @svgEl.attr('d')
     transform = @svgEl.attr('transform')
-    @model.set({transform, path})
+    fill = @svgEl.attr('fill')
+    @model.set({transform, path, fill})
 
   # Will render the nodes and the transform from the model.
   render: (svgEl=@svgEl) ->
     pathStr = @model.get('path')
+    fill = @model.get('fill')
     svgEl.attr(d: pathStr) if pathStr
-    svgEl.attr(transform: @model.get('transform') or null)
+    svgEl.attr(fill: @model.get('fill')) if fill and fill isnt '#000000'
+    svgEl.attr
+      transform: @model.get('transform') or null
 
   cloneElement: (svgDocument=@svgDocument) ->
     el = svgDocument.getObjectLayer().path()
@@ -81,7 +86,8 @@ class Path
     args.object = this
     @emitter.emit(eventName, args)
 
-  _setupSVGObject: (@svgEl) ->
-    @svgEl = @svgDocument.getObjectLayer().path().attr(DefaultAttrs) unless @svgEl
+  _setupSVGObject: (options) ->
+    {@svgEl} = options
+    @svgEl = @svgDocument.getObjectLayer().path().attr(ObjectAssign({}, DefaultAttrs, options)) unless @svgEl
     Utils.setObjectOnNode(@svgEl.node, this)
-    @model.set(path: @svgEl.attr('d'))
+    @updateFromAttributes()
