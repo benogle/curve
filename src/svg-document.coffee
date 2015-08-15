@@ -152,4 +152,4 @@ class SVGDocument
   _createObjectLayer: ->
     @objectLayer = @svg.nested()
     @setSize(1024, 1024)
-    @objectLayer
+    @objectLayer.back()
