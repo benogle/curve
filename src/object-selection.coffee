@@ -1,4 +1,4 @@
-{Emitter, CompositeDisposable} = require 'event-kit'
+{CompositeDisposable} = require 'event-kit'
 
 # The display for a selected object. i.e. the red or blue outline around the
 # selected object.
@@ -7,14 +7,11 @@
 module.exports =
 class ObjectSelection
   constructor: (@svgDocument, @options={}) ->
-    @emitter = new Emitter
     @options.class ?= 'object-selection'
 
-  on: (args...) -> @emitter.on(args...)
-
   setObject: (object) ->
+    return if object is @object
     @_unbindObject()
-    old = object
     @object = object
     @_bindObject(@object)
 
@@ -26,7 +23,7 @@ class ObjectSelection
       @svgDocument.getToolLayer().add(@trackingObject)
       @trackingObject.back()
       @render()
-    @emitter.emit 'change:object', {objectSelection: this, @object, old}
+    return
 
   render: =>
     @object.render(@trackingObject)
