@@ -18,7 +18,8 @@ class Rectangle
   Delegator.includeInto(this)
 
   @delegatesMethods 'on', toProperty: 'emitter'
-  @delegatesMethods 'get', 'set', 'translate',
+  @delegatesMethods 'get', 'set', 'getID', 'getType',
+    'translate',
     toProperty: 'model'
 
   constructor: (@svgDocument, options={}) ->
