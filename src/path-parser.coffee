@@ -47,12 +47,30 @@ parseTokens = (groupedCommands) ->
 
     node
 
+  # When a command has more than one set of coords specified, we iterate over
+  # each set of coords.
+  #
+  # Relative coordinates are relative to the last set of coordinates, not the
+  # last command. (The SVG docs http://www.w3.org/TR/SVG/paths.html are not
+  # super clear on this.)
+  iterateOverParameterSets = (command, setSize, isRelative, callback) ->
+    sets = command.parameters.length / setSize
+    for setIndex in [0...sets]
+      minindex = setIndex * setSize + 0
+      maxIndex = setIndex * setSize + setSize
+      paramSet = command.parameters.slice(minindex, maxIndex)
+      paramSet = makeAbsolute(paramSet) if isRelative
+      callback(paramSet, setIndex)
+    return
+
   for i in [0...groupedCommands.length]
     command = groupedCommands[i]
     switch command.type
-      when 'M'
+      when 'M', 'm'
         # Move to
-        currentPoint = command.parameters
+        params = command.parameters
+        params = makeAbsolute(params) if command.type == 'm'
+        currentPoint = params
         addNewSubpath(currentPoint)
 
       when 'L', 'l'
@@ -75,67 +93,80 @@ parseTokens = (groupedCommands) ->
           params = params.slice(1)
         createNode([currentPoint[0], params[0]], i)
 
-      when 'C', 'c', 'Q', 'q'
+      when 'C', 'c'
         # Bezier
-        params = command.parameters
-        params = makeAbsolute(params) if command.type in ['c', 'q']
+        setSize = 6
+        isRelative = command.type == 'c'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          currentPoint = slicePoint(paramSet, 4)
+          handleIn = slicePoint(paramSet, 2)
+          handleOut = slicePoint(paramSet, 0)
 
-        if command.type in ['C', 'c']
-          currentPoint = slicePoint(params, 4)
-          handleIn = slicePoint(params, 2)
-          handleOut = slicePoint(params, 0)
-        else
-          currentPoint = slicePoint(params, 2)
-          handleIn = handleOut = slicePoint(params, 0)
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
+          lastNode.setAbsoluteHandleOut(handleOut)
 
-        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
-        lastNode.setAbsoluteHandleOut(handleOut)
+          if node = createNode(currentPoint, i)
+            node.setAbsoluteHandleIn(handleIn)
+          else
+            firstNode = currentSubpath.nodes[0]
+            firstNode.setAbsoluteHandleIn(handleIn)
 
-        if node = createNode(currentPoint, i)
-          node.setAbsoluteHandleIn(handleIn)
-        else
-          firstNode = currentSubpath.nodes[0]
-          firstNode.setAbsoluteHandleIn(handleIn)
+      when 'Q', 'q'
+        # Bezier
+        setSize = 4
+        isRelative = command.type == 'q'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          currentPoint = slicePoint(paramSet, 2)
+          handleIn = handleOut = slicePoint(paramSet, 0)
+
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
+          lastNode.setAbsoluteHandleOut(handleOut)
+
+          if node = createNode(currentPoint, i)
+            node.setAbsoluteHandleIn(handleIn)
+          else
+            firstNode = currentSubpath.nodes[0]
+            firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'S', 's'
         # Shorthand cubic bezier.
         # Infer last node's handleOut to be a mirror of its handleIn.
-        params = command.parameters
-        params = makeAbsolute(params) if command.type == 's'
+        setSize = 4
+        isRelative = command.type == 's'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          currentPoint = slicePoint(paramSet, 2)
+          handleIn = slicePoint(paramSet, 0)
 
-        currentPoint = slicePoint(params, 2)
-        handleIn = slicePoint(params, 0)
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
+          lastNode.join('handleIn')
 
-        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
-        lastNode.join('handleIn')
-
-        if node = createNode(currentPoint, i)
-          node.setAbsoluteHandleIn(handleIn)
-        else
-          firstNode = currentSubpath.nodes[0]
-          firstNode.setAbsoluteHandleIn(handleIn)
+          if node = createNode(currentPoint, i)
+            node.setAbsoluteHandleIn(handleIn)
+          else
+            firstNode = currentSubpath.nodes[0]
+            firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'T', 't'
         # Shorthand quadradic bezier.
         # Infer node's handles based on previous node's handles
-        params = command.parameters
-        params = makeAbsolute(params) if command.type == 't'
+        setSize = 2
+        isRelative = command.type == 'q'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          currentPoint = slicePoint(paramSet, 0)
 
-        currentPoint = slicePoint(params, 0)
+          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
+          lastNode.join('handleIn')
 
-        lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1]
-        lastNode.join('handleIn')
+          # Use the handle out from the previous node.
+          # TODO: Should check if the last node was a Q command...
+          # https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths#Bezier_Curves
+          handleIn = lastNode.getAbsoluteHandleOut()
 
-        # Use the handle out from the previous node.
-        # TODO: Should check if the last node was a Q command...
-        # https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths#Bezier_Curves
-        handleIn = lastNode.getAbsoluteHandleOut()
-
-        if node = createNode(currentPoint, i)
-          node.setAbsoluteHandleIn(handleIn)
-        else
-          firstNode = currentSubpath.nodes[0]
-          firstNode.setAbsoluteHandleIn(handleIn)
+          if node = createNode(currentPoint, i)
+            node.setAbsoluteHandleIn(handleIn)
+          else
+            firstNode = currentSubpath.nodes[0]
+            firstNode.setAbsoluteHandleIn(handleIn)
 
       when 'Z', 'z'
         currentSubpath.closed = true
@@ -161,6 +192,7 @@ groupCommands = (pathTokens) ->
     command =
       type: token.string
       parameters: []
+
 
     while nextToken = pathTokens[i+1]
       if nextToken.type == NUMBER
