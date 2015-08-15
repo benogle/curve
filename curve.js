@@ -721,6 +721,10 @@
       }
     }
 
+    Node.prototype.toString = function() {
+      return "(" + (this.getPoint()) + ", " + (this.getHandleIn()) + ", " + (this.getHandleOut()) + ")";
+    };
+
     Node.prototype.on = function() {
       var args, ref;
       args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -1143,7 +1147,7 @@
   };
 
   parseTokens = function(groupedCommands) {
-    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, j, k, l, lastNode, len, len1, makeAbsolute, node, params, ref1, ref2, ref3, ref4, ref5, ref6, result, slicePoint, subpath;
+    var addNewSubpath, command, createNode, currentPoint, currentSubpath, firstNode, handleIn, handleOut, i, isRelative, iterateOverParameterSets, j, k, l, lastNode, len, len1, makeAbsolute, node, params, ref1, ref2, ref3, ref4, ref5, ref6, result, setSize, slicePoint, subpath;
     result = {
       subpaths: []
     };
@@ -1186,11 +1190,29 @@
       }
       return node;
     };
+    iterateOverParameterSets = function(command, setSize, isRelative, callback) {
+      var j, maxIndex, minindex, paramSet, ref2, setIndex, sets;
+      sets = command.parameters.length / setSize;
+      for (setIndex = j = 0, ref2 = sets; 0 <= ref2 ? j < ref2 : j > ref2; setIndex = 0 <= ref2 ? ++j : --j) {
+        minindex = setIndex * setSize + 0;
+        maxIndex = setIndex * setSize + setSize;
+        paramSet = command.parameters.slice(minindex, maxIndex);
+        if (isRelative) {
+          paramSet = makeAbsolute(paramSet);
+        }
+        callback(paramSet, setIndex);
+      }
+    };
     for (i = j = 0, ref2 = groupedCommands.length; 0 <= ref2 ? j < ref2 : j > ref2; i = 0 <= ref2 ? ++j : --j) {
       command = groupedCommands[i];
       switch (command.type) {
         case 'M':
-          currentPoint = command.parameters;
+        case 'm':
+          params = command.parameters;
+          if (command.type === 'm') {
+            params = makeAbsolute(params);
+          }
+          currentPoint = params;
           addNewSubpath(currentPoint);
           break;
         case 'L':
@@ -1245,20 +1267,20 @@
           break;
         case 'S':
         case 's':
-          params = command.parameters;
-          if (command.type === 's') {
-            params = makeAbsolute(params);
-          }
-          currentPoint = slicePoint(params, 2);
-          handleIn = slicePoint(params, 0);
-          lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
-          lastNode.join('handleIn');
-          if (node = createNode(currentPoint, i)) {
-            node.setAbsoluteHandleIn(handleIn);
-          } else {
-            firstNode = currentSubpath.nodes[0];
-            firstNode.setAbsoluteHandleIn(handleIn);
-          }
+          setSize = 4;
+          isRelative = command.type === 's';
+          iterateOverParameterSets(command, setSize, isRelative, function(paramSet) {
+            currentPoint = slicePoint(paramSet, 2);
+            handleIn = slicePoint(paramSet, 0);
+            lastNode = currentSubpath.nodes[currentSubpath.nodes.length - 1];
+            lastNode.join('handleIn');
+            if (node = createNode(currentPoint, i)) {
+              return node.setAbsoluteHandleIn(handleIn);
+            } else {
+              firstNode = currentSubpath.nodes[0];
+              return firstNode.setAbsoluteHandleIn(handleIn);
+            }
+          });
           break;
         case 'T':
         case 't':

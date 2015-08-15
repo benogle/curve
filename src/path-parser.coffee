@@ -75,23 +75,27 @@ parseTokens = (groupedCommands) ->
 
       when 'L', 'l'
         # Line to
-        params = command.parameters
-        params = makeAbsolute(params) if command.type == 'l'
-        createNode(slicePoint(params, 0), i)
+        setSize = 2
+        isRelative = command.type == 'l'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          createNode(slicePoint(paramSet, 0), i)
 
       when 'H', 'h'
         # Horizontal line
-        params = command.parameters
-        params = makeAbsolute(params) if command.type == 'h'
-        createNode([params[0], currentPoint[1]], i)
+        setSize = 1
+        isRelative = command.type == 'h'
+        iterateOverParameterSets command, setSize, isRelative, (paramSet) ->
+          createNode([paramSet[0], currentPoint[1]], i)
 
       when 'V', 'v'
         # Vertical line
-        params = command.parameters
-        if command.type == 'v'
-          params = makeAbsolute([0, params[0]])
-          params = params.slice(1)
-        createNode([currentPoint[0], params[0]], i)
+        setSize = 1
+        isRelative = command.type == 'v'
+        # command
+        iterateOverParameterSets command, setSize, false, (paramSet) ->
+          val = paramSet[0]
+          val += currentPoint[1] if isRelative
+          createNode([currentPoint[0], val], i)
 
       when 'C', 'c'
         # Bezier
