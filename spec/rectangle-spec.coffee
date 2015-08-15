@@ -48,3 +48,13 @@ describe 'Rectangle', ->
 
       expect(rect.get('position')).toEqual Point.create(10, 20)
       expect(rect.get('size')).toEqual Size.create(200, 300)
+
+    it "can have its fill color changed", ->
+      rect = new Rectangle(svg, {x: 10, y: 20, width: 200, height: 300, fill: '#ff0000'})
+
+      el = rect.svgEl
+      expect(el.attr('fill')).toBe '#ff0000'
+
+      rect.set(fill: '#00ff00')
+      expect(el.attr('fill')).toBe '#00ff00'
+      expect(rect.get('fill')).toBe '#00ff00'
