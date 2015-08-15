@@ -1,4 +1,5 @@
 {Emitter, CompositeDisposable} = require 'event-kit'
+Delegator = require 'delegato'
 
 Utils = require './utils'
 PathParser = require './path-parser'
@@ -29,6 +30,8 @@ class PathModel
   ###
 
   toString: -> @getPathString()
+
+  getSubpaths: -> @subpaths
 
   getNodes: ->
     nodes = (subpath.getNodes() for subpath in @subpaths)
@@ -148,6 +151,13 @@ class PathModel
 module.exports =
 class Path
   Draggable.includeInto(this)
+  Delegator.includeInto(this)
+
+  @delegatesMethods 'on', toProperty: 'emitter'
+  @delegatesMethods 'getPathString',
+    'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'close'
+    'translate'
+    toProperty: 'model'
 
   constructor: (@svgDocument, {svgEl}={}) ->
     @emitter = new Emitter
@@ -159,8 +169,6 @@ class Path
     @_setupSVGObject(svgEl)
     @svgDocument.registerObject(this)
 
-  on: (args...) -> @emitter.on(args...)
-
   ###
   Section: Public Methods
   ###
@@ -171,20 +179,6 @@ class Path
 
   toString: ->
     "Path #{@id} #{@model.toString()}"
-
-  getPathString: -> @model.getPathString()
-
-  getNodes: -> @model.getNodes()
-
-  getSubpaths: -> @model.subpaths
-
-  addNode: (node) -> @model.addNode(node)
-
-  insertNode: (node, index) -> @model.insertNode(node, index)
-
-  close: -> @model.close()
-
-  translate: (delta) -> @model.translate(delta)
 
   getPosition: ->
     new Point(@svgEl.x(), @svgEl.y())

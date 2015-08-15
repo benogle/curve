@@ -22,6 +22,7 @@
     "grunt-shell": "^1.1.2"
   },
   "dependencies": {
+    "delegato": "^1.0.0",
     "event-kit": "^1.2.0",
     "mixto": "^1.0.0",
     "object-assign": "^3.0.0"
