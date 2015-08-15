@@ -190,9 +190,22 @@ describe 'Path', ->
       expect(spy).toHaveBeenCalled()
 
   describe "updating attributes", ->
-    it "can have its fill color changed", ->
+    beforeEach ->
       path = new Path(svg, {x: 10, y: 20, width: 200, height: 300, fill: '#ff0000'})
 
+    it "emits an event with the object, model, old, and new values when changed", ->
+      path.on('change', changeSpy = jasmine.createSpy())
+
+      path.set(fill: '#00ff00')
+
+      arg = changeSpy.calls.mostRecent().args[0]
+      expect(changeSpy).toHaveBeenCalled()
+      expect(arg.object).toBe path
+      expect(arg.model).toBe path.model
+      expect(arg.value).toEqual fill: '#00ff00'
+      expect(arg.oldValue).toEqual fill: '#ff0000'
+
+    it "can have its fill color changed", ->
       el = path.svgEl
       expect(el.attr('fill')).toBe '#ff0000'
       expect(path.get('fill')).toBe '#ff0000'

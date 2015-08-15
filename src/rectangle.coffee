@@ -75,9 +75,10 @@ class Rectangle
   Section: Event Handlers
   ###
 
-  onModelChange: =>
+  onModelChange: (args) =>
     @render()
-    @emitter.emit 'change', this
+    args.object = this
+    @emitter.emit 'change', args
 
   ###
   Section: Private Methods

@@ -49,12 +49,25 @@ describe 'Rectangle', ->
       expect(rect.get('position')).toEqual Point.create(10, 20)
       expect(rect.get('size')).toEqual Size.create(200, 300)
 
-    it "can have its fill color changed", ->
-      rect = new Rectangle(svg, {x: 10, y: 20, width: 200, height: 300, fill: '#ff0000'})
+    describe "updating attributes", ->
+      beforeEach ->
+        rect = new Rectangle(svg, {x: 10, y: 20, width: 200, height: 300, fill: '#ff0000'})
 
-      el = rect.svgEl
-      expect(el.attr('fill')).toBe '#ff0000'
+      it "emits an event with the object, model, old, and new values when changed", ->
+        rect.on('change', changeSpy = jasmine.createSpy())
+        rect.set(fill: '#00ff00')
 
-      rect.set(fill: '#00ff00')
-      expect(el.attr('fill')).toBe '#00ff00'
-      expect(rect.get('fill')).toBe '#00ff00'
+        arg = changeSpy.calls.mostRecent().args[0]
+        expect(changeSpy).toHaveBeenCalled()
+        expect(arg.object).toBe rect
+        expect(arg.model).toBe rect.model
+        expect(arg.value).toEqual fill: '#00ff00'
+        expect(arg.oldValue).toEqual fill: '#ff0000'
+
+      it "can have its fill color changed", ->
+        el = rect.svgEl
+        expect(el.attr('fill')).toBe '#ff0000'
+
+        rect.set(fill: '#00ff00')
+        expect(el.attr('fill')).toBe '#00ff00'
+        expect(rect.get('fill')).toBe '#00ff00'
