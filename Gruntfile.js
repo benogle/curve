@@ -42,8 +42,8 @@ module.exports = function(grunt) {
         tasks: ['coffee:build', 'browserify']
       },
       test: {
-        files: ['test/src/**/*.coffee'],
-        tasks: ['coffee:test', 'jasmine']
+        files: ['src/**/*.coffee', 'spec/**/*.coffee'],
+        tasks: ['shell:test']
       }
     },
 
