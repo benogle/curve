@@ -31,15 +31,15 @@ class PathEditor
   activateNode: (node) ->
     @deactivateNode()
     if node?
-      @selectedNode = node
+      @activeNode = node
       nodeEditor = @_findNodeEditorForNode(node)
       nodeEditor.setEnableHandles(true) if nodeEditor?
 
   deactivateNode: ->
-    if @selectedNode?
-      nodeEditor = @_findNodeEditorForNode(@selectedNode)
+    if @activeNode?
+      nodeEditor = @_findNodeEditorForNode(@activeNode)
       nodeEditor.setEnableHandles(false) if nodeEditor?
-    @selectedNode = null
+    @activeNode = null
 
   onInsertNode: ({node, index}={}) =>
     @_addNodeEditor(node)

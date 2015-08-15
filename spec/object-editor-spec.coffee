@@ -52,3 +52,16 @@ describe 'ObjectEditor', ->
       expect(editor.isActive()).toBe false
       expect(editor.getActiveObject()).toBe null
       expect(canvas.querySelector('svg circle.node-editor-node')).toHide()
+
+    describe "when the selected node is changed", ->
+      it 'activates the node editor associated with the selected node', ->
+        model.setSelected(path)
+        expect(editor.isActive()).toBe true
+        expect(editor.getActiveObject()).toBe path
+        expect(editor.getActiveEditor().activeNode).toBe null
+
+        model.setSelectedNode(path.getNodes()[0])
+        expect(editor.getActiveEditor().activeNode).toBe path.getNodes()[0]
+
+        model.setSelectedNode()
+        expect(editor.getActiveEditor().activeNode).toBe null
