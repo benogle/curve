@@ -1,4 +1,3 @@
-ObjectEditor = require './object-editor'
 Utils = require './Utils'
 
 module.exports =
@@ -11,7 +10,7 @@ class PointerTool
     @selectionView =  @svgDocument.getSelectionView()
     @toolLayer = @svgDocument.getToolLayer()
 
-    @objectEditor = new ObjectEditor(@svgDocument)
+    @objectEditor = @svgDocument.getObjectEditor()
 
   getType: -> 'pointer'
 

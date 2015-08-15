@@ -3,12 +3,14 @@ SVG = require '../vendor/svg'
 
 SelectionModel = require "./selection-model"
 SelectionView = require "./selection-view"
+PenTool = require "./pen-tool"
 PointerTool = require "./pointer-tool"
 ShapeTool = require "./shape-tool"
 SerializeSVG = require "./serialize-svg"
 DeserializeSVG = require "./deserialize-svg"
 Size = require "./size"
 Point = require "./point"
+ObjectEditor = require './object-editor'
 SVGDocumentModel = require "./svg-document-model"
 
 module.exports =
@@ -23,6 +25,7 @@ class SVGDocument
 
     @selectionModel = new SelectionModel()
     @selectionView = new SelectionView(this)
+    @objectEditor = new ObjectEditor(this)
 
     @model.on('change:size', @onChangedSize)
 
@@ -35,6 +38,7 @@ class SVGDocument
   initializeTools: ->
     @tools = [
       new PointerTool(this)
+      new PenTool(this)
       new ShapeTool(this)
     ]
 
@@ -121,6 +125,8 @@ class SVGDocument
   getSize: -> @model.getSize()
 
   getObjects: -> @model.getObjects()
+
+  getObjectEditor: -> @objectEditor
 
   ###
   Section: Event Handlers
