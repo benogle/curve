@@ -230,6 +230,42 @@ describe 'PathParser.parsePath', ->
     expect(getXY(subject.nodes[8].point, 'x', 'y')).toEqual x: 300 + 100 + 150, y: 500
     expect(getXY(subject.nodes[9].point, 'x', 'y')).toEqual x: 300 + 100 + 150, y: 600
 
+  it 'parses multple M coordinate sets as lineto commands', ->
+    path = 'M100,100 200,100 200,200 100,200z'
+    parsedPath = PathParser.parsePath(path)
+    expect(parsedPath.subpaths.length).toEqual 1
+
+    subject = parsedPath.subpaths[0]
+    expect(subject.closed).toEqual true
+    expect(subject.nodes.length).toEqual 4
+
+    expect(getXY(subject.nodes[0].point, 'x', 'y')).toEqual x: 100, y: 100
+    expect(subject.nodes[0].handleOut).toBeUndefined()
+    expect(subject.nodes[0].handleIn).toBeUndefined()
+
+    expect(getXY(subject.nodes[1].point, 'x', 'y')).toEqual x: 200, y: 100
+    expect(getXY(subject.nodes[2].point, 'x', 'y')).toEqual x: 200, y: 200
+    expect(getXY(subject.nodes[3].point, 'x', 'y')).toEqual x: 100, y: 200
+
+  it 'parses small m as an absolute move when at the beginning', ->
+    path = 'm100,100 100,0z m50,50 50,50z'
+    parsedPath = PathParser.parsePath(path)
+    expect(parsedPath.subpaths.length).toEqual 2
+
+    subject = parsedPath.subpaths[0]
+    expect(subject.closed).toEqual true
+    expect(subject.nodes.length).toEqual 2
+
+    expect(getXY(subject.nodes[0].point, 'x', 'y')).toEqual x: 100, y: 100
+    expect(getXY(subject.nodes[1].point, 'x', 'y')).toEqual x: 200, y: 100
+
+    subject = parsedPath.subpaths[1]
+    expect(subject.closed).toEqual true
+    expect(subject.nodes.length).toEqual 2
+
+    expect(getXY(subject.nodes[0].point, 'x', 'y')).toEqual x: 250, y: 150
+    expect(getXY(subject.nodes[1].point, 'x', 'y')).toEqual x: 300, y: 200
+
   it 'parses S and s commands', ->
     path = 'M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80 s55-70, 85 0'
     parsedPath = PathParser.parsePath(path)
