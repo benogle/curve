@@ -62,8 +62,7 @@ class ShapeTool
       size = Math.min(size.width, size.height)
       size = new Size(size, size)
 
-    @shape.setPosition(position)
-    @shape.setSize(size)
+    @shape.set({position, size})
 
   onMouseUp: (event) =>
     @anchor = null

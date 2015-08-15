@@ -2,6 +2,7 @@ SVGDocument = require '../src/svg-document'
 
 Rectangle = require '../src/rectangle'
 Point = require '../src/point'
+Size = require '../src/size'
 
 describe 'Rectangle', ->
   [svg, rect] = []
@@ -44,3 +45,6 @@ describe 'Rectangle', ->
       expect(el.attr('width')).toBe 200
       expect(el.attr('height')).toBe 300
       expect(el.attr('fill')).toBe '#ff0000'
+
+      expect(rect.get('position')).toEqual Point.create(10, 20)
+      expect(rect.get('size')).toEqual Size.create(200, 300)

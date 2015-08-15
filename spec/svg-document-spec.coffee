@@ -151,12 +151,12 @@ describe 'Curve.SVGDocument', ->
       svg.translateSelectedObjects([10, 0])
 
     it "translates the selected object by the point specified", ->
-      expect(object.getPosition()).toEqual new Point(20, 30)
+      expect(object.get('position')).toEqual new Point(20, 30)
 
       svg.selectionModel.setSelected(object)
       svg.translateSelectedObjects([20, 0])
 
-      expect(object.getPosition()).toEqual new Point(40, 30)
+      expect(object.get('position')).toEqual new Point(40, 30)
 
   describe '::removeSelectedObjects', ->
     [object] = []

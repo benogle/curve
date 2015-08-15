@@ -18,10 +18,7 @@ class Rectangle
   Delegator.includeInto(this)
 
   @delegatesMethods 'on', toProperty: 'emitter'
-  @delegatesMethods 'getPathString',
-    'getPosition', 'setPosition'
-    'getSize', 'setSize'
-    'translate'
+  @delegatesMethods 'get', 'set', 'translate',
     toProperty: 'model'
 
   constructor: (@svgDocument, options={}) ->
@@ -54,19 +51,20 @@ class Rectangle
     height = @svgEl.attr('height')
     transform = @svgEl.attr('transform')
 
-    @model.setPosition(x, y)
-    @model.setSize(width, height)
-    @model.setTransformString(transform)
+    @model.set
+      position: [x, y]
+      size: [width, height]
+      transform: transform
 
   # Will render the nodes and the transform from the model.
   render: (svgEl=@svgEl) ->
-    position = @model.getPosition()
-    size = @model.getSize()
+    position = @model.get('position')
+    size = @model.get('size')
     svgEl.attr(x: position.x)
     svgEl.attr(y: position.y)
     svgEl.attr(width: size.width)
     svgEl.attr(height: size.height)
-    svgEl.attr(transform: @model.getTransformString() or null)
+    svgEl.attr(transform: @model.get('transform') or null)
 
   cloneElement: (svgDocument=@svgDocument) ->
     el = svgDocument.getObjectLayer().rect()

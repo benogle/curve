@@ -1,67 +1,45 @@
-{Emitter} = require 'event-kit'
+{CompositeDisposable} = require 'event-kit'
 Delegator = require 'delegato'
 
 Transform = require './transform'
 Point = require './point'
 Size = require './size'
+Model = require './model'
 
 IDS = 0
 
 module.exports =
-class RectangleModel
-  position: null
-  size: null
-  transform: null
-
+class RectangleModel extends Model
   constructor: ->
-    @emitter = new Emitter
+    super(['transform', 'position', 'size', 'fill'])
     @id = IDS++
     @transform = new Transform
 
-  on: (args...) -> @emitter.on(args...)
+    @addFilter 'size', (value) => Size.create(value)
+    @addFilter 'position', (value) => Point.create(value)
+
+    @subscriptions = new CompositeDisposable
+    @subscriptions.add @on 'change:transform', ({value}) => @transform.setTransformString(value)
+
+  destroy: ->
+    @subscriptions.dispose()
 
   ###
   Section: Public Methods
   ###
 
-  toString: -> "{Rect #{@id}: #{@position} #{@size}"
+  getType: -> 'Path'
+
+  getID: -> "#{@getType()}-#{@id}"
+
+  toString: -> "{Rect #{@id}: #{@get('position')} #{@get('size')}"
 
   ###
   Section: Position / Size Methods
   ###
 
-  getPosition: -> @position
-
-  setPosition: (x, y) ->
-    @position = Point.create(x, y)
-    @_emitChangeEvent()
+  getTransform: -> @transform
 
   translate: (point) ->
     point = Point.create(point)
-    @setPosition(@position.add(point))
-    @_emitChangeEvent()
-
-  getSize: -> @size
-
-  setSize: (width, height) ->
-    @size = Size.create(width, height)
-    @_emitChangeEvent()
-
-  ###
-  Section: Editable Attributes
-  ###
-
-  getTransform: -> @transform
-
-  getTransformString: -> @transform.toString()
-
-  setTransformString: (transformString) ->
-    if @transform.setTransformString(transformString)
-      @_emitChangeEvent()
-
-  ###
-  Section: Private Methods
-  ###
-
-  _emitChangeEvent: ->
-    @emitter.emit 'change', this
+    @set(position: @get('position').add(point))
