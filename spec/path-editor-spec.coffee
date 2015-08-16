@@ -6,7 +6,7 @@ PathEditor = require '../src/path-editor'
 describe 'PathEditor', ->
   [svgDocument, canvas, path, editor] = []
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svgDocument = new SVGDocument(canvas)
 

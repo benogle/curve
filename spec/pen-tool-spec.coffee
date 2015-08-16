@@ -9,7 +9,7 @@ describe 'PenTool', ->
   [tool, svg, canvas, selectionModel] = []
 
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svg = new SVGDocument(canvas)
     selectionModel = svg.getSelectionModel()

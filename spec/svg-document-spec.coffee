@@ -9,7 +9,7 @@ Point = require '../src/point'
 describe 'Curve.SVGDocument', ->
   [svg, canvas] = []
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svg = new SVGDocument(canvas)
 

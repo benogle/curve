@@ -8,7 +8,7 @@ describe 'Ellipse', ->
   [svg, ellipse] = []
 
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svg = new SVGDocument(canvas)
 

@@ -8,7 +8,7 @@ ObjectEditor = require '../src/object-editor'
 describe 'ObjectEditor', ->
   [canvas, svgDocument, model, editor, path] = []
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svgDocument = new SVGDocument(canvas)
     model = svgDocument.getSelectionModel()

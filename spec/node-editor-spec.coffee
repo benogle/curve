@@ -8,7 +8,7 @@ NodeEditor = require '../src/node-editor'
 describe 'NodeEditor', ->
   [svgDocument, path, nodeEditor] = []
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svgDocument = new SVGDocument(canvas)
 

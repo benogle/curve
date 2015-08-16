@@ -10,7 +10,7 @@ describe 'Path', ->
   [svg, path] = []
 
   beforeEach ->
-    canvas = document.createElement('canvas')
+    canvas = document.createElement('div')
     jasmine.attachToDOM(canvas)
     svg = new SVGDocument(canvas)
 
