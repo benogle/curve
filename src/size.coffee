@@ -1,3 +1,4 @@
+Point = require './point'
 
 #
 module.exports =
@@ -14,6 +15,14 @@ class Size
 
   set: (@width, @height) ->
     [@width, @height] = @width if Array.isArray(@width)
+
+  add: (width, height) ->
+    if width instanceof Point or (width.x? and width.y?)
+      point = width
+      new Size(@width + point.x, @height + point.y)
+    else
+      other = Size.create(width, height)
+      new Size(@width + other.width, @height + other.height)
 
   toArray: ->
     [@width, @height]
