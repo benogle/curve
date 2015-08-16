@@ -2,8 +2,10 @@ SVGDocument = require '../src/svg-document'
 
 Node = require '../src/node'
 Path = require '../src/path'
+Rectangle = require '../src/rectangle'
 SelectionModel = require '../src/selection-model'
 ObjectEditor = require '../src/object-editor'
+ShapeEditor = require '../src/shape-editor'
 
 describe 'ObjectEditor', ->
   [canvas, svgDocument, model, editor, path] = []
@@ -63,6 +65,17 @@ describe 'ObjectEditor', ->
       expect(editor.isActive()).toBe false
       expect(editor.getActiveObject()).toBe null
       expect(canvas.querySelector('svg circle.node-editor-node')).toHide()
+
+    describe "when the selected object is a Rectangle", ->
+      [object] = []
+      beforeEach ->
+        object = new Rectangle(svgDocument)
+
+      it "activates the ShapeEditor", ->
+        model.setSelected(object)
+        expect(editor.isActive()).toBe true
+        expect(editor.getActiveObject()).toBe object
+        expect(editor.getActiveEditor() instanceof ShapeEditor).toBe true
 
     describe "when the selected node is changed", ->
       it 'activates the node editor associated with the selected node', ->

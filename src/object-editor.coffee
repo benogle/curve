@@ -1,5 +1,6 @@
 {CompositeDisposable} = require 'event-kit'
 PathEditor = require './path-editor'
+ShapeEditor = require './shape-editor'
 
 # Manages the editor UIs for all object types. e.g. PathEditor object for <path>
 # SVG objects.
@@ -14,6 +15,7 @@ class ObjectEditor
     @selectionModel = @svgDocument.getSelectionModel()
     @editors =
       Path: new PathEditor(@svgDocument)
+      Rectangle: new ShapeEditor(@svgDocument)
 
   isActive: ->
     @active
