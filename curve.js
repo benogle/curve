@@ -21,12 +21,16 @@
     setObjectOnNode: function(domNode, object) {
       return getObjectMap()[domNode.id] = object;
     },
-    pointForEvent: function(svgRoot, event) {
-      var clientX, clientY, left, top;
-      clientX = event.clientX, clientY = event.clientY;
-      top = this.svgRoot.node.offsetTop;
-      left = this.svgRoot.node.offsetLeft;
-      return new Point(event.clientX - left, event.clientY - top);
+    getCanvasPosition: function(svgRoot, event) {
+      var x, y;
+      if ((event.offsetX != null) && (event.offsetY != null)) {
+        x = event.offsetX;
+        y = event.offsetY;
+      } else {
+        x = event.pageX - svgRoot.node.offsetLeft;
+        y = event.pageY - svgRoot.node.offsetTop;
+      }
+      return new Point(x, y);
     }
   };
 
@@ -561,15 +565,23 @@
 
 },{"delegato":31,"event-kit":35}],8:[function(require,module,exports){
 (function() {
-  var CompositeDisposable, NodeEditor, Point,
+  var CompositeDisposable, Delegator, Emitter, NodeEditor, Point, ref,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  CompositeDisposable = require('event-kit').CompositeDisposable;
+  ref = require('event-kit'), CompositeDisposable = ref.CompositeDisposable, Emitter = ref.Emitter;
+
+  Delegator = require('delegato');
 
   Point = require('./point');
 
   module.exports = NodeEditor = (function() {
     var handleElements, lineElement, node, nodeElement;
+
+    Delegator.includeInto(NodeEditor);
+
+    NodeEditor.delegatesMethods('on', {
+      toProperty: 'emitter'
+    });
 
     NodeEditor.prototype.nodeSize = 5;
 
@@ -590,6 +602,7 @@
       this.onDraggingHandleIn = bind(this.onDraggingHandleIn, this);
       this.onDraggingNode = bind(this.onDraggingNode, this);
       this.render = bind(this.render, this);
+      this.emitter = new Emitter;
       this.toolLayer = this.svgDocument.getToolLayer();
       this._setupNodeElement();
       this._setupLineElement();
@@ -682,19 +695,19 @@
     };
 
     NodeEditor.prototype._bindNode = function(node) {
-      var ref;
+      var ref1;
       if (!node) {
         return;
       }
       this.nodeSubscriptions = new CompositeDisposable;
       this.nodeSubscriptions.add(node.on('change', this.render));
-      return this.nodeSubscriptions.add((ref = node.getPath()) != null ? ref.on('change', this.render) : void 0);
+      return this.nodeSubscriptions.add((ref1 = node.getPath()) != null ? ref1.on('change', this.render) : void 0);
     };
 
     NodeEditor.prototype._unbindNode = function() {
-      var ref;
-      if ((ref = this.nodeSubscriptions) != null) {
-        ref.dispose();
+      var ref1;
+      if ((ref1 = this.nodeSubscriptions) != null) {
+        ref1.dispose();
       }
       return this.nodeSubscriptions = null;
     };
@@ -704,9 +717,20 @@
       this.nodeElement.node.setAttribute('class', 'node-editor-node');
       this.nodeElement.mousedown((function(_this) {
         return function(e) {
+          var defaultPrevented, preventDefault;
           e.stopPropagation();
-          _this.setEnableHandles(true);
-          _this.pathEditor.activateNode(_this.node);
+          defaultPrevented = false;
+          preventDefault = function() {
+            return defaultPrevented = true;
+          };
+          _this.emitter.emit('mousedown:node', {
+            node: _this.node,
+            preventDefault: preventDefault,
+            event: event
+          });
+          if (!defaultPrevented) {
+            _this.svgDocument.getSelectionModel().setSelectedNode(_this.node);
+          }
           return false;
         };
       })(this));
@@ -714,7 +738,6 @@
       this.nodeElement.dragmove = this.onDraggingNode;
       this.nodeElement.dragstart = (function(_this) {
         return function() {
-          _this.pathEditor.activateNode(_this.node);
           return _this._startPosition = _this.node.getPoint();
         };
       })(this);
@@ -797,7 +820,7 @@
 
 }).call(this);
 
-},{"./point":17,"event-kit":35}],9:[function(require,module,exports){
+},{"./point":17,"delegato":31,"event-kit":35}],9:[function(require,module,exports){
 (function() {
   var Emitter, Node, Point,
     slice = [].slice;
@@ -956,7 +979,8 @@
   module.exports = ObjectEditor = (function() {
     function ObjectEditor(svgDocument) {
       this.svgDocument = svgDocument;
-      this.onChangeSelected = bind(this.onChangeSelected, this);
+      this.activateSelectedNode = bind(this.activateSelectedNode, this);
+      this.activateSelectedObject = bind(this.activateSelectedObject, this);
       this.active = false;
       this.activeEditor = null;
       this.selectionModel = this.svgDocument.getSelectionModel();
@@ -974,10 +998,29 @@
       return (ref = (ref1 = this.activeEditor) != null ? ref1.getActiveObject() : void 0) != null ? ref : null;
     };
 
+    ObjectEditor.prototype.getActiveEditor = function() {
+      return this.activeEditor;
+    };
+
     ObjectEditor.prototype.activate = function() {
       this.active = true;
       this.subscriptions = new CompositeDisposable;
-      return this.subscriptions.add(this.selectionModel.on('change:selected', this.onChangeSelected));
+      this.subscriptions.add(this.selectionModel.on('change:selected', (function(_this) {
+        return function(arg) {
+          var object;
+          object = arg.object;
+          return _this.activateSelectedObject(object);
+        };
+      })(this)));
+      this.subscriptions.add(this.selectionModel.on('change:selectedNode', (function(_this) {
+        return function(arg) {
+          var node;
+          node = arg.node;
+          return _this.activateSelectedNode(node);
+        };
+      })(this)));
+      this.activateSelectedObject(this.selectionModel.getSelected());
+      return this.activateSelectedNode(this.selectionModel.getSelectedNode());
     };
 
     ObjectEditor.prototype.deactivate = function() {
@@ -989,14 +1032,18 @@
       return this.active = false;
     };
 
-    ObjectEditor.prototype.onChangeSelected = function(arg) {
-      var object, old, ref;
-      object = arg.object, old = arg.old;
+    ObjectEditor.prototype.activateSelectedObject = function(object) {
+      var ref;
       this._deactivateActiveEditor();
       if (object != null) {
         this.activeEditor = this.editors[object.getType()];
         return (ref = this.activeEditor) != null ? ref.activateObject(object) : void 0;
       }
+    };
+
+    ObjectEditor.prototype.activateSelectedNode = function(node) {
+      var ref;
+      return (ref = this.activeEditor) != null ? typeof ref.activateNode === "function" ? ref.activateNode(node) : void 0 : void 0;
     };
 
     ObjectEditor.prototype._deactivateActiveEditor = function() {
@@ -1079,21 +1126,31 @@
 
 },{"event-kit":35}],12:[function(require,module,exports){
 (function() {
-  var CompositeDisposable, NodeEditor, PathEditor,
+  var CompositeDisposable, Delegator, Emitter, NodeEditor, PathEditor, ref,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  CompositeDisposable = require('event-kit').CompositeDisposable;
+  ref = require('event-kit'), Emitter = ref.Emitter, CompositeDisposable = ref.CompositeDisposable;
+
+  Delegator = require('delegato');
 
   NodeEditor = require('./node-editor');
 
   module.exports = PathEditor = (function() {
+    Delegator.includeInto(PathEditor);
+
+    PathEditor.delegatesMethods('on', {
+      toProperty: 'emitter'
+    });
+
     function PathEditor(svgDocument) {
       this.svgDocument = svgDocument;
       this.onInsertNode = bind(this.onInsertNode, this);
+      this.emitter = new Emitter;
       this.path = null;
       this.node = null;
       this.nodeEditors = [];
       this._nodeEditorPool = [];
+      this.nodeEditorSubscriptions = new CompositeDisposable();
     }
 
     PathEditor.prototype.isActive = function() {
@@ -1124,7 +1181,7 @@
       var nodeEditor;
       this.deactivateNode();
       if (node != null) {
-        this.selectedNode = node;
+        this.activeNode = node;
         nodeEditor = this._findNodeEditorForNode(node);
         if (nodeEditor != null) {
           return nodeEditor.setEnableHandles(true);
@@ -1134,18 +1191,18 @@
 
     PathEditor.prototype.deactivateNode = function() {
       var nodeEditor;
-      if (this.selectedNode != null) {
-        nodeEditor = this._findNodeEditorForNode(this.selectedNode);
+      if (this.activeNode != null) {
+        nodeEditor = this._findNodeEditorForNode(this.activeNode);
         if (nodeEditor != null) {
           nodeEditor.setEnableHandles(false);
         }
       }
-      return this.selectedNode = null;
+      return this.activeNode = null;
     };
 
     PathEditor.prototype.onInsertNode = function(arg) {
-      var index, node, ref;
-      ref = arg != null ? arg : {}, node = ref.node, index = ref.index;
+      var index, node, ref1;
+      ref1 = arg != null ? arg : {}, node = ref1.node, index = ref1.index;
       this._addNodeEditor(node);
       return null;
     };
@@ -1159,20 +1216,20 @@
     };
 
     PathEditor.prototype._unbindFromObject = function() {
-      var ref;
-      if ((ref = this.objectSubscriptions) != null) {
-        ref.dispose();
+      var ref1;
+      if ((ref1 = this.objectSubscriptions) != null) {
+        ref1.dispose();
       }
       return this.objectSubscriptions = null;
     };
 
     PathEditor.prototype._removeNodeEditors = function() {
-      var i, len, nodeEditor, ref;
+      var i, len, nodeEditor, ref1;
       this._nodeEditorPool = this._nodeEditorPool.concat(this.nodeEditors);
       this.nodeEditors = [];
-      ref = this._nodeEditorPool;
-      for (i = 0, len = ref.length; i < len; i++) {
-        nodeEditor = ref[i];
+      ref1 = this._nodeEditorPool;
+      for (i = 0, len = ref1.length; i < len; i++) {
+        nodeEditor = ref1[i];
         nodeEditor.setNode(null);
       }
     };
@@ -1194,22 +1251,36 @@
       if (!node) {
         return false;
       }
-      nodeEditor = this._nodeEditorPool.length ? this._nodeEditorPool.pop() : new NodeEditor(this.svgDocument, this);
+      if (this._nodeEditorPool.length) {
+        nodeEditor = this._nodeEditorPool.pop();
+      } else {
+        nodeEditor = new NodeEditor(this.svgDocument, this);
+        this.nodeEditorSubscriptions.add(nodeEditor.on('mousedown:node', this._forwardEvent.bind(this, 'mousedown:node')));
+      }
       nodeEditor.setNode(node);
       this.nodeEditors.push(nodeEditor);
       return true;
     };
 
     PathEditor.prototype._findNodeEditorForNode = function(node) {
-      var i, len, nodeEditor, ref;
-      ref = this.nodeEditors;
-      for (i = 0, len = ref.length; i < len; i++) {
-        nodeEditor = ref[i];
+      var i, len, nodeEditor, ref1;
+      ref1 = this.nodeEditors;
+      for (i = 0, len = ref1.length; i < len; i++) {
+        nodeEditor = ref1[i];
         if (nodeEditor.node === node) {
           return nodeEditor;
         }
       }
       return null;
+    };
+
+    PathEditor.prototype._forwardEvent = function(eventName, args) {
+      var path;
+      if (!(path = this.getActiveObject())) {
+        return;
+      }
+      args.object = path;
+      return this.emitter.emit(eventName, args);
     };
 
     return PathEditor;
@@ -1218,7 +1289,7 @@
 
 }).call(this);
 
-},{"./node-editor":8,"event-kit":35}],13:[function(require,module,exports){
+},{"./node-editor":8,"delegato":31,"event-kit":35}],13:[function(require,module,exports){
 (function() {
   var CompositeDisposable, Delegator, Emitter, IDS, Model, PathModel, PathParser, Point, Subpath, Transform, flatten, ref,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
@@ -1315,6 +1386,18 @@
         return results;
       }).call(this);
       return flatten(nodes);
+    };
+
+    PathModel.prototype.isClosed = function() {
+      var i, len, ref1, subpath;
+      ref1 = this.subpaths;
+      for (i = 0, len = ref1.length; i < len; i++) {
+        subpath = ref1[i];
+        if (!subpath.isClosed()) {
+          return false;
+        }
+      }
+      return true;
     };
 
 
@@ -1800,7 +1883,7 @@
       toProperty: 'emitter'
     });
 
-    Path.delegatesMethods('get', 'set', 'getID', 'getType', 'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'close', 'translate', {
+    Path.delegatesMethods('get', 'set', 'getID', 'getType', 'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'close', 'isClosed', 'translate', {
       toProperty: 'model'
     });
 
@@ -1925,65 +2008,95 @@
 
 },{"./draggable-mixin":4,"./path-model":13,"./point":17,"./utils":30,"delegato":31,"event-kit":35,"object-assign":290}],16:[function(require,module,exports){
 (function() {
-  var Node, Path, PenTool,
+  var Node, Path, PenTool, getCanvasPosition,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   Node = require('./node');
 
   Path = require('./path');
 
+  getCanvasPosition = require('./utils').getCanvasPosition;
+
   module.exports = PenTool = (function() {
     PenTool.prototype.currentObject = null;
 
     PenTool.prototype.currentNode = null;
 
-    function PenTool(svgDocument, arg) {
-      var ref;
+    function PenTool(svgDocument) {
       this.svgDocument = svgDocument;
-      ref = arg != null ? arg : {}, this.selectionModel = ref.selectionModel, this.selectionView = ref.selectionView;
       this.onMouseUp = bind(this.onMouseUp, this);
       this.onMouseMove = bind(this.onMouseMove, this);
       this.onMouseDown = bind(this.onMouseDown, this);
+      this.selectionModel = this.svgDocument.getSelectionModel();
+      this.objectEditor = this.svgDocument.getObjectEditor();
     }
 
+    PenTool.prototype.getType = function() {
+      return 'pen';
+    };
+
+    PenTool.prototype.supportsType = function(type) {
+      return type === 'pen';
+    };
+
+    PenTool.prototype.isActive = function() {
+      return this.active;
+    };
+
     PenTool.prototype.activate = function() {
-      this.svgDocument.on('mousedown', this.onMouseDown);
-      this.svgDocument.on('mousemove', this.onMouseMove);
-      return this.svgDocument.on('mouseup', this.onMouseUp);
+      var svg;
+      this.objectEditor.activate();
+      this.subscriptions = this.objectEditor.editors.Path.on('mousedown:node', this.onMouseDownNode.bind(this));
+      svg = this.svgDocument.getSVGRoot();
+      svg.on('mousedown', this.onMouseDown);
+      svg.on('mousemove', this.onMouseMove);
+      svg.on('mouseup', this.onMouseUp);
+      return this.active = true;
     };
 
     PenTool.prototype.deactivate = function() {
-      this.svgDocument.off('mousedown', this.onMouseDown);
-      this.svgDocument.off('mousemove', this.onMouseMove);
-      return this.svgDocument.off('mouseup', this.onMouseUp);
+      var ref, svg;
+      this.objectEditor.deactivate();
+      if ((ref = this.subscriptions) != null) {
+        ref.dispose();
+      }
+      svg = this.svgDocument.getSVGRoot();
+      svg.off('mousedown', this.onMouseDown);
+      svg.off('mousemove', this.onMouseMove);
+      svg.off('mouseup', this.onMouseUp);
+      return this.active = false;
     };
 
-    PenTool.prototype.onMouseDown = function(e) {
-      var makeNode;
-      makeNode = (function(_this) {
-        return function() {
-          _this.currentNode = new Node([e.clientX, e.clientY], [0, 0], [0, 0]);
-          _this.currentObject.addNode(_this.currentNode);
-          return _this.selectionModel.setSelectedNode(_this.currentNode);
-        };
-      })(this);
-      if (this.currentObject) {
-        if (this.selectionView.nodeEditors.length && e.target === this.selectionView.nodeEditors[0].nodeElement.node) {
-          this.currentObject.close();
-          return this.currentObject = null;
-        } else {
-          return makeNode();
+    PenTool.prototype.onMouseDownNode = function(event) {
+      var node, nodeIndex, path;
+      node = event.node;
+      path = this.selectionModel.getSelected();
+      if (path != null) {
+        nodeIndex = path.getNodes().indexOf(node);
+        if (nodeIndex === 0) {
+          path.close();
         }
-      } else {
-        this.currentObject = new Path(this.svgDocument);
-        this.selectionModel.setSelected(this.currentObject);
-        return makeNode();
+        return this.currentObject = null;
       }
     };
 
+    PenTool.prototype.onMouseDown = function(event) {
+      var position;
+      if (!this.currentObject) {
+        this.currentObject = new Path(this.svgDocument);
+        this.selectionModel.setSelected(this.currentObject);
+      }
+      position = getCanvasPosition(this.svgDocument.getSVGRoot(), event);
+      this.currentNode = new Node(position, [0, 0], [0, 0], true);
+      this.currentObject.addNode(this.currentNode);
+      return this.selectionModel.setSelectedNode(this.currentNode);
+    };
+
     PenTool.prototype.onMouseMove = function(e) {
+      var position;
       if (this.currentNode) {
-        return this.currentNode.setAbsoluteHandleOut([e.clientX, e.clientY]);
+        position = getCanvasPosition(this.svgDocument.getSVGRoot(), e);
+        return this.currentNode.setAbsoluteHandleOut(position);
       }
     };
 
@@ -1997,7 +2110,7 @@
 
 }).call(this);
 
-},{"./node":9,"./path":15}],17:[function(require,module,exports){
+},{"./node":9,"./path":15,"./utils":30}],17:[function(require,module,exports){
 (function() {
   var Point;
 
@@ -2059,10 +2172,8 @@
 
 },{}],18:[function(require,module,exports){
 (function() {
-  var ObjectEditor, PointerTool, Utils,
+  var PointerTool, Utils,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  ObjectEditor = require('./object-editor');
 
   Utils = require('./Utils');
 
@@ -2077,7 +2188,7 @@
       this.selectionModel = this.svgDocument.getSelectionModel();
       this.selectionView = this.svgDocument.getSelectionView();
       this.toolLayer = this.svgDocument.getToolLayer();
-      this.objectEditor = new ObjectEditor(this.svgDocument);
+      this.objectEditor = this.svgDocument.getObjectEditor();
     }
 
     PointerTool.prototype.getType = function() {
@@ -2182,7 +2293,7 @@
 
 }).call(this);
 
-},{"./Utils":1,"./object-editor":10}],19:[function(require,module,exports){
+},{"./Utils":1}],19:[function(require,module,exports){
 (function() {
   var CompositeDisposable, Delegator, IDS, Model, Point, RectangleModel, Size, Transform,
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -2499,6 +2610,10 @@
       });
     };
 
+    SelectionModel.prototype.getSelectedNode = function() {
+      return this.selectedNode;
+    };
+
     SelectionModel.prototype.setSelectedNode = function(selectedNode) {
       var old;
       if (selectedNode === this.selectedNode) {
@@ -2600,6 +2715,8 @@
   Size = require('./size');
 
   Rectangle = require('./rectangle');
+
+  getCanvasPosition = require('./utils').getCanvasPosition;
 
   module.exports = ShapeTool = (function() {
     function ShapeTool(svgDocument) {
@@ -2719,21 +2836,9 @@
     };
   };
 
-  getCanvasPosition = function(svgRoot, event) {
-    var x, y;
-    if ((event.offsetX != null) && (event.offsetY != null)) {
-      x = event.offsetX;
-      y = event.offsetY;
-    } else {
-      x = event.pageX - svgRoot.node.offsetLeft;
-      y = event.pageY - svgRoot.node.offsetTop;
-    }
-    return new Point(x, y);
-  };
-
 }).call(this);
 
-},{"./point":17,"./rectangle":20,"./size":25,"event-kit":35}],25:[function(require,module,exports){
+},{"./point":17,"./rectangle":20,"./size":25,"./utils":30,"event-kit":35}],25:[function(require,module,exports){
 (function() {
   var Size;
 
@@ -2888,6 +2993,10 @@
         node: node
       });
       return this.emitter.emit('change', this);
+    };
+
+    Subpath.prototype.isClosed = function() {
+      return this.closed;
     };
 
     Subpath.prototype.close = function() {
@@ -3062,7 +3171,7 @@
 
 },{"./point":17,"./size":25,"event-kit":35}],28:[function(require,module,exports){
 (function() {
-  var DeserializeSVG, Emitter, Point, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, ShapeTool, Size,
+  var DeserializeSVG, Emitter, ObjectEditor, PenTool, Point, PointerTool, SVG, SVGDocument, SVGDocumentModel, SelectionModel, SelectionView, SerializeSVG, ShapeTool, Size,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     slice = [].slice;
 
@@ -3073,6 +3182,8 @@
   SelectionModel = require("./selection-model");
 
   SelectionView = require("./selection-view");
+
+  PenTool = require("./pen-tool");
 
   PointerTool = require("./pointer-tool");
 
@@ -3086,6 +3197,8 @@
 
   Point = require("./point");
 
+  ObjectEditor = require('./object-editor');
+
   SVGDocumentModel = require("./svg-document-model");
 
   module.exports = SVGDocument = (function() {
@@ -3098,6 +3211,7 @@
       this.toolLayer.node.setAttribute('class', 'tool-layer');
       this.selectionModel = new SelectionModel();
       this.selectionView = new SelectionView(this);
+      this.objectEditor = new ObjectEditor(this);
       this.model.on('change:size', this.onChangedSize);
       this.model.on('change', (function(_this) {
         return function(event) {
@@ -3119,7 +3233,7 @@
 
     SVGDocument.prototype.initializeTools = function() {
       var i, len, ref, tool;
-      this.tools = [new PointerTool(this), new ShapeTool(this)];
+      this.tools = [new PointerTool(this), new PenTool(this), new ShapeTool(this)];
       ref = this.tools;
       for (i = 0, len = ref.length; i < len; i++) {
         tool = ref[i];
@@ -3267,6 +3381,10 @@
       return this.model.getObjects();
     };
 
+    SVGDocument.prototype.getObjectEditor = function() {
+      return this.objectEditor;
+    };
+
 
     /*
     Section: Event Handlers
@@ -3308,7 +3426,7 @@
     SVGDocument.prototype._createObjectLayer = function() {
       this.objectLayer = this.svg.nested();
       this.setSize(1024, 1024);
-      return this.objectLayer;
+      return this.objectLayer.back();
     };
 
     return SVGDocument;
@@ -3317,7 +3435,7 @@
 
 }).call(this);
 
-},{"../vendor/svg":292,"./deserialize-svg":3,"./point":17,"./pointer-tool":18,"./selection-model":21,"./selection-view":22,"./serialize-svg":23,"./shape-tool":24,"./size":25,"./svg-document-model":27,"event-kit":35}],29:[function(require,module,exports){
+},{"../vendor/svg":292,"./deserialize-svg":3,"./object-editor":10,"./pen-tool":16,"./point":17,"./pointer-tool":18,"./selection-model":21,"./selection-view":22,"./serialize-svg":23,"./shape-tool":24,"./size":25,"./svg-document-model":27,"event-kit":35}],29:[function(require,module,exports){
 (function() {
   var Point, SVG, Transform;
 
