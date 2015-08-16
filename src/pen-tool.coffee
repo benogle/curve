@@ -67,7 +67,6 @@ class PenTool
   onRemovedNode: ({node, subpath, index}) ->
     @_unsetCurrentNode() if node is @currentNode
     if newNode = subpath.getNodes()[index - 1]
-      @currentNode = newNode
       @selectionModel.setSelectedNode(newNode)
 
   _unsetCurrentObject: ->
