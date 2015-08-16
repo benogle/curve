@@ -13,9 +13,11 @@ class ObjectEditor
     @active = false
     @activeEditor = null
     @selectionModel = @svgDocument.getSelectionModel()
+    shapeEditor = new ShapeEditor(@svgDocument)
     @editors =
       Path: new PathEditor(@svgDocument)
-      Rectangle: new ShapeEditor(@svgDocument)
+      Ellipse: shapeEditor
+      Rectangle: shapeEditor
 
   isActive: ->
     @active

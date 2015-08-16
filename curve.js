@@ -1281,15 +1281,18 @@
 
   module.exports = ObjectEditor = (function() {
     function ObjectEditor(svgDocument) {
+      var shapeEditor;
       this.svgDocument = svgDocument;
       this.activateSelectedNode = bind(this.activateSelectedNode, this);
       this.activateSelectedObject = bind(this.activateSelectedObject, this);
       this.active = false;
       this.activeEditor = null;
       this.selectionModel = this.svgDocument.getSelectionModel();
+      shapeEditor = new ShapeEditor(this.svgDocument);
       this.editors = {
         Path: new PathEditor(this.svgDocument),
-        Rectangle: new ShapeEditor(this.svgDocument)
+        Ellipse: shapeEditor,
+        Rectangle: shapeEditor
       };
     }
 
@@ -3175,8 +3178,8 @@
       return this._startPosition = this.object.get('position');
     };
 
-    ShapeEditor.prototype.onDraggingCornerHandle = function(cornerPosition, delta) {
-      var anchor, changedPoint;
+    ShapeEditor.prototype.onDraggingCornerHandle = function(cornerPosition, delta, event) {
+      var anchor, changedPoint, positionAndSize, size;
       switch (cornerPosition) {
         case 'topLeft':
           anchor = this._getPointForCornerPosition('bottomRight', this._startPosition, this._startSize);
@@ -3194,7 +3197,13 @@
           anchor = this._getPointForCornerPosition('topRight', this._startPosition, this._startSize);
           changedPoint = this._getPointForCornerPosition('bottomLeft', this._startPosition, this._startSize).add(delta);
       }
-      return this.object.set(normalizePositionAndSize(anchor, changedPoint));
+      positionAndSize = normalizePositionAndSize(anchor, changedPoint);
+      if (event.shiftKey) {
+        size = positionAndSize.size;
+        size = Math.min(size.width, size.height);
+        positionAndSize.size = new Size(size, size);
+      }
+      return this.object.set(positionAndSize);
     };
 
 

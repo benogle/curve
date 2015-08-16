@@ -3,6 +3,7 @@ SVGDocument = require '../src/svg-document'
 Node = require '../src/node'
 Path = require '../src/path'
 Rectangle = require '../src/rectangle'
+Ellipse = require '../src/ellipse'
 SelectionModel = require '../src/selection-model'
 ObjectEditor = require '../src/object-editor'
 ShapeEditor = require '../src/shape-editor'
@@ -70,6 +71,17 @@ describe 'ObjectEditor', ->
       [object] = []
       beforeEach ->
         object = new Rectangle(svgDocument)
+
+      it "activates the ShapeEditor", ->
+        model.setSelected(object)
+        expect(editor.isActive()).toBe true
+        expect(editor.getActiveObject()).toBe object
+        expect(editor.getActiveEditor() instanceof ShapeEditor).toBe true
+
+    describe "when the selected object is an Ellipse", ->
+      [object] = []
+      beforeEach ->
+        object = new Ellipse(svgDocument)
 
       it "activates the ShapeEditor", ->
         model.setSelected(object)
