@@ -18,7 +18,7 @@ class Path
 
   @delegatesMethods 'on', toProperty: 'emitter'
   @delegatesMethods 'get', 'set', 'getID', 'getType',
-    'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'removeNode', 'createSubpath', 
+    'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'removeNode', 'createSubpath',
     'close', 'isClosed'
     'translate'
     toProperty: 'model'
@@ -29,6 +29,7 @@ class Path
     @model = new PathModel
     @model.on 'change', @onModelChange
     @model.on 'insert:node', @_forwardEvent.bind(this, 'insert:node')
+    @model.on 'remove:node', @_forwardEvent.bind(this, 'remove:node')
     @_setupSVGObject(options)
     @svgDocument.registerObject(this)
 

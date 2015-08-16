@@ -1,10 +1,16 @@
 {Emitter} = require 'event-kit'
-Rectangle = require '../src/rectangle'
 SelectionModel = require '../src/selection-model'
 
+SVGDocument = require '../src/svg-document'
+Node = require '../src/node'
+Path = require '../src/path'
+
 describe 'SelectionModel', ->
-  [model, path, onSelected, onSelectedNode] = []
+  [model, path, onSelected, onSelectedNode, svg] = []
   beforeEach ->
+    canvas = document.createElement('div')
+    svg = new SVGDocument(canvas)
+
     model = new SelectionModel()
     path = {id: 1}
 
@@ -41,3 +47,23 @@ describe 'SelectionModel', ->
 
     emitter.emit('remove', {object: path})
     expect(model.getSelected()).toBe null
+
+  it "deselects the node when it's been removed", ->
+    path = new Path(svg)
+    path.addNode(new Node([50, 50]))
+    path.addNode(new Node([80, 60]))
+    path.addNode(new Node([60, 80]))
+
+    node = path.getNodes()[1]
+    model.setSelected(path)
+    model.setSelectedNode(node)
+    expect(model.getSelected()).toBe path
+    expect(model.getSelectedNode()).toBe node
+
+    path.removeNode(path.getNodes()[0])
+    expect(model.getSelected()).toBe path
+    expect(model.getSelectedNode()).toBe node
+
+    path.removeNode(node)
+    expect(model.getSelected()).toBe path
+    expect(model.getSelectedNode()).toBe null

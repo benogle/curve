@@ -121,6 +121,7 @@ class PathModel extends Model
     @subpathSubscriptions ?= new CompositeDisposable
     @subpathSubscriptions.add subpath.on('change', @onSubpathChange)
     @subpathSubscriptions.add subpath.on('insert:node', @_forwardEvent.bind(this, 'insert:node'))
+    @subpathSubscriptions.add subpath.on('remove:node', @_forwardEvent.bind(this, 'remove:node'))
 
   _unbindSubpath: (subpath) ->
     return unless subpath

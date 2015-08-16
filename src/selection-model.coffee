@@ -33,7 +33,9 @@ class SelectionModel
 
     if @selected?
       @selectedSubscriptions = new CompositeDisposable
-      @selectedSubscriptions.add @selected?.on('remove', => @setSelected(null)) if @selected.on?
+      @selectedSubscriptions.add @selected?.on?('remove', => @setSelected(null))
+      @selectedSubscriptions.add @selected?.on? 'remove:node', ({node}) =>
+        @setSelectedNode(null) if node is @selectedNode
 
     @setPreselected(null) if @preselected is selected
     @emitter.emit 'change:selected', object: @selected, old: old
