@@ -25,6 +25,12 @@ jasmine.buildMouseEvent = (type, properties...) ->
     Object.defineProperty(event, 'offsetY', get: -> properties.offsetY)
   event
 
+jasmine.buildMouseParams = (x, y) ->
+  pageX: x
+  pageY: y
+  offsetX: x
+  offsetY: y
+
 beforeEach ->
   jasmine.addMatchers
     toShow: ->
