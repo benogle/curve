@@ -1,4 +1,5 @@
-{CompositeDisposable} = require 'event-kit'
+{CompositeDisposable, Emitter} = require 'event-kit'
+Delegator = require 'delegato'
 Point = require './point'
 
 # A node UI in the interface allowing for user interaction (moving the node,
@@ -6,6 +7,9 @@ Point = require './point'
 # Managed by a PathEditor object.
 module.exports =
 class NodeEditor
+  Delegator.includeInto(this)
+  @delegatesMethods 'on', toProperty: 'emitter'
+
   nodeSize: 5
   handleSize: 3
 
@@ -15,6 +19,7 @@ class NodeEditor
   lineElement = null
 
   constructor: (@svgDocument, @pathEditor) ->
+    @emitter = new Emitter
     @toolLayer = @svgDocument.getToolLayer()
     @_setupNodeElement()
     @_setupLineElement()
@@ -98,14 +103,16 @@ class NodeEditor
 
     @nodeElement.mousedown (e) =>
       e.stopPropagation()
-      @setEnableHandles(true)
-      @pathEditor.activateNode(@node)
+
+      defaultPrevented = false
+      preventDefault = -> defaultPrevented = true
+      @emitter.emit('mousedown:node', {@node, preventDefault, event})
+      @svgDocument.getSelectionModel().setSelectedNode(@node) unless defaultPrevented
       false
 
     @nodeElement.draggable()
     @nodeElement.dragmove = @onDraggingNode
     @nodeElement.dragstart = =>
-      @pathEditor.activateNode(@node)
       @_startPosition = @node.getPoint()
     @nodeElement.dragend = =>
       @_startPosition = null

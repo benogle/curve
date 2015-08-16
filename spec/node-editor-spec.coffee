@@ -31,3 +31,29 @@ describe 'NodeEditor', ->
       expect(path.getSubpaths()[0].nodes[0].handleOut).toEqual new Point([20, 10])
       expect(nodeEditor.handleElements.members[1].node).toHaveAttr 'cx', '70'
       expect(nodeEditor.handleElements.members[1].node).toHaveAttr 'cy', '60'
+
+  describe 'clicking nodes', ->
+    beforeEach ->
+      nodeEditor.setNode(path.getSubpaths()[0].nodes[0])
+
+    it 'clicking the node editor selects the node', ->
+      expect(svgDocument.getSelectionModel().getSelectedNode()).toBe null
+
+      xyParams = jasmine.buildMouseParams(20, 30)
+      nodeEditorElement = nodeEditor.nodeElement.node
+      nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mousedown', xyParams, target: nodeEditorElement))
+      nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mouseup', xyParams))
+
+      expect(svgDocument.getSelectionModel().getSelectedNode()).toBe path.getNodes()[0]
+
+    it 'clicking the node editor does not select the node when event.preventDefault is called', ->
+      nodeEditor.on 'mousedown:node', mousedownSpy = jasmine.createSpy().and.callFake ({preventDefault}) -> preventDefault()
+      expect(svgDocument.getSelectionModel().getSelectedNode()).toBe null
+
+      xyParams = jasmine.buildMouseParams(20, 30)
+      nodeEditorElement = nodeEditor.nodeElement.node
+      nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mousedown', xyParams, target: nodeEditorElement))
+      nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mouseup', xyParams))
+
+      expect(mousedownSpy).toHaveBeenCalled()
+      expect(svgDocument.getSelectionModel().getSelectedNode()).toBe null
