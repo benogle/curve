@@ -144,6 +144,17 @@ describe 'Curve.SVGDocument', ->
       expect(svg.getActiveToolType()).toBe 'pointer'
       expect(pointerTool.deactivate).not.toHaveBeenCalled()
 
+    it "will only call deactivate when attempting to switch to the same tool when it supports multiple types", ->
+      svg.setActiveToolType('rectangle')
+      expect(svg.getActiveToolType()).toBe 'rectangle'
+      svg.setActiveToolType('rectangle')
+      expect(svg.getActiveToolType()).toBe 'rectangle'
+      expect(shapeTool.deactivate).not.toHaveBeenCalled()
+
+      svg.setActiveToolType('ellipse')
+      expect(svg.getActiveToolType()).toBe 'ellipse'
+      expect(shapeTool.deactivate).toHaveBeenCalled()
+
   describe '::translateSelectedObjects', ->
     [object] = []
     beforeEach ->

@@ -89,9 +89,10 @@ class SVGDocument
 
   setActiveToolType: (toolType) ->
     oldActiveTool = @getActiveTool()
+    oldActiveToolType = oldActiveTool?.getType()
 
     newTool = @toolForType(toolType)
-    if newTool? and newTool isnt oldActiveTool
+    if newTool? and toolType isnt oldActiveToolType
       oldActiveTool?.deactivate()
       newTool.activate(toolType)
       @emitter.emit('change:tool', {toolType})

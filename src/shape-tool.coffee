@@ -2,6 +2,7 @@
 
 Point = require './point'
 Size = require './size'
+Ellipse = require './ellipse'
 Rectangle = require './rectangle'
 {getCanvasPosition} = require './utils'
 
@@ -15,7 +16,7 @@ class ShapeTool
 
   getType: -> @shapeType
 
-  supportsType: (type) -> type in ['shape', 'rectangle']
+  supportsType: (type) -> type in ['shape', 'rectangle', 'ellipse']
 
   isActive: -> @active
 
@@ -39,6 +40,8 @@ class ShapeTool
   createShape: (params) ->
     if @shapeType is 'rectangle'
       new Rectangle(@svgDocument, params)
+    else if @shapeType is 'ellipse'
+      new Ellipse(@svgDocument, params)
     else
       null
 

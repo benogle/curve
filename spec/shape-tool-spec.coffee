@@ -5,6 +5,7 @@ SelectionModel = require '../src/selection-model'
 Size = require '../src/size'
 Point = require '../src/point'
 Rectangle = require '../src/rectangle'
+Ellipse = require '../src/ellipse'
 
 describe 'ShapeTool', ->
   [tool, svg, canvas, selectionModel] = []
@@ -83,5 +84,24 @@ describe 'ShapeTool', ->
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', jasmine.buildMouseParams(30, 50), shiftKey: true))
       selected = selectionModel.getSelected()
       expect(selected.get('size')).toEqual new Size(30, 30)
+
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
+
+  describe "when activated with Rectangle", ->
+    beforeEach ->
+      tool.activate('ellipse')
+      expect(selectionModel.getSelected()).toBe null
+
+    it "creates an Ellipse when dragging", ->
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', jasmine.buildMouseParams(20, 30)))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', jasmine.buildMouseParams(30, 50)))
+      selected = selectionModel.getSelected()
+      expect(selected instanceof Ellipse).toBe true
+      expect(selected.get('position')).toEqual new Point(20, 30)
+      expect(selected.get('size')).toEqual new Size(10, 20)
+
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', jasmine.buildMouseParams(10, 50)))
+      expect(selected.get('position')).toEqual new Point(10, 30)
+      expect(selected.get('size')).toEqual new Size(10, 20)
 
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
