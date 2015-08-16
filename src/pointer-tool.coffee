@@ -40,13 +40,14 @@ class PointerTool
     @active = false
 
   onChangedSelectedObject: ({object, old}) =>
-    object.enableDragging() if object?
     old.disableDragging() if old?
+    object.enableDragging(@_dragStartEvent) if object?
+    @_dragStartEvent = null
 
   onMouseDown: (event) =>
     # obj = @_hitWithIntersectionList(event)
     object = @_hitWithTarget(event)
-    object?.enableDragging?(event)
+    @_dragStartEvent = event if object?
     @selectionModel.setSelected(object)
     @selectionModel.setSelectedNode(null)
     true
