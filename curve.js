@@ -2619,21 +2619,20 @@
     PointerTool.prototype.onChangedSelectedObject = function(arg) {
       var object, old;
       object = arg.object, old = arg.old;
-      if (object != null) {
-        object.enableDragging();
-      }
       if (old != null) {
-        return old.disableDragging();
+        old.disableDragging();
       }
+      if (object != null) {
+        object.enableDragging(this._dragStartEvent);
+      }
+      return this._dragStartEvent = null;
     };
 
     PointerTool.prototype.onMouseDown = function(event) {
       var object;
       object = this._hitWithTarget(event);
       if (object != null) {
-        if (typeof object.enableDragging === "function") {
-          object.enableDragging(event);
-        }
+        this._dragStartEvent = event;
       }
       this.selectionModel.setSelected(object);
       this.selectionModel.setSelectedNode(null);
