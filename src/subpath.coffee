@@ -83,6 +83,13 @@ class Subpath
     @emitter.emit('insert:node', {subpath: this, index, node})
     @emitter.emit('change', this)
 
+  removeNode: (node) ->
+    index = @nodes.indexOf(node)
+    if index > -1
+      @nodes.splice(index, 1)
+      @emitter.emit('remove:node', {subpath: this, index, node})
+      @emitter.emit('change', this)
+
   isClosed: -> @closed
 
   close: ->

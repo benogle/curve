@@ -82,7 +82,7 @@ describe 'Subpath', ->
       path.close()
       expect(changespy).toHaveBeenCalled()
 
-    it 'node added adds node to the end', ->
+    it 'adds a node to the end with addNode and emits an event', ->
       node = new Node([40, 60], [0, 0], [0, 0])
 
       spy = jasmine.createSpy()
@@ -95,6 +95,21 @@ describe 'Subpath', ->
         subpath: path
         index: 3
         node: node
+
+    it 'removes a node with removeNode and emits an event', ->
+      node = path.nodes[1]
+      path.on 'remove:node', removedSpy = jasmine.createSpy()
+      path.on 'change', changedSpy = jasmine.createSpy()
+      path.removeNode(node)
+
+      expect(changedSpy).toHaveBeenCalled()
+      expect(removedSpy.calls.mostRecent().args[0]).toEqual
+        subpath: path
+        index: 1
+        node: node
+
+      expect(path.nodes.indexOf(node)).toBe -1
+      expect(path.nodes).toHaveLength 2
 
     it 'node inserted inserts node in right place', ->
       node = new Node([40, 60], [0, 0], [0, 0])
