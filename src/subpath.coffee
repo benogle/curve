@@ -83,6 +83,8 @@ class Subpath
     @emitter.emit('insert:node', {subpath: this, index, node})
     @emitter.emit('change', this)
 
+  isClosed: -> @closed
+
   close: ->
     @closed = true
     @emitter.emit('change', this)

@@ -55,6 +55,12 @@ class PathModel extends Model
     nodes = (subpath.getNodes() for subpath in @subpaths)
     flatten(nodes)
 
+  isClosed: ->
+    # FIXME: this is pretty crappy right now. Not sure what the best thing is
+    for subpath in @subpaths
+      return false unless subpath.isClosed()
+    true
+
   ###
   Section: Position / Size Methods
   ###

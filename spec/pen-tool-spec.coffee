@@ -42,4 +42,12 @@ describe 'PenTool', ->
       expect(selectedNode.getHandleOut()).toEqual new Point(-30, 10)
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
 
-    it "closes the path when clicking on the first node", ->
+      # closes when clicking on the first node
+      nodeEditorElement = svg.getObjectEditor().getActiveEditor().nodeEditors[0].nodeElement.node
+      xyParams = jasmine.buildMouseParams(20, 30)
+      nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mousedown', xyParams, target: nodeEditorElement))
+
+      selectedNode = selectionModel.getSelectedNode()
+      expect(selected.isClosed()).toBe true
+      expect(selectedNode).toBe selected.getNodes()[0]
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))

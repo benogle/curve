@@ -19,6 +19,7 @@ class PenTool
 
   activate: ->
     @objectEditor.activate()
+    @subscriptions = @objectEditor.editors.Path.on('mousedown:node', @onMouseDownNode.bind(this))
     svg = @svgDocument.getSVGRoot()
     svg.on 'mousedown', @onMouseDown
     svg.on 'mousemove', @onMouseMove
@@ -27,29 +28,29 @@ class PenTool
 
   deactivate: ->
     @objectEditor.deactivate()
+    @subscriptions?.dispose()
     svg = @svgDocument.getSVGRoot()
     svg.off 'mousedown', @onMouseDown
     svg.off 'mousemove', @onMouseMove
     svg.off 'mouseup', @onMouseUp
     @active = false
 
-  onMouseDown: (e) =>
-    makeNode = =>
-      position = getCanvasPosition(@svgDocument.getSVGRoot(), e)
-      @currentNode = new Node(position, [0, 0], [0, 0], true)
-      @currentObject.addNode(@currentNode)
-      @selectionModel.setSelectedNode(@currentNode)
+  onMouseDownNode: (event) ->
+    {node} = event
+    path = @selectionModel.getSelected()
+    if path?
+      nodeIndex = path.getNodes().indexOf(node)
+      path.close() if nodeIndex is 0
 
-    if @currentObject
-      # if @selectionView.nodeEditors.length and e.target == @selectionView.nodeEditors[0].nodeElement.node
-      #   @currentObject.close()
-      #   @currentObject = null
-      # else
-      makeNode()
-    else
+  onMouseDown: (event) =>
+    unless @currentObject
       @currentObject = new Path(@svgDocument)
       @selectionModel.setSelected(@currentObject)
-      makeNode()
+
+    position = getCanvasPosition(@svgDocument.getSVGRoot(), event)
+    @currentNode = new Node(position, [0, 0], [0, 0], true)
+    @currentObject.addNode(@currentNode)
+    @selectionModel.setSelectedNode(@currentNode)
 
   onMouseMove: (e) =>
     if @currentNode
