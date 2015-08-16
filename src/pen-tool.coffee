@@ -41,6 +41,7 @@ class PenTool
     if path?
       nodeIndex = path.getNodes().indexOf(node)
       path.close() if nodeIndex is 0
+      @currentObject = null
 
   onMouseDown: (event) =>
     unless @currentObject

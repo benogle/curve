@@ -20,7 +20,7 @@ describe 'PenTool', ->
       tool.activate()
       expect(selectionModel.getSelected()).toBe null
 
-    it "creates a path when dragging", ->
+    it "creates a path when clicking and dragging", ->
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', jasmine.buildMouseParams(20, 30)))
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', jasmine.buildMouseParams(30, 50)))
       selected = selectionModel.getSelected()
@@ -50,4 +50,14 @@ describe 'PenTool', ->
       selectedNode = selectionModel.getSelectedNode()
       expect(selected.isClosed()).toBe true
       expect(selectedNode).toBe selected.getNodes()[0]
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
+
+      # now it should create a new Path
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', jasmine.buildMouseParams(200, 300)))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', jasmine.buildMouseParams(300, 500)))
+      newSelected = selectionModel.getSelected()
+      newSelectedNode = selectionModel.getSelectedNode()
+      expect(newSelected instanceof Path).toBe true
+      expect(newSelected).not.toBe selected
+      expect(newSelectedNode).toBe newSelected.getNodes()[0]
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
