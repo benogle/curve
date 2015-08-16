@@ -17,6 +17,8 @@ class RectangleModel extends Model
 
     @addFilter 'size', (value) => Size.create(value)
     @addFilter 'position', (value) => Point.create(value)
+    @addFilter 'transform', (value) =>
+      if value is 'matrix(1,0,0,1,0,0)' then null else value
 
     @subscriptions = new CompositeDisposable
     @subscriptions.add @on 'change:transform', ({value}) => @transform.setTransformString(value)
