@@ -99,6 +99,10 @@ class Ellipse
     {@svgEl} = options
     unless @svgEl
       attrs = ObjectAssign({}, DefaultAttrs, options, @_convertPositionAndSizeToCenter(options))
+      delete attrs.x
+      delete attrs.y
+      delete attrs.width
+      delete attrs.height
       @svgEl = @svgDocument.getObjectLayer().ellipse().attr(attrs)
     Utils.setObjectOnNode(@svgEl.node, this)
     @updateFromAttributes()
