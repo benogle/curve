@@ -72,7 +72,7 @@ class ShapeEditor
     @_startSize = @object.get('size')
     @_startPosition = @object.get('position')
 
-  onDraggingCornerHandle: (cornerPosition, delta) ->
+  onDraggingCornerHandle: (cornerPosition, delta, event) ->
     # Technique here is to anchor at the corner _opposite_ the corner the user
     # is dragging, find the new point at the corner we're dragging, then pass
     # that through the normalize function.
@@ -90,7 +90,14 @@ class ShapeEditor
         anchor = @_getPointForCornerPosition('topRight', @_startPosition, @_startSize)
         changedPoint = @_getPointForCornerPosition('bottomLeft', @_startPosition, @_startSize).add(delta)
 
-    @object.set(normalizePositionAndSize(anchor, changedPoint))
+    positionAndSize = normalizePositionAndSize(anchor, changedPoint)
+    if event.shiftKey
+      # constrain to 1:1 ratio when holding shift
+      size = positionAndSize.size
+      size = Math.min(size.width, size.height)
+      positionAndSize.size = new Size(size, size)
+
+    @object.set(positionAndSize)
 
   ###
   Section: Private Methods

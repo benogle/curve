@@ -68,3 +68,26 @@ describe 'ShapeEditor', ->
       expect(cornerHandle.attr('y')).toBe 220 - editor.handleSize / 2
 
       cornerHandleNode.dispatchEvent(jasmine.buildMouseEvent('mouseup', xyParams))
+
+    it "constrains to 1:1 proportion when shift is held while dragging", ->
+      # bottom right
+      cornerHandle = editor.cornerHandles.members[2]
+      cornerHandleNode = cornerHandle.node
+      xyParams = jasmine.buildMouseParams(120, 220)
+      cornerHandleNode.dispatchEvent(jasmine.buildMouseEvent('mousedown', xyParams, target: cornerHandleNode))
+
+      xyParams = jasmine.buildMouseParams(100, 300)
+      cornerHandleNode.dispatchEvent(jasmine.buildMouseEvent('mousemove', xyParams, target: cornerHandleNode, shiftKey: true))
+      expect(object.get('position')).toEqual new Point(20, 20)
+      expect(object.get('size')).toEqual new Size(80, 80)
+      expect(cornerHandle.attr('x')).toBe 100 - editor.handleSize / 2
+      expect(cornerHandle.attr('y')).toBe 100 - editor.handleSize / 2
+
+      xyParams = jasmine.buildMouseParams(300, 100)
+      cornerHandleNode.dispatchEvent(jasmine.buildMouseEvent('mousemove', xyParams, target: cornerHandleNode, shiftKey: true))
+      expect(object.get('position')).toEqual new Point(20, 20)
+      expect(object.get('size')).toEqual new Size(80, 80)
+      expect(cornerHandle.attr('x')).toBe 100 - editor.handleSize / 2
+      expect(cornerHandle.attr('y')).toBe 100 - editor.handleSize / 2
+
+      cornerHandleNode.dispatchEvent(jasmine.buildMouseEvent('mouseup', xyParams))
