@@ -61,3 +61,30 @@ describe 'PathEditor', ->
 
     path.addNode(new Node([10, 40], [-10, 0], [10, 0]))
     expect(canvas.querySelectorAll('svg circle.node-editor-node')).toHaveLength 3
+
+  it "emits an event when a node is mousedown'd", ->
+    editor.activateObject(path)
+    editor.activateNode(path.getNodes()[0])
+
+    editor.on('mousedown:node', nodeSpy = jasmine.createSpy())
+
+    nodeEditorElement = editor.nodeEditors[0].nodeElement.node
+    xyParams = jasmine.buildMouseParams(20, 30)
+    nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mousedown', xyParams, target: nodeEditorElement))
+
+    args = nodeSpy.calls.mostRecent().args[0]
+    expect(nodeSpy).toHaveBeenCalled()
+    expect(args.nodeIndex).toBe 0
+    expect(args.event).toBeTruthy()
+
+    nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mouseup', xyParams))
+
+    path.addNode(new Node([10, 40], [-10, 0], [10, 0]))
+
+    nodeEditorElement = editor.nodeEditors[1].nodeElement.node
+    xyParams = jasmine.buildMouseParams(10, 40)
+    nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mousedown', xyParams, target: nodeEditorElement))
+
+    args = nodeSpy.calls.mostRecent().args[0]
+    expect(nodeSpy).toHaveBeenCalled()
+    expect(args.nodeIndex).toBe 1

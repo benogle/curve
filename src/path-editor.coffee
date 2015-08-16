@@ -1,15 +1,21 @@
-{CompositeDisposable} = require 'event-kit'
+{Emitter, CompositeDisposable} = require 'event-kit'
+Delegator = require 'delegato'
 NodeEditor = require './node-editor'
 
 # Handles the UI for free-form path editing. Manages NodeEditor objects based on
 # a Path's nodes.
 module.exports =
 class PathEditor
+  Delegator.includeInto(this)
+  @delegatesMethods 'on', toProperty: 'emitter'
+
   constructor: (@svgDocument) ->
+    @emitter = new Emitter
     @path = null
     @node = null
     @nodeEditors = []
     @_nodeEditorPool = []
+    @nodeEditorSubscriptions = new CompositeDisposable()
 
   isActive: -> !!@path
 
@@ -72,10 +78,11 @@ class PathEditor
   _addNodeEditor: (node) ->
     return false unless node
 
-    nodeEditor = if @_nodeEditorPool.length
-      @_nodeEditorPool.pop()
+    if @_nodeEditorPool.length
+      nodeEditor = @_nodeEditorPool.pop()
     else
-      new NodeEditor(@svgDocument, this)
+      nodeEditor = new NodeEditor(@svgDocument, this)
+      @nodeEditorSubscriptions.add nodeEditor.on 'mousedown:node', @_forwardEvent.bind(this, 'mousedown:node')
 
     nodeEditor.setNode(node)
     @nodeEditors.push(nodeEditor)
@@ -85,3 +92,11 @@ class PathEditor
     for nodeEditor in @nodeEditors
       return nodeEditor if nodeEditor.node == node
     null
+
+  _forwardEvent: (eventName, args) ->
+    return unless path = @getActiveObject()
+    {node} = args
+    nodeIndex = path.getNodes().indexOf(node)
+    args.nodeIndex = nodeIndex
+    args.object = path
+    @emitter.emit(eventName, args)
