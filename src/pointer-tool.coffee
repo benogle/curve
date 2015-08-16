@@ -48,7 +48,7 @@ class PointerTool
     object = @_hitWithTarget(event)
     object?.enableDragging?(event)
     @selectionModel.setSelected(object)
-    # return false if obj
+    @selectionModel.setSelectedNode(null)
     true
 
   onMouseMove: (e) =>

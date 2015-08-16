@@ -1,5 +1,7 @@
 SVGDocument = require '../src/svg-document'
 Rectangle = require '../src/rectangle'
+Path = require '../src/path'
+Node = require '../src/node'
 Size = require '../src/size'
 Point = require '../src/point'
 
@@ -158,6 +160,22 @@ describe 'Curve.SVGDocument', ->
 
       expect(object.get('position')).toEqual new Point(40, 30)
 
+    it "translates the selected node by the point when a node is selected", ->
+      object = new Path(svg)
+      object.addNode(new Node([20, 30]))
+      object.addNode(new Node([30, 30]))
+      object.addNode(new Node([30, 40]))
+      object.addNode(new Node([20, 40]))
+      object.close()
+      expect(object.getNodes()[0].getPoint()).toEqual new Point(20, 30)
+      expect(object.getNodes()[1].getPoint()).toEqual new Point(30, 30)
+
+      svg.selectionModel.setSelected(object)
+      svg.selectionModel.setSelectedNode(object.getNodes()[1])
+      svg.translateSelectedObjects([20, 0])
+      expect(object.getNodes()[0].getPoint()).toEqual new Point(20, 30)
+      expect(object.getNodes()[1].getPoint()).toEqual new Point(50, 30)
+
   describe '::removeSelectedObjects', ->
     [object] = []
     beforeEach ->
@@ -171,6 +189,20 @@ describe 'Curve.SVGDocument', ->
       svg.selectionModel.setSelected(object)
       svg.removeSelectedObjects()
       expect(svg.getObjects()).not.toContain object
+
+    it "removes the selected node when a node is selected", ->
+      object = new Path(svg)
+      object.addNode(new Node([20, 30]))
+      object.addNode(new Node([30, 30]))
+      object.addNode(new Node([30, 40]))
+      object.addNode(new Node([20, 40]))
+      object.close()
+      expect(object.getNodes()).toHaveLength 4
+
+      svg.selectionModel.setSelected(object)
+      svg.selectionModel.setSelectedNode(object.getNodes()[1])
+      svg.removeSelectedObjects()
+      expect(object.getNodes()).toHaveLength 3
 
 DOCUMENT = '''
   <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">

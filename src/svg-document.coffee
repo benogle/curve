@@ -142,15 +142,23 @@ class SVGDocument
   ###
 
   translateSelectedObjects: (deltaPoint) ->
+    # TODO: this could ask the active tool to move the selected objects
     return unless deltaPoint
     deltaPoint = Point.create(deltaPoint)
 
-    selectedObject = @selectionModel.getSelected()
-    selectedObject?.translate?(deltaPoint)
+    if selectedNode = @selectionModel.getSelectedNode()
+      selectedNode?.translate?(deltaPoint)
+    else if selectedObject = @selectionModel.getSelected()
+      selectedObject?.translate?(deltaPoint)
 
   removeSelectedObjects: ->
+    # TODO: this could ask the active tool to remove the selected objects
     selectedObject = @selectionModel.getSelected()
-    selectedObject?.remove()
+
+    if selectedObject and (selectedNode = @selectionModel.getSelectedNode())
+      selectedObject.removeNode?(selectedNode)
+    else
+      selectedObject?.remove()
 
   registerObject: (object) ->
     @model.registerObject(object)
