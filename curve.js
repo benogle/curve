@@ -34,8 +34,16 @@
       }
       return new Point(x, y);
     },
-    normalizePositionAndSize: function(anchor, point) {
-      var bottomRight, diff, topLeft;
+    normalizePositionAndSize: function(anchor, point, constrain) {
+      var bottomRight, diff, diffX, diffY, minVal, topLeft;
+      if (constrain) {
+        diffX = point.x - anchor.x;
+        diffY = point.y - anchor.y;
+        minVal = Math.min(Math.abs(diffX), Math.abs(diffY));
+        diffX = diffX / Math.abs(diffX) * minVal;
+        diffY = diffY / Math.abs(diffY) * minVal;
+        point = new Point(anchor.x + diffX, anchor.y + diffY);
+      }
       topLeft = new Point(Math.min(anchor.x, point.x), Math.min(anchor.y, point.y));
       bottomRight = new Point(Math.max(anchor.x, point.x), Math.max(anchor.y, point.y));
       diff = bottomRight.subtract(topLeft);
@@ -3179,7 +3187,7 @@
     };
 
     ShapeEditor.prototype.onDraggingCornerHandle = function(cornerPosition, delta, event) {
-      var anchor, changedPoint, positionAndSize, size;
+      var anchor, changedPoint;
       switch (cornerPosition) {
         case 'topLeft':
           anchor = this._getPointForCornerPosition('bottomRight', this._startPosition, this._startSize);
@@ -3197,13 +3205,7 @@
           anchor = this._getPointForCornerPosition('topRight', this._startPosition, this._startSize);
           changedPoint = this._getPointForCornerPosition('bottomLeft', this._startPosition, this._startSize).add(delta);
       }
-      positionAndSize = normalizePositionAndSize(anchor, changedPoint);
-      if (event.shiftKey) {
-        size = positionAndSize.size;
-        size = Math.min(size.width, size.height);
-        positionAndSize.size = new Size(size, size);
-      }
-      return this.object.set(positionAndSize);
+      return this.object.set(normalizePositionAndSize(anchor, changedPoint, event.shiftKey));
     };
 
 
@@ -3361,7 +3363,7 @@
     };
 
     ShapeTool.prototype.onMouseMove = function(event) {
-      var point, position, ref1, size;
+      var point;
       if (this.anchor == null) {
         return;
       }
@@ -3375,18 +3377,9 @@
         });
         this.selectionModel.setSelected(this.shape);
       }
-      if (!this.shape) {
-        return;
+      if (this.shape) {
+        return this.shape.set(normalizePositionAndSize(this.anchor, point, event.shiftKey));
       }
-      ref1 = normalizePositionAndSize(this.anchor, point), size = ref1.size, position = ref1.position;
-      if (event.shiftKey) {
-        size = Math.min(size.width, size.height);
-        size = new Size(size, size);
-      }
-      return this.shape.set({
-        position: position,
-        size: size
-      });
     };
 
     ShapeTool.prototype.onMouseUp = function(event) {
