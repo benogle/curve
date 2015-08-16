@@ -1,5 +1,6 @@
 SVGDocument = require '../src/svg-document'
 Rectangle = require '../src/rectangle'
+Ellipse = require '../src/ellipse'
 Path = require '../src/path'
 Node = require '../src/node'
 Size = require '../src/size'
@@ -43,6 +44,28 @@ describe 'Curve.SVGDocument', ->
 
       expect(canvas.querySelector('.tool-layer .node-editor-node')).toBeDefined()
       expect(canvas.querySelector('.tool-layer .object-selection')).toBeDefined()
+
+    describe "when there are ellipses and circles", ->
+      it "parses out the ellipses and circles", ->
+        svgString = '''
+          <svg height="1024" width="1024" xmlns="http://www.w3.org/2000/svg">
+            <ellipse id="el" cx="100" cy="75" rx="10" ry="20"/></ellipse>
+            <circle id="cir" cx="200" cy="175" r="50"></circle>
+          </svg>
+        '''
+
+        svg.deserialize(svgString)
+        expect(svg.getObjects()).toHaveLength 2
+
+        ellipse = svg.getObjects()[0]
+        expect(ellipse instanceof Ellipse).toBe true
+        expect(ellipse.get('size')).toEqual new Size(20, 40)
+        expect(ellipse.get('position')).toEqual new Point(90, 55)
+
+        circle = svg.getObjects()[1]
+        expect(circle instanceof Ellipse).toBe true
+        expect(circle.get('size')).toEqual new Size(100, 100)
+        expect(circle.get('position')).toEqual new Point(150, 125)
 
   describe 'exporting svg', ->
     it 'will export an svg document', ->

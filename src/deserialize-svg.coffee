@@ -3,6 +3,7 @@ require "../vendor/svg.parser"
 
 Path = require "./path"
 Rectangle = require "./rectangle"
+Ellipse = require "./ellipse"
 
 # svg.import.js 0.11 - Copyright (c) 2013 Wout Fierens - Licensed under the MIT license
 #
@@ -19,6 +20,8 @@ module.exports = (svgDocument, svgString) ->
   IMPORT_FNS =
     path: (el) -> [new Path(svgDocument, svgEl: el)]
     rect: (el) -> [new Rectangle(svgDocument, svgEl: el)]
+    circle: (el) -> [new Ellipse(svgDocument, svgEl: el)]
+    ellipse: (el) -> [new Ellipse(svgDocument, svgEl: el)]
 
   # create temporary div to receive svg content
   parentNode = document.createElement('div')
@@ -41,6 +44,7 @@ module.exports = (svgDocument, svgString) ->
 # Convert nodes to svg.js elements
 convertNodes = (nodes, context, level, store, block) ->
   for i in [0...nodes.length]
+    element = null
     child = nodes[i]
     attr  = {}
     clips = []
