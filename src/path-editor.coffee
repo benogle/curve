@@ -51,14 +51,26 @@ class PathEditor
     @_addNodeEditor(node)
     null # Force null. otherwise _insertNodeEditor returns true and tells event emitter 'once'. Ugh
 
+  onRemoveNode: ({node, index}={}) =>
+    @_removeNodeEditorForNode(node)
+
   _bindToObject: (object) ->
     return unless object
     @objectSubscriptions = new CompositeDisposable
     @objectSubscriptions.add object.on('insert:node', @onInsertNode)
+    @objectSubscriptions.add object.on('remove:node', @onRemoveNode)
 
   _unbindFromObject: ->
     @objectSubscriptions?.dispose()
     @objectSubscriptions = null
+
+  _removeNodeEditorForNode: (node) ->
+    nodeEditor = @_findNodeEditorForNode(node)
+    if nodeEditor?
+      nodeEditor.setNode(null)
+      editorIndex = @nodeEditors.indexOf(nodeEditor)
+      @nodeEditors.splice(editorIndex, 1)
+      @_nodeEditorPool.push(nodeEditor)
 
   _removeNodeEditors: ->
     @_nodeEditorPool = @_nodeEditorPool.concat(@nodeEditors)

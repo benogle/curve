@@ -62,6 +62,19 @@ describe 'PathEditor', ->
     path.addNode(new Node([10, 40], [-10, 0], [10, 0]))
     expect(canvas.querySelectorAll('svg circle.node-editor-node')).toHaveLength 3
 
+  it 'removes NodeEditors when removing nodes from object', ->
+    editor.activateObject(path)
+    path.addNode(new Node([40, 40], [-10, 0], [10, 0]))
+    path.addNode(new Node([10, 40], [-10, 0], [10, 0]))
+
+    expect(editor.nodeEditors).toHaveLength 3
+
+    path.removeNode(path.getNodes()[0])
+    expect(editor.nodeEditors).toHaveLength 2
+
+    path.removeNode(path.getNodes()[0])
+    expect(editor.nodeEditors).toHaveLength 1
+
   it "emits an event when a node is mousedown'd", ->
     editor.activateObject(path)
     editor.activateNode(path.getNodes()[0])
