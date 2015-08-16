@@ -4,7 +4,7 @@ Point = require './point'
 Size = require './size'
 Ellipse = require './ellipse'
 Rectangle = require './rectangle'
-{getCanvasPosition} = require './utils'
+{getCanvasPosition, normalizePositionAndSize} = require './utils'
 
 module.exports =
 class ShapeTool
@@ -74,9 +74,3 @@ class ShapeTool
       @shape = null
     else
       @emitter.emit('cancel')
-
-normalizePositionAndSize = (anchor, point) ->
-  topLeft = new Point(Math.min(anchor.x, point.x), Math.min(anchor.y, point.y))
-  bottomRight = new Point(Math.max(anchor.x, point.x), Math.max(anchor.y, point.y))
-  diff = bottomRight.subtract(topLeft)
-  {position: topLeft, size: new Size(diff.x, diff.y)}
