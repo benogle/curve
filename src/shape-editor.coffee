@@ -90,14 +90,7 @@ class ShapeEditor
         anchor = @_getPointForCornerPosition('topRight', @_startPosition, @_startSize)
         changedPoint = @_getPointForCornerPosition('bottomLeft', @_startPosition, @_startSize).add(delta)
 
-    positionAndSize = normalizePositionAndSize(anchor, changedPoint)
-    if event.shiftKey
-      # constrain to 1:1 ratio when holding shift
-      size = positionAndSize.size
-      size = Math.min(size.width, size.height)
-      positionAndSize.size = new Size(size, size)
-
-    @object.set(positionAndSize)
+    @object.set(normalizePositionAndSize(anchor, changedPoint, event.shiftKey))
 
   ###
   Section: Private Methods

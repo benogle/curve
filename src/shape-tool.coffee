@@ -57,16 +57,7 @@ class ShapeTool
       @shape = @createShape({x: @anchor.x, y: @anchor.y, width: 0, height: 0})
       @selectionModel.setSelected(@shape)
 
-    return unless @shape
-
-    {size, position} = normalizePositionAndSize(@anchor, point)
-
-    if event.shiftKey
-      # constrain to 1:1 ratio when holding shift
-      size = Math.min(size.width, size.height)
-      size = new Size(size, size)
-
-    @shape.set({position, size})
+    @shape.set(normalizePositionAndSize(@anchor, point, event.shiftKey)) if @shape
 
   onMouseUp: (event) =>
     @anchor = null

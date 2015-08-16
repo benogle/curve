@@ -23,7 +23,16 @@ Utils =
       y = event.pageY - svgRoot.node.offsetTop
     new Point(x, y)
 
-  normalizePositionAndSize: (anchor, point) ->
+  normalizePositionAndSize: (anchor, point, constrain) ->
+    if constrain
+      diffX = point.x - anchor.x
+      diffY = point.y - anchor.y
+      minVal = Math.min(Math.abs(diffX), Math.abs(diffY))
+
+      diffX = diffX / Math.abs(diffX) * minVal
+      diffY = diffY / Math.abs(diffY) * minVal
+      point = new Point(anchor.x + diffX, anchor.y + diffY)
+
     topLeft = new Point(Math.min(anchor.x, point.x), Math.min(anchor.y, point.y))
     bottomRight = new Point(Math.max(anchor.x, point.x), Math.max(anchor.y, point.y))
     diff = bottomRight.subtract(topLeft)
