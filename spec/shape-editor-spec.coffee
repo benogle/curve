@@ -1,6 +1,7 @@
 SVGDocument = require '../src/svg-document'
 Node = require '../src/node'
 Rectangle = require '../src/rectangle'
+Ellipse = require '../src/ellipse'
 Point = require '../src/point'
 Size = require '../src/size'
 ShapeEditor = require '../src/shape-editor'
@@ -12,6 +13,20 @@ describe 'ShapeEditor', ->
     jasmine.attachToDOM(canvas)
     svgDocument = new SVGDocument(canvas)
 
+  describe "when using a Ellipse object", ->
+    beforeEach ->
+      editor = new ShapeEditor(svgDocument)
+      object = new Ellipse(svgDocument, x: 20, y: 20, width: 100, height: 200)
+      editor.activateObject(object)
+
+    it 'creates nodes when selecting and cleans up when selecting nothing', ->
+      expect(canvas.querySelector('svg rect.shape-editor-handle')).toShow()
+      expect(canvas.querySelector('svg rect.object-selection')).toShow()
+
+      editor.deactivate()
+      expect(canvas.querySelector('svg rect.shape-editor-handle')).toHide()
+      expect(canvas.querySelector('svg rect.object-selection')).toBe null
+
   describe "when using a Rectangle object", ->
     beforeEach ->
       editor = new ShapeEditor(svgDocument)
@@ -19,10 +34,12 @@ describe 'ShapeEditor', ->
       editor.activateObject(object)
 
     it 'creates nodes when selecting and cleans up when selecting nothing', ->
-      expect(canvas.querySelectorAll('svg rect.shape-editor-handle')[0]).toShow()
+      expect(canvas.querySelector('svg rect.shape-editor-handle')).toShow()
+      expect(canvas.querySelector('svg rect.object-selection')).toShow()
 
       editor.deactivate()
-      expect(canvas.querySelectorAll('svg rect.shape-editor-handle')[0]).toHide()
+      expect(canvas.querySelector('svg rect.shape-editor-handle')).toHide()
+      expect(canvas.querySelector('svg rect.object-selection')).toBe null
 
     it "updates the object and the handles when dragging the Top Left handles", ->
       cornerHandle = editor.cornerHandles.members[0]

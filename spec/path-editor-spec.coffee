@@ -18,12 +18,12 @@ describe 'PathEditor', ->
 
   it 'creates nodes when selecting and cleans up when selecting nothing', ->
     editor.activateObject(path)
-
-    expect(canvas.querySelectorAll('svg circle.node-editor-node')[0]).toShow()
+    expect(canvas.querySelector('svg circle.node-editor-node')).toShow()
+    expect(canvas.querySelector('svg path.object-selection')).toShow()
 
     editor.deactivate()
-
-    expect(canvas.querySelectorAll('svg circle.node-editor-node')[0]).toHide()
+    expect(canvas.querySelector('svg circle.node-editor-node')).toHide()
+    expect(canvas.querySelector('svg path.object-selection')).toBe null
 
   it 'renders node editor when selecting a node', ->
     editor.activateObject(path)

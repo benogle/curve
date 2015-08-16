@@ -19,13 +19,6 @@ describe 'SelectionView', ->
     path.addNode(new Node([50, 50], [-10, 0], [10, 0]))
     path.close()
 
-  it 'creates object-selection when selecting and cleans up when selecting nothing', ->
-    model.setSelected(path)
-    expect(canvas.querySelectorAll('svg path.object-selection')).toHaveLength 1
-
-    model.clearSelected()
-    expect(canvas.querySelectorAll('svg path.object-selection')).toHaveLength 0
-
   it 'creates nodes when PREselecting and cleans up when selecting nothing', ->
     expect(canvas.querySelectorAll('svg path.object-preselection')).toHaveLength 0
 

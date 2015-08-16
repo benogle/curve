@@ -1,6 +1,7 @@
 {Emitter, CompositeDisposable} = require 'event-kit'
 Delegator = require 'delegato'
 NodeEditor = require './node-editor'
+ObjectSelection = require './object-selection'
 
 # Handles the UI for free-form path editing. Manages NodeEditor objects based on
 # a Path's nodes.
@@ -15,6 +16,7 @@ class PathEditor
     @node = null
     @nodeEditors = []
     @_nodeEditorPool = []
+    @objectSelection = new ObjectSelection(@svgDocument)
     @nodeEditorSubscriptions = new CompositeDisposable()
 
   isActive: -> !!@path
@@ -26,9 +28,11 @@ class PathEditor
     if object?
       @path = object
       @_bindToObject(@path)
+      @objectSelection.setObject(object)
       @_createNodeEditors(@path)
 
   deactivate: ->
+    @objectSelection.setObject(null)
     @deactivateNode()
     @_unbindFromObject()
     @_removeNodeEditors()

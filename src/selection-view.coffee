@@ -1,22 +1,17 @@
 ObjectSelection = require "./object-selection"
 
-# Handles showing / hiding the red and blue outlines when an object is selected /
-# preselected.
-
+# Handles showing / hiding the red outlines when an object is preselected. This
+# handles preselection only. Each ObjectEditor (e.g. PathEditor, ShapeEditor)
+# handles displaying its own selection rect or path.
 module.exports =
 class SelectionView
   constructor: (@svgDocument) ->
     @model = @svgDocument.getSelectionModel()
-    @objectSelection = new ObjectSelection(@svgDocument)
     @objectPreselection = new ObjectSelection(@svgDocument, class: 'object-preselection')
-    @model.on 'change:selected', @onChangeSelected
     @model.on 'change:preselected', @onChangePreselected
 
   getObjectSelection: ->
     @objectSelection
-
-  onChangeSelected: ({object, old}) =>
-    @objectSelection.setObject(object)
 
   onChangePreselected: ({object}) =>
     @objectPreselection.setObject(object)

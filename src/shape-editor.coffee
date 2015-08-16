@@ -1,6 +1,7 @@
 {CompositeDisposable} = require 'event-kit'
 Point = require './point'
 Size = require './size'
+RectangleSelection = require './rectangle-selection'
 {normalizePositionAndSize} = require './utils'
 
 # Handles the UI for free-form path editing. Manages NodeEditor objects based on
@@ -16,6 +17,7 @@ class ShapeEditor
   constructor: (@svgDocument) ->
     @object = null
     @toolLayer = @svgDocument.getToolLayer()
+    @rectangleSelection = new RectangleSelection(@svgDocument)
 
   isActive: -> !!@object
 
@@ -27,10 +29,12 @@ class ShapeEditor
       @object = object
       @_bindToObject(@object)
       @_setupCornerNodes()
+      @rectangleSelection.setObject(object)
       @render()
       @show()
 
   deactivate: ->
+    @rectangleSelection.setObject(null)
     @hide()
     @_unbindFromObject()
     @object = null
