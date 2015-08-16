@@ -30,7 +30,7 @@ class RectangleModel extends Model
   Section: Public Methods
   ###
 
-  getType: -> 'Path'
+  getType: -> 'Rectangle'
 
   getID: -> "#{@getType()}-#{@id}"
 

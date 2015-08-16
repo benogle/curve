@@ -15,7 +15,7 @@ describe 'Rectangle', ->
   describe "creation", ->
     it 'has an id', ->
       rect = new Rectangle(svg)
-      expect(rect.getID()).toBe "Rectangle-#{rect.id}"
+      expect(rect.getID()).toBe "Rectangle-#{rect.model.id}"
 
     it 'registers itself with the document', ->
       rect = new Rectangle(svg)

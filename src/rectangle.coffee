@@ -18,7 +18,7 @@ class Rectangle
   Delegator.includeInto(this)
 
   @delegatesMethods 'on', toProperty: 'emitter'
-  @delegatesMethods 'get', 'set', 'getID', 'getType',
+  @delegatesMethods 'get', 'set', 'getID', 'getType', 'toString',
     'translate',
     toProperty: 'model'
 
@@ -32,12 +32,6 @@ class Rectangle
   ###
   Section: Public Methods
   ###
-
-  getType: -> 'Rectangle'
-
-  getID: -> "#{@getType()}-#{@id}"
-
-  toString: -> @model.toString()
 
   remove: ->
     @svgEl.remove()

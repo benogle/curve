@@ -1144,6 +1144,7 @@
 
     function PathEditor(svgDocument) {
       this.svgDocument = svgDocument;
+      this.onRemoveNode = bind(this.onRemoveNode, this);
       this.onInsertNode = bind(this.onInsertNode, this);
       this.emitter = new Emitter;
       this.path = null;
@@ -1207,12 +1208,19 @@
       return null;
     };
 
+    PathEditor.prototype.onRemoveNode = function(arg) {
+      var index, node, ref1;
+      ref1 = arg != null ? arg : {}, node = ref1.node, index = ref1.index;
+      return this._removeNodeEditorForNode(node);
+    };
+
     PathEditor.prototype._bindToObject = function(object) {
       if (!object) {
         return;
       }
       this.objectSubscriptions = new CompositeDisposable;
-      return this.objectSubscriptions.add(object.on('insert:node', this.onInsertNode));
+      this.objectSubscriptions.add(object.on('insert:node', this.onInsertNode));
+      return this.objectSubscriptions.add(object.on('remove:node', this.onRemoveNode));
     };
 
     PathEditor.prototype._unbindFromObject = function() {
@@ -1221,6 +1229,17 @@
         ref1.dispose();
       }
       return this.objectSubscriptions = null;
+    };
+
+    PathEditor.prototype._removeNodeEditorForNode = function(node) {
+      var editorIndex, nodeEditor;
+      nodeEditor = this._findNodeEditorForNode(node);
+      if (nodeEditor != null) {
+        nodeEditor.setNode(null);
+        editorIndex = this.nodeEditors.indexOf(nodeEditor);
+        this.nodeEditors.splice(editorIndex, 1);
+        return this._nodeEditorPool.push(nodeEditor);
+      }
     };
 
     PathEditor.prototype._removeNodeEditors = function() {
@@ -1338,6 +1357,15 @@
           return _this._parseFromPathString(value);
         };
       })(this));
+      this.addFilter('transform', (function(_this) {
+        return function(value) {
+          if (value === 'matrix(1,0,0,1,0,0)') {
+            return null;
+          } else {
+            return value;
+          }
+        };
+      })(this));
       this.subscriptions = new CompositeDisposable;
       this.subscriptions.add(this.on('change:transform', (function(_this) {
         return function(arg) {
@@ -1442,9 +1470,26 @@
       return this.currentSubpath.close();
     };
 
+    PathModel.prototype.createSubpath = function(args) {
+      if (args == null) {
+        args = {};
+      }
+      args.path = this;
+      return this.currentSubpath = this._addSubpath(new Subpath(args));
+    };
+
+    PathModel.prototype.removeNode = function(node) {
+      var i, len, ref1, subpath;
+      ref1 = this.subpaths;
+      for (i = 0, len = ref1.length; i < len; i++) {
+        subpath = ref1[i];
+        subpath.removeNode(node);
+      }
+    };
+
     PathModel.prototype._addCurrentSubpathIfNotPresent = function() {
       if (!this.currentSubpath) {
-        return this.currentSubpath = this._createSubpath();
+        return this.createSubpath();
       }
     };
 
@@ -1462,14 +1507,6 @@
     Section: Private Methods
      */
 
-    PathModel.prototype._createSubpath = function(args) {
-      if (args == null) {
-        args = {};
-      }
-      args.path = this;
-      return this._addSubpath(new Subpath(args));
-    };
-
     PathModel.prototype._addSubpath = function(subpath) {
       this.subpaths.push(subpath);
       this._bindSubpath(subpath);
@@ -1485,7 +1522,8 @@
         this.subpathSubscriptions = new CompositeDisposable;
       }
       this.subpathSubscriptions.add(subpath.on('change', this.onSubpathChange));
-      return this.subpathSubscriptions.add(subpath.on('insert:node', this._forwardEvent.bind(this, 'insert:node')));
+      this.subpathSubscriptions.add(subpath.on('insert:node', this._forwardEvent.bind(this, 'insert:node')));
+      return this.subpathSubscriptions.add(subpath.on('remove:node', this._forwardEvent.bind(this, 'remove:node')));
     };
 
     PathModel.prototype._unbindSubpath = function(subpath) {
@@ -1539,9 +1577,8 @@
       ref1 = parsedPath.subpaths;
       for (i = 0, len = ref1.length; i < len; i++) {
         parsedSubpath = ref1[i];
-        this._createSubpath(parsedSubpath);
+        this.createSubpath(parsedSubpath);
       }
-      this.currentSubpath = this.subpaths[this.subpaths.length - 1];
       return this._pathToString();
     };
 
@@ -1883,7 +1920,7 @@
       toProperty: 'emitter'
     });
 
-    Path.delegatesMethods('get', 'set', 'getID', 'getType', 'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'close', 'isClosed', 'translate', {
+    Path.delegatesMethods('get', 'set', 'getID', 'getType', 'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'removeNode', 'createSubpath', 'close', 'isClosed', 'translate', {
       toProperty: 'model'
     });
 
@@ -1898,6 +1935,7 @@
       this.model = new PathModel;
       this.model.on('change', this.onModelChange);
       this.model.on('insert:node', this._forwardEvent.bind(this, 'insert:node'));
+      this.model.on('remove:node', this._forwardEvent.bind(this, 'remove:node'));
       this._setupSVGObject(options);
       this.svgDocument.registerObject(this);
     }
@@ -2008,8 +2046,10 @@
 
 },{"./draggable-mixin":4,"./path-model":13,"./point":17,"./utils":30,"delegato":31,"event-kit":35,"object-assign":290}],16:[function(require,module,exports){
 (function() {
-  var Node, Path, PenTool, getCanvasPosition,
+  var CompositeDisposable, Node, Path, PenTool, getCanvasPosition,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  CompositeDisposable = require('event-kit').CompositeDisposable;
 
   Node = require('./node');
 
@@ -2076,7 +2116,7 @@
         if (nodeIndex === 0) {
           path.close();
         }
-        return this.currentObject = null;
+        return this._unsetCurrentObject();
       }
     };
 
@@ -2084,6 +2124,8 @@
       var position;
       if (!this.currentObject) {
         this.currentObject = new Path(this.svgDocument);
+        this.currentObjectSubscriptions = new CompositeDisposable;
+        this.currentObjectSubscriptions.add(this.currentObject.on('remove:node', this.onRemovedNode.bind(this)));
         this.selectionModel.setSelected(this.currentObject);
       }
       position = getCanvasPosition(this.svgDocument.getSVGRoot(), event);
@@ -2101,6 +2143,29 @@
     };
 
     PenTool.prototype.onMouseUp = function(e) {
+      return this._unsetCurrentNode();
+    };
+
+    PenTool.prototype.onRemovedNode = function(arg) {
+      var index, newNode, node, subpath;
+      node = arg.node, subpath = arg.subpath, index = arg.index;
+      if (node === this.currentNode) {
+        this._unsetCurrentNode();
+      }
+      if (newNode = subpath.getNodes()[index - 1]) {
+        return this.selectionModel.setSelectedNode(newNode);
+      }
+    };
+
+    PenTool.prototype._unsetCurrentObject = function() {
+      var ref;
+      if ((ref = this.currentObjectSubscriptions) != null) {
+        ref.dispose();
+      }
+      return this.currentObject = null;
+    };
+
+    PenTool.prototype._unsetCurrentNode = function() {
       return this.currentNode = null;
     };
 
@@ -2110,7 +2175,7 @@
 
 }).call(this);
 
-},{"./node":9,"./path":15,"./utils":30}],17:[function(require,module,exports){
+},{"./node":9,"./path":15,"./utils":30,"event-kit":35}],17:[function(require,module,exports){
 (function() {
   var Point;
 
@@ -2251,6 +2316,7 @@
         }
       }
       this.selectionModel.setSelected(object);
+      this.selectionModel.setSelectedNode(null);
       return true;
     };
 
@@ -2330,6 +2396,15 @@
           return Point.create(value);
         };
       })(this));
+      this.addFilter('transform', (function(_this) {
+        return function(value) {
+          if (value === 'matrix(1,0,0,1,0,0)') {
+            return null;
+          } else {
+            return value;
+          }
+        };
+      })(this));
       this.subscriptions = new CompositeDisposable;
       this.subscriptions.add(this.on('change:transform', (function(_this) {
         return function(arg) {
@@ -2350,7 +2425,7 @@
      */
 
     RectangleModel.prototype.getType = function() {
-      return 'Path';
+      return 'Rectangle';
     };
 
     RectangleModel.prototype.getID = function() {
@@ -2420,7 +2495,7 @@
       toProperty: 'emitter'
     });
 
-    Rectangle.delegatesMethods('get', 'set', 'getID', 'getType', 'translate', {
+    Rectangle.delegatesMethods('get', 'set', 'getID', 'getType', 'toString', 'translate', {
       toProperty: 'model'
     });
 
@@ -2441,18 +2516,6 @@
     /*
     Section: Public Methods
      */
-
-    Rectangle.prototype.getType = function() {
-      return 'Rectangle';
-    };
-
-    Rectangle.prototype.getID = function() {
-      return (this.getType()) + "-" + this.id;
-    };
-
-    Rectangle.prototype.toString = function() {
-      return this.model.toString();
-    };
 
     Rectangle.prototype.remove = function() {
       this.svgEl.remove();
@@ -2581,7 +2644,7 @@
     };
 
     SelectionModel.prototype.setSelected = function(selected) {
-      var old, ref1, ref2;
+      var old, ref1, ref2, ref3;
       if (selected === this.selected) {
         return;
       }
@@ -2593,13 +2656,20 @@
       this.selectedSubscriptions = null;
       if (this.selected != null) {
         this.selectedSubscriptions = new CompositeDisposable;
-        if (this.selected.on != null) {
-          this.selectedSubscriptions.add((ref2 = this.selected) != null ? ref2.on('remove', (function(_this) {
-            return function() {
-              return _this.setSelected(null);
-            };
-          })(this)) : void 0);
-        }
+        this.selectedSubscriptions.add((ref2 = this.selected) != null ? typeof ref2.on === "function" ? ref2.on('remove', (function(_this) {
+          return function() {
+            return _this.setSelected(null);
+          };
+        })(this)) : void 0 : void 0);
+        this.selectedSubscriptions.add((ref3 = this.selected) != null ? typeof ref3.on === "function" ? ref3.on('remove:node', (function(_this) {
+          return function(arg) {
+            var node;
+            node = arg.node;
+            if (node === _this.selectedNode) {
+              return _this.setSelectedNode(null);
+            }
+          };
+        })(this)) : void 0 : void 0);
       }
       if (this.preselected === selected) {
         this.setPreselected(null);
@@ -2993,6 +3063,20 @@
         node: node
       });
       return this.emitter.emit('change', this);
+    };
+
+    Subpath.prototype.removeNode = function(node) {
+      var index;
+      index = this.nodes.indexOf(node);
+      if (index > -1) {
+        this.nodes.splice(index, 1);
+        this.emitter.emit('remove:node', {
+          subpath: this,
+          index: index,
+          node: node
+        });
+        return this.emitter.emit('change', this);
+      }
     };
 
     Subpath.prototype.isClosed = function() {
@@ -3404,19 +3488,26 @@
      */
 
     SVGDocument.prototype.translateSelectedObjects = function(deltaPoint) {
-      var selectedObject;
+      var selectedNode, selectedObject;
       if (!deltaPoint) {
         return;
       }
       deltaPoint = Point.create(deltaPoint);
-      selectedObject = this.selectionModel.getSelected();
-      return selectedObject != null ? typeof selectedObject.translate === "function" ? selectedObject.translate(deltaPoint) : void 0 : void 0;
+      if (selectedNode = this.selectionModel.getSelectedNode()) {
+        return selectedNode != null ? typeof selectedNode.translate === "function" ? selectedNode.translate(deltaPoint) : void 0 : void 0;
+      } else if (selectedObject = this.selectionModel.getSelected()) {
+        return selectedObject != null ? typeof selectedObject.translate === "function" ? selectedObject.translate(deltaPoint) : void 0 : void 0;
+      }
     };
 
     SVGDocument.prototype.removeSelectedObjects = function() {
-      var selectedObject;
+      var selectedNode, selectedObject;
       selectedObject = this.selectionModel.getSelected();
-      return selectedObject != null ? selectedObject.remove() : void 0;
+      if (selectedObject && (selectedNode = this.selectionModel.getSelectedNode())) {
+        return typeof selectedObject.removeNode === "function" ? selectedObject.removeNode(selectedNode) : void 0;
+      } else {
+        return selectedObject != null ? selectedObject.remove() : void 0;
+      }
     };
 
     SVGDocument.prototype.registerObject = function(object) {
