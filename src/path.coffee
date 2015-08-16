@@ -18,7 +18,8 @@ class Path
 
   @delegatesMethods 'on', toProperty: 'emitter'
   @delegatesMethods 'get', 'set', 'getID', 'getType',
-    'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'close', 'isClosed'
+    'getNodes', 'getSubpaths', 'addNode', 'insertNode', 'removeNode', 'createSubpath', 
+    'close', 'isClosed'
     'translate'
     toProperty: 'model'
 

@@ -89,8 +89,15 @@ class PathModel extends Model
   close: ->
     @_addCurrentSubpathIfNotPresent()
     @currentSubpath.close()
+  createSubpath: (args={}) ->
+    args.path = this
+    @currentSubpath = @_addSubpath(new Subpath(args))
+  removeNode: (node) ->
+    for subpath in @subpaths
+      subpath.removeNode(node)
+    return
   _addCurrentSubpathIfNotPresent: ->
-    @currentSubpath = @_createSubpath() unless @currentSubpath
+    @createSubpath() unless @currentSubpath
 
   ###
   Section: Event Handlers
@@ -102,10 +109,6 @@ class PathModel extends Model
   ###
   Section: Private Methods
   ###
-
-  _createSubpath: (args={}) ->
-    args.path = this
-    @_addSubpath(new Subpath(args))
 
   _addSubpath: (subpath) ->
     @subpaths.push(subpath)
@@ -139,8 +142,7 @@ class PathModel extends Model
     return if pathString is @pathString
     @_removeAllSubpaths()
     parsedPath = PathParser.parsePath(pathString)
-    @_createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
-    @currentSubpath = @subpaths[@subpaths.length - 1]
+    @createSubpath(parsedSubpath) for parsedSubpath in parsedPath.subpaths
     @_pathToString()
 
   _forwardEvent: (eventName, args) ->

@@ -189,6 +189,24 @@ describe 'Path', ->
       expect(path.getSubpaths()[0].nodes[0]).toEqual node
       expect(spy).toHaveBeenCalled()
 
+    it 'removes a node from the correct place', ->
+      node = new Node([20, 30], [0, 0], [0, 0])
+
+      subpath = path.createSubpath()
+      subpath.addNode(node)
+
+      expect(path.getSubpaths()[0].nodes).toHaveLength 3
+      expect(path.getSubpaths()[1].nodes).toHaveLength 1
+      expect(path.getSubpaths()[1].nodes[0]).toEqual node
+
+      path.on 'change', changedSpy = jasmine.createSpy()
+
+      path.removeNode(node)
+      expect(path.getSubpaths()[0].nodes).toHaveLength 3
+      expect(path.getSubpaths()[1].nodes).toHaveLength 0
+
+      expect(changedSpy).toHaveBeenCalled()
+
   describe "updating attributes", ->
     beforeEach ->
       path = new Path(svg, {x: 10, y: 20, width: 200, height: 300, fill: '#ff0000'})
