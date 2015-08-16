@@ -33,7 +33,8 @@ describe 'ObjectEditor', ->
     it 'activates the editor associated with the selected object', ->
       editor.activate()
       expect(editor.isActive()).toBe true
-      expect(editor.getActiveObject()).toBe path.getNodes()[0]
+      expect(editor.getActiveObject()).toBe path
+      expect(editor.getActiveEditor().activeNode).toBe path.getNodes()[0]
 
   describe "when the ObjectEditor is active", ->
     beforeEach ->

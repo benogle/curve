@@ -38,6 +38,8 @@ class SelectionModel
     @setPreselected(null) if @preselected is selected
     @emitter.emit 'change:selected', object: @selected, old: old
 
+  getSelectedNode: -> @selectedNode
+
   setSelectedNode: (selectedNode) ->
     return if selectedNode == @selectedNode
     old = @selectedNode

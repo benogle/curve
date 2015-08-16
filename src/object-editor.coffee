@@ -27,21 +27,23 @@ class ObjectEditor
   activate: ->
     @active = true
     @subscriptions = new CompositeDisposable
-    @subscriptions.add @selectionModel.on('change:selected', @onChangeSelected)
-    @subscriptions.add @selectionModel.on('change:selectedNode', @onChangeSelectedNode)
+    @subscriptions.add @selectionModel.on('change:selected', ({object}) => @activateSelectedObject(object))
+    @subscriptions.add @selectionModel.on('change:selectedNode', ({node}) => @activateSelectedNode(node))
+    @activateSelectedObject(@selectionModel.getSelected())
+    @activateSelectedNode(@selectionModel.getSelectedNode())
 
   deactivate: ->
     @subscriptions?.dispose()
     @_deactivateActiveEditor()
     @active = false
 
-  onChangeSelected: ({object}) =>
+  activateSelectedObject: (object) =>
     @_deactivateActiveEditor()
     if object?
       @activeEditor = @editors[object.getType()]
       @activeEditor?.activateObject(object)
 
-  onChangeSelectedNode: ({node}) =>
+  activateSelectedNode: (node) =>
     @activeEditor?.activateNode?(node)
 
   _deactivateActiveEditor: ->
