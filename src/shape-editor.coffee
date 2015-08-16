@@ -11,17 +11,11 @@ class ShapeEditor
   # border is a fuzzy 2px. When this number is odd with a 1px border, it
   # produces sharp lines because it places the nodes on a .5 px boundary. Yay.
   handleSize: 9
-
   cornerPositionByIndex: ['topLeft', 'topRight', 'bottomRight', 'bottomLeft']
-  cornerIndexByPosition: null
 
   constructor: (@svgDocument) ->
     @object = null
     @toolLayer = @svgDocument.getToolLayer()
-    @cornerIndexByPosition = {}
-    for position, index in @cornerPositionByIndex
-      @cornerIndexByPosition[position] = index
-    return
 
   isActive: -> !!@object
 
@@ -54,19 +48,18 @@ class ShapeEditor
 
     size = @object.get('size')
     position = @object.get('position')
+    transform = @object.get('transform')
 
-    @renderCorner(@_getPointForCornerPosition('topLeft', position, size), 'topLeft')
-    @renderCorner(@_getPointForCornerPosition('topRight', position, size), 'topRight')
-    @renderCorner(@_getPointForCornerPosition('bottomRight', position, size), 'bottomRight')
-    @renderCorner(@_getPointForCornerPosition('bottomLeft', position, size), 'bottomLeft')
+    for corner, index in @cornerHandles.members
+      cornerPosition = @cornerPositionByIndex[index]
+      point = @_getPointForCornerPosition(cornerPosition, position, size)
 
-  renderCorner: (point, cornerPosition) ->
-    index = @cornerIndexByPosition[cornerPosition]
-    corner = @cornerHandles.members[index]
-    corner.attr
-      x: point.x - @handleSize / 2
-      y: point.y - @handleSize / 2
-      transform: @object.get('transform')
+      corner.attr
+        x: point.x - @handleSize / 2
+        y: point.y - @handleSize / 2
+        transform: transform
+
+    return
 
   ###
   Section: Event Handlers
