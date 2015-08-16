@@ -42,6 +42,18 @@ describe 'PenTool', ->
       expect(selectedNode.getHandleOut()).toEqual new Point(-30, 10)
       svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
 
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousedown', jasmine.buildMouseParams(85, 95)))
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mousemove', jasmine.buildMouseParams(55, 105)))
+      selectedNode = selectionModel.getSelectedNode()
+      expect(selected instanceof Path).toBe true
+      expect(selectedNode).toBe selected.getNodes()[2]
+      svg.getSVGRoot().node.dispatchEvent(jasmine.buildMouseEvent('mouseup'))
+
+      # remove the node, it selects the previous
+      selected.removeNode(selected.getNodes()[2])
+      selectedNode = selectionModel.getSelectedNode()
+      expect(selectedNode).toBe selected.getNodes()[1]
+
       # closes when clicking on the first node
       nodeEditorElement = svg.getObjectEditor().getActiveEditor().nodeEditors[0].nodeElement.node
       xyParams = jasmine.buildMouseParams(20, 30)

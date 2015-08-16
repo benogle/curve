@@ -1,3 +1,4 @@
+{CompositeDisposable} = require 'event-kit'
 Node = require './node'
 Path = require './path'
 {getCanvasPosition} = require './utils'
@@ -41,11 +42,13 @@ class PenTool
     if path?
       nodeIndex = path.getNodes().indexOf(node)
       path.close() if nodeIndex is 0
-      @currentObject = null
+      @_unsetCurrentObject()
 
   onMouseDown: (event) =>
     unless @currentObject
       @currentObject = new Path(@svgDocument)
+      @currentObjectSubscriptions = new CompositeDisposable
+      @currentObjectSubscriptions.add(@currentObject.on 'remove:node', @onRemovedNode.bind(this))
       @selectionModel.setSelected(@currentObject)
 
     position = getCanvasPosition(@svgDocument.getSVGRoot(), event)
@@ -59,4 +62,17 @@ class PenTool
       @currentNode.setAbsoluteHandleOut(position)
 
   onMouseUp: (e) =>
+    @_unsetCurrentNode()
+
+  onRemovedNode: ({node, subpath, index}) ->
+    @_unsetCurrentNode() if node is @currentNode
+    if newNode = subpath.getNodes()[index - 1]
+      @currentNode = newNode
+      @selectionModel.setSelectedNode(newNode)
+
+  _unsetCurrentObject: ->
+    @currentObjectSubscriptions?.dispose()
+    @currentObject = null
+
+  _unsetCurrentNode: ->
     @currentNode = null
