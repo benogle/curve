@@ -74,7 +74,7 @@ describe 'PathEditor', ->
 
     args = nodeSpy.calls.mostRecent().args[0]
     expect(nodeSpy).toHaveBeenCalled()
-    expect(args.nodeIndex).toBe 0
+    expect(args.node).toBe path.getNodes()[0]
     expect(args.event).toBeTruthy()
 
     nodeEditorElement.dispatchEvent(jasmine.buildMouseEvent('mouseup', xyParams))
@@ -87,4 +87,4 @@ describe 'PathEditor', ->
 
     args = nodeSpy.calls.mostRecent().args[0]
     expect(nodeSpy).toHaveBeenCalled()
-    expect(args.nodeIndex).toBe 1
+    expect(args.node).toBe path.getNodes()[1]

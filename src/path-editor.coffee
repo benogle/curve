@@ -95,8 +95,5 @@ class PathEditor
 
   _forwardEvent: (eventName, args) ->
     return unless path = @getActiveObject()
-    {node} = args
-    nodeIndex = path.getNodes().indexOf(node)
-    args.nodeIndex = nodeIndex
     args.object = path
     @emitter.emit(eventName, args)
