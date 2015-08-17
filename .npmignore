@@ -4,6 +4,8 @@ spec/
 .npmignore
 .grunt
 .travis.yml
-_SpecRunner.html
+Gruntfile.js
+curve.js
+curve.min.js
 npm-debug.log
 TODO.md
