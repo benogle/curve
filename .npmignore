@@ -5,9 +5,9 @@ examples/
 .npmignore
 .grunt
 .travis.yml
+/curve.js
+/curve.min.js
 Gruntfile.js
-curve.js
-curve.min.js
 npm-debug.log
 server.sh
 TODO.md
