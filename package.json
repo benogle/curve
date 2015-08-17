@@ -9,7 +9,7 @@
     "url": "https://github.com/benogle/curve.git"
   },
   "scripts": {
-    "prepublish": "grunt",
+    "prepublish": "grunt coffee",
     "test": "grunt test"
   },
   "devDependencies": {
