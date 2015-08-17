@@ -50,6 +50,7 @@ class PointerTool
     @_dragStartEvent = event if object?
     @selectionModel.setSelected(object)
     @selectionModel.setSelectedNode(null)
+    object?.enableDragging(event) # just in case it isnt enabled
     true
 
   onMouseMove: (e) =>
