@@ -4,10 +4,24 @@ window.main = function() {
   this.DOC = doc = new Curve.SVGDocument("canvas")
 
   fileToLoad = localStorage.getItem('curve-file') || Curve.Examples.cloud
-  // fileToLoad = Curve.Examples.rects
   doc.deserialize(fileToLoad)
+  doc.initializeTools()
+
+  var size = doc.getSize()
+  var svgNode = document.querySelector('#canvas')
+  svgNode.style.width = size.width + 'px'
+  svgNode.style.height = size.height + 'px'
 
   document.addEventListener('keydown', onKeyDown, false)
+
+  document.querySelector('button[data-tool="pointer"]').classList.add('selected')
+  document.addEventListener('click', function(event) {
+    if (event.target.nodeName === 'BUTTON' && event.target.classList.contains('tool-button')) {
+      document.querySelector('.tool-button.selected').classList.remove('selected')
+      event.target.classList.add('selected')
+      doc.setActiveToolType(event.target.getAttribute('data-tool'))
+    }
+  })
 }
 
 function save() {
@@ -24,43 +38,26 @@ function onKeyDown(event) {
 
 // Draws a couple paths
 window._main = function() {
-  svg = SVG("canvas")
+  this.DOC = doc = new Curve.SVGDocument("canvas")
 
-  path1 = new Path(svg)
+  path1 = new Path(doc)
   path1.addNode(new Node([50, 50], [-10, 0], [10, 0]))
   path1.addNode(new Node([80, 60], [-10, -5], [10, 5]))
   path1.addNode(new Node([60, 80], [10, 0], [-10, 0]))
   path1.close()
 
-  path2 = new Path(svg)
+  path2 = new Path(doc, {
+    fill: 'none',
+    stroke: '#333',
+    'stroke-width': 2
+  })
   path2.addNode(new Node([150, 50], [-10, 0], [10, 0]))
   path2.addNode(new Node([220, 100], [-10, -5], [10, 5]))
   path2.addNode(new Node([160, 120], [10, 0], [-10, 0]))
   path2.close()
 
-  path2.svgEl.attr({
-    fill: 'none',
-    stroke: '#333',
-    'stroke-width': 2
-  })
-
-  selectionModel = new Curve.SelectionModel()
-  selectionView = new Curve.SelectionView(svg, selectionModel)
-
-  selectionModel.setSelected(path1)
-  selectionModel.setSelectedNode(path1.nodes[2])
-
-  tool = new Curve.PointerTool(svg, {
-    selectionModel: this.selectionModel,
-    selectionView: this.selectionView
-  })
-  tool.activate()
-
-  // pen = new Curve.PenTool(svg, {
-  //   selectionModel: this.selectionModel,
-  //   selectionView: this.selectionView
-  // })
-  // @pen.activate()
+  doc.getSelectionModel().setSelected(path1)
+  doc.getSelectionModel().setSelectedNode(path1.nodes[2])
 }
 
 Curve.Examples = {

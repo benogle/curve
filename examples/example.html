@@ -18,19 +18,19 @@
 
   <style type="text/css">
     body {
-      background: #fff;
+      background: #f4f4f4;
     }
-    #canvas, body{
-      padding: 0; margin: 0;
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      overflow: auto;
+    #canvas{
+      margin: 20px auto;
     }
     #canvas>svg {
+      background: #fff;
       width: 100% !important;
+      overflow: visible;
+    }
+
+    .tool-button.selected {
+      background: #69c;
     }
 
     svg .object-selection{
@@ -64,10 +64,22 @@
       stroke-width: 1;
       stroke-linecap: round;
     }
+    svg .shape-editor-handle{
+      fill: #fff;
+      stroke: #069;
+      stroke-width: 1;
+      stroke-linecap: round;
+    }
   </style>
 
 </head>
 <body>
+  <div id="toolbar">
+    <button class="tool-button" data-tool="pointer">Pointer</button>
+    <button class="tool-button" data-tool="pen">Pen</button>
+    <button class="tool-button" data-tool="rectangle">Rectangle</button>
+    <button class="tool-button" data-tool="ellipse">Ellipse</button>
+  </div>
   <div id="canvas"></div>
 </body>
 </html>
