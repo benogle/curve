@@ -22,7 +22,6 @@ class PenTool
     @objectEditor.activate()
     @subscriptions = new CompositeDisposable
     @subscriptions.add @objectEditor.editors.Path.on('mousedown:node', @onMouseDownNode.bind(this))
-    @subscriptions.add @selectionModel.on('change:selected', @onChangedSelectedObject.bind(this))
     svg = @svgDocument.getSVGRoot()
     svg.on 'mousedown', @onMouseDown
     svg.on 'mousemove', @onMouseMove
@@ -38,9 +37,6 @@ class PenTool
     svg.off 'mousemove', @onMouseMove
     svg.off 'mouseup', @onMouseUp
     @active = false
-
-  onChangedSelectedObject: ({object, old}) =>
-    old.disableDragging() if old?
 
   onMouseDownNode: (event) ->
     {node} = event
@@ -77,7 +73,6 @@ class PenTool
 
   _unsetCurrentObject: ->
     @currentObjectSubscriptions?.dispose()
-    @currentObject?.enableDragging()
     @currentObject = null
 
   _unsetCurrentNode: ->
