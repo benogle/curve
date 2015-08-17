@@ -2406,7 +2406,8 @@
     PenTool.prototype.activate = function() {
       var svg;
       this.objectEditor.activate();
-      this.subscriptions = this.objectEditor.editors.Path.on('mousedown:node', this.onMouseDownNode.bind(this));
+      this.subscriptions = new CompositeDisposable;
+      this.subscriptions.add(this.objectEditor.editors.Path.on('mousedown:node', this.onMouseDownNode.bind(this)));
       svg = this.svgDocument.getSVGRoot();
       svg.on('mousedown', this.onMouseDown);
       svg.on('mousemove', this.onMouseMove);
@@ -2420,6 +2421,7 @@
       if ((ref = this.subscriptions) != null) {
         ref.dispose();
       }
+      this._unsetCurrentObject();
       svg = this.svgDocument.getSVGRoot();
       svg.off('mousedown', this.onMouseDown);
       svg.off('mousemove', this.onMouseMove);
@@ -2636,6 +2638,9 @@
       }
       this.selectionModel.setSelected(object);
       this.selectionModel.setSelectedNode(null);
+      if (object != null) {
+        object.enableDragging(event);
+      }
       return true;
     };
 
