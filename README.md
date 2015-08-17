@@ -76,6 +76,8 @@ Officially tested on Chrome
 * Automatically compile changes `grunt watch`
 * Run tests with `npm test`
 
+## License
+
 MIT License
 
 [electron]:http://electron.atom.io
