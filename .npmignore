@@ -1,5 +1,6 @@
 src/
 spec/
+examples/
 .DS_Store
 .npmignore
 .grunt
@@ -8,4 +9,5 @@ Gruntfile.js
 curve.js
 curve.min.js
 npm-debug.log
+server.sh
 TODO.md
