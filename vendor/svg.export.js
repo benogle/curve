@@ -41,6 +41,9 @@
             this.attr('width', options.width)
           if (options.height)
             this.attr('height', options.height)
+
+          if (!this.attr('xmlns'))
+            this.attr('xmlns', 'http://www.w3.org/2000/svg')
         }
 
         /* open node */

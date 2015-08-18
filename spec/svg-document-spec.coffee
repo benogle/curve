@@ -17,14 +17,21 @@ describe 'Curve.SVGDocument', ->
     expect(canvas.querySelector('svg>.tool-layer')).toBeDefined()
 
   describe 'when the document is empty', ->
-    it "creates a new object layer with a default size", ->
+    beforeEach ->
       rect = new Rectangle(svg, {x: 20, y: 30, width: 45, height: 55})
+
+    it "creates a new object layer with a default size", ->
       children = svg.getObjectLayer().node.childNodes
       expect(children.length).toBe 1
       expect(children[0].nodeName).toBe 'rect'
 
       expect(svg.getObjectLayer().width()).toBe 1024
       expect(svg.getObjectLayer().height()).toBe 1024
+
+    it "exports with the correct xmlns", ->
+      svgString = svg.serialize().trim()
+      expect(svgString).toContain 'xmlns="http://www.w3.org/2000/svg"'
+
 
   describe 'reading svg', ->
     beforeEach ->
