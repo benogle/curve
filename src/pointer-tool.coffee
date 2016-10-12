@@ -1,4 +1,4 @@
-Utils = require './Utils'
+Utils = require './utils'
 
 module.exports =
 class PointerTool
